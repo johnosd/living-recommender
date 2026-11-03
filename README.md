@@ -1,0 +1,134 @@
+# living-recommender
+
+Plataforma web que recomenda **onde morar em Portugal**, município a município e, dentro de cada município, freguesia a freguesia. A recomendação se baseia no orçamento de aluguel e nas preferências de cada pessoa.
+
+> **Status:** planejamento. A arquitetura e o roteiro estão definidos em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md). Ainda não há código executável neste repositório.
+
+*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: planning.*
+
+---
+
+## Como funciona
+
+1. A pessoa informa **quanto pode pagar de aluguel** e a tipologia desejada (T0–T4+).
+2. Escolhe a **preferência de clima** (ameno, quente ou fresco) e, para cada categoria (cultura, economia, emprego, educação, população, comunidade estrangeira, saúde, segurança, distância a capitais…), define:
+   - **não importa**;
+   - um **peso** de 0 a 5;
+   - uma **faixa de valores** aceitável, usada como filtro eliminatório.
+3. O sistema aplica essas preferências sobre uma **base vigente já processada** e mostra o resultado como **infográfico**: mapa, os melhores municípios, por que cada um foi recomendado, comparação com a média de Portugal, aluguel em relação ao orçamento, clima mês a mês e distâncias.
+4. Ao abrir um município, a pessoa vê as **freguesias** ordenadas pelos mesmos critérios. Cada indicador informa se é próprio da freguesia ou herdado do município.
+
+Não é preciso criar conta. As preferências ficam só no navegador e podem ser compartilhadas por URL.
+
+## Princípios
+
+- **Sem dados inventados.** Indicador ausente aparece como ausente; amostras pequenas são sinalizadas; cada número traz fonte e período de referência.
+- **Explicável.** O score é uma média ponderada transparente, e a metodologia é pública.
+- **Privacidade por padrão.** Sem cadastro, sem rastreamento; as preferências não saem do dispositivo.
+- **Custo mínimo.** A meta é operar com menos de US$ 10/mês na AWS. O site é estático, e o processamento roda só uma vez por mês.
+
+## Arquitetura (resumo)
+
+```mermaid
+flowchart LR
+  F[Fontes públicas e anúncios] --> C[Coletores: Lambda / upload manual]
+  C --> R[(S3 raw)]
+  O[MWAA Serverless] -. orquestra .-> C
+  O -. orquestra .-> T
+  R --> T[dbt Core + DuckDB em ECS]
+  T --> P[(S3 published/vN)]
+  P --> CDN[CloudFront]
+  CDN --> W[Site estático: ranking no navegador]
+```
+
+| Camada | Tecnologia |
+|---|---|
+| Orquestração | Amazon MWAA Serverless (Apache Airflow) |
+| Coleta | AWS Lambda (Python); CLI de upload para coletas manuais |
+| Armazenamento | Amazon S3 (raw imutável → bronze/silver/gold em Parquet → JSON publicado) |
+| Transformação | dbt Core + DuckDB em ECS Fargate |
+| Frontend | React (exportação estática), MapLibre GL, i18n PT-BR/EN |
+| Recomendador | Biblioteca TypeScript pura, guiada por um catálogo de critérios |
+| Infraestrutura | Terraform; GitHub Actions com OIDC |
+| Laboratório | Databricks Free Edition (exploração e ML, fora da produção) |
+
+Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plano_plataforma_recomendacao_portugal.md).
+
+## Fontes de dados
+
+| Fonte | Uso | Nível |
+|---|---|---|
+| CAOP (DGT) | Limites e códigos oficiais de municípios e freguesias | Município / freguesia |
+| Pordata / INE | Cultura, economia, emprego, salários, educação, população, saúde, segurança, migração, rendas medianas | Município |
+| Censos 2021 (INE) | População e faixas etárias | Freguesia |
+| Open-Meteo Histórico, World Weather Online | Médias climáticas, dias extremos, conforto climático | Ponto (centroide) |
+| Anúncios de arrendamento (Idealista) | Aluguel pedido, **só agregado** (mediana, P25–P75, n) | Município / freguesia |
+| Wikipedia | Texto descritivo dos municípios (CC BY-SA, com atribuição) | Município |
+
+Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência, até a integração com a API oficial do Idealista, já solicitada. Nenhum anúncio individual é publicado. Licenças e regras de uso de cada fonte estão nas seções 3.4 e 5 do plano.
+
+## Roteiro
+
+| Fase | Entrega | Estado |
+|---|---|---|
+| 0 | Higiene do legado e fundação do repositório | A fazer |
+| 1 | Fundação AWS (Terraform, orçamento, OIDC) e PoC do MWAA Serverless | A fazer |
+| 2 | Dimensão territorial e coletores das fontes públicas | A fazer |
+| 3 | Modelagem dbt (municípios e freguesias) com testes de qualidade | A fazer |
+| 4 | Recomendador e site com resultado infográfico | A fazer |
+| 5 | Operação mensal, rollback e medição de custo | A fazer |
+
+Marco intermediário: uma **v0 só com municípios** publicada por volta da semana 12–14. O drill-down por freguesia entra como v1.1. Itens posteriores ao MVP: API oficial do Idealista, modelo de ML de aluguel em escala nacional, API dinâmica.
+
+## Estrutura do repositório
+
+Estado atual:
+
+```text
+.docs/        plano de arquitetura e implementação
+.planning/    fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
+.agents/      skills do agente de desenvolvimento
+```
+
+Estrutura prevista (seção 11 do plano):
+
+```text
+apps/web/                 site
+packages/ranker/          biblioteca do recomendador
+pipelines/                coletores, CLI de upload, workflows, imagens ECS
+extension/idealista/      extensão de coleta manual
+analytics/dbt/            modelos, seeds e testes
+analytics/lab/            notebooks de laboratório
+infrastructure/terraform/ infraestrutura
+config/sources.yml        catálogo de fontes
+docs/{adr,runbooks}/      decisões e operação
+```
+
+## Como contribuir
+
+O desenvolvimento segue um fluxo de *Spec-Driven Development* descrito em [.planning/README.md](.planning/README.md):
+
+1. Decisões de arquitetura → ADR em `sdd/adr/`.
+2. Cada funcionalidade → `spec.md` → `plan.md` + `tasks.md` → implementação → convergência, em `sdd/specs/`.
+3. Ideias e bugs → [.planning/backlog.md](.planning/backlog.md).
+
+Instruções de ambiente local (Python, Node, dbt, Terraform) serão adicionadas junto com o primeiro código executável.
+
+**Regras básicas:**
+
+- Nenhum segredo no Git. Credenciais ficam no AWS SSM Parameter Store ou em `.env` local, que o Git ignora.
+- Mensagens de commit curtas, em inglês.
+- Todo PR passa por lint, testes, testes dbt e `terraform plan` antes do merge.
+
+## Origem
+
+Este projeto evolui dois trabalhos anteriores do autor:
+
+- **MPAlugueisLisboa** — TCC (2023) de previsão de aluguéis na Região de Lisboa. Dele vêm os processadores do Pordata, a pontuação climática e a análise exploratória.
+- **IdealistaScraper** — extensão de navegador para coleta de anúncios de arrendamento.
+
+O que é reaproveitado e o que é reescrito está na seção 3 do plano.
+
+## Licença
+
+A definir.
