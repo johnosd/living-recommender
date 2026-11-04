@@ -1,0 +1,1 @@
+"""Helpers reutilizáveis dos coletores."""

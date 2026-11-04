@@ -11,7 +11,7 @@ update-bug-status.ps1.
 
 | Slug | Título | Status | Progresso | Última Atualização |
 | --- | --- | --- | --- | --- |
-| 001-ingestao-caop | Fundação da ingestão e dimensão territorial CAOP | Especificada | N/A | 2026-11-03 |
+| 001-ingestao-caop | Fundação da ingestão e dimensão territorial CAOP | Em Execução | 30/43 tasks | 2026-11-04 |
 
 ## Melhorias Ad-hoc
 

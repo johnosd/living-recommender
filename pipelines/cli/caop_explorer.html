@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Explorador da CAOP</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #18252d; background: #f6f8f8; }
+    body { max-width: 1050px; margin: 0 auto; padding: 24px 18px 64px; }
+    h1, h2 { line-height: 1.2; }
+    p { line-height: 1.55; }
+    .muted { color: #53636b; }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; margin: 22px 0; }
+    .flow div { background: white; border: 1px solid #d5e0e2; border-radius: 8px; padding: 12px; flex: 1 1 170px; }
+    .flow strong { display: block; margin-bottom: 4px; }
+    .stats { font-size: 1.2rem; font-weight: 650; margin: 22px 0; }
+    .controls { display: flex; flex-wrap: wrap; gap: 14px; margin: 20px 0; }
+    label { display: grid; gap: 5px; font-weight: 600; flex: 1 1 280px; }
+    input, select { font: inherit; padding: 9px; border: 1px solid #869ca5; border-radius: 5px; background: white; min-width: 0; }
+    .table-wrap { overflow-x: auto; background: white; border: 1px solid #d5e0e2; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e3eaec; }
+    th { background: #eaf1f2; white-space: nowrap; }
+    td.number { text-align: right; font-variant-numeric: tabular-nums; }
+    tr:last-child td { border-bottom: 0; }
+    tr[data-code] { cursor: pointer; }
+    tr[data-code]:hover, tr[data-code]:focus { background: #dff1f0; outline: 2px solid #126c68; outline-offset: -2px; }
+    code { background: #eaf1f2; padding: 2px 4px; border-radius: 3px; }
+    a { color: #0a635f; }
+    @media (max-width: 600px) { body { padding: 16px 12px 40px; } th, td { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Explorador da CAOP</h1>
+    <p>Esta é a base territorial que o projeto construiu. <strong>Uma linha em municípios</strong> identifica um município; <strong>várias linhas em freguesias</strong> apontam para ele pelo código <code>dico</code>.</p>
+    <div class="flow" aria-label="Etapas dos dados">
+      <div><strong>1. Raw</strong>ZIPs originais da DGT, sem alterações.</div>
+      <div><strong>2. Bronze</strong>Geometria e códigos preparados para validação.</div>
+      <div><strong>3. Silver</strong>Tabelas simples para consultar e juntar a outras fontes.</div>
+    </div>
+    <p class="stats" id="stats"></p>
+    <p class="muted" id="provenance"></p>
+    <h2>Municípios</h2>
+    <div class="controls">
+      <label>Buscar município pelo nome ou código <input id="search" type="search" placeholder="Ex.: Lisboa ou 1106"></label>
+      <label>Selecionar município <select id="municipality"></select></label>
+    </div>
+    <p id="municipality-count" aria-live="polite"></p>
+    <div class="table-wrap"><table><thead><tr><th>Código</th><th>Município</th><th>Distrito ou ilha</th><th>Região</th><th>Área (km²)</th></tr></thead><tbody id="municipality-rows"></tbody></table></div>
+    <h2 id="parish-title">Freguesias</h2>
+    <p class="muted">O código da freguesia (<code>dicofre</code> nesta base; <code>dtmnfr</code> no arquivo CAOP2025) começa com o código do município. Alguns códigos oficiais terminam em letras, como <code>0302FA</code>.</p>
+    <p id="parish-count" aria-live="polite"></p>
+    <div class="table-wrap"><table><thead><tr><th>Código</th><th>Freguesia</th><th>Área (km²)</th></tr></thead><tbody id="parish-rows"></tbody></table></div>
+    <p class="muted">Fonte: Direção-Geral do Território, CAOP. Dados locais gerados para exploração; veja os CSVs em <code>.data/explore/</code> para todas as colunas.</p>
+  </main>
+  <script id="caop-data" type="application/json">__CAOP_DATA__</script>
+  <script>
+    const data = JSON.parse(document.getElementById('caop-data').textContent);
+    const sorted = [...data.municipalities].sort((a, b) => a.official_name.localeCompare(b.official_name, 'pt'));
+    const select = document.getElementById('municipality');
+    const search = document.getElementById('search');
+    const area = n => Number(n).toLocaleString('pt-PT', { maximumFractionDigits: 2 });
+    const cell = (tr, value, numeric = false) => {
+      const td = document.createElement('td');
+      td.textContent = value ?? '—';
+      if (numeric) td.className = 'number';
+      tr.appendChild(td);
+    };
+    document.getElementById('stats').textContent = `${data.municipalities.length} municípios · ${data.parishes.length} freguesias`;
+    document.getElementById('provenance').textContent = `Edição CAOP ${data.version} · coleta ${data.run_id} · processamento ${data.processed_at_utc}`;
+    for (const m of sorted) {
+      const option = document.createElement('option');
+      option.value = m.dico;
+      option.textContent = `${m.official_name} (${m.dico})`;
+      select.appendChild(option);
+    }
+    function showParishes() {
+      const municipality = data.municipalities.find(m => m.dico === select.value);
+      const rows = data.parishes.filter(p => p.dico === select.value)
+        .sort((a, b) => a.official_name.localeCompare(b.official_name, 'pt'));
+      const body = document.getElementById('parish-rows');
+      body.replaceChildren();
+      for (const parish of rows) {
+        const tr = document.createElement('tr');
+        cell(tr, parish.dicofre);
+        cell(tr, parish.official_name);
+        cell(tr, area(parish.area_km2), true);
+        body.appendChild(tr);
+      }
+      document.getElementById('parish-title').textContent = `Freguesias de ${municipality.official_name}`;
+      document.getElementById('parish-count').textContent = `${rows.length} freguesia(s) ligadas ao município ${municipality.dico}`;
+    }
+    function showMunicipalities() {
+      const term = search.value.trim().toLocaleLowerCase('pt');
+      const matches = sorted.filter(m => `${m.dico} ${m.official_name} ${m.district_or_island}`.toLocaleLowerCase('pt').includes(term));
+      const body = document.getElementById('municipality-rows');
+      body.replaceChildren();
+      for (const municipality of matches) {
+        const tr = document.createElement('tr');
+        tr.dataset.code = municipality.dico;
+        tr.tabIndex = 0;
+        const choose = () => { select.value = municipality.dico; showParishes(); };
+        tr.addEventListener('click', choose);
+        tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } });
+        cell(tr, municipality.dico);
+        cell(tr, municipality.official_name);
+        cell(tr, municipality.district_or_island);
+        cell(tr, municipality.autonomous_region ?? 'Continente');
+        cell(tr, area(municipality.area_km2), true);
+        body.appendChild(tr);
+      }
+      document.getElementById('municipality-count').textContent = `${matches.length} município(s) encontrados`;
+    }
+    select.value = data.municipalities.find(m => m.official_name === 'Lisboa')?.dico ?? sorted[0].dico;
+    select.addEventListener('change', showParishes);
+    search.addEventListener('input', showMunicipalities);
+    showMunicipalities();
+    showParishes();
+  </script>
+</body>
+</html>

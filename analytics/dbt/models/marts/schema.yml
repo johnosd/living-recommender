@@ -1,0 +1,43 @@
+version: 2
+models:
+  - name: dim_municipality
+    description: Uma linha por município vigente da CAOP.
+    columns:
+      - name: dico
+        data_tests: [not_null, unique]
+      - name: official_name
+        data_tests: [not_null]
+      - name: normalized_name
+        data_tests: [not_null]
+      - name: area_km2
+        data_tests: [not_null]
+      - name: representative_lat
+        data_tests: [not_null]
+      - name: representative_lon
+        data_tests: [not_null]
+      - name: source_run_id
+        data_tests: [not_null]
+  - name: dim_parish
+    description: Uma linha por código oficial de freguesia vigente da CAOP.
+    columns:
+      - name: dicofre
+        data_tests: [not_null, unique]
+      - name: dico
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_municipality')
+                field: dico
+      - name: official_name
+        data_tests: [not_null]
+      - name: normalized_name
+        data_tests: [not_null]
+      - name: area_km2
+        data_tests: [not_null]
+      - name: representative_lat
+        data_tests: [not_null]
+      - name: representative_lon
+        data_tests: [not_null]
+      - name: source_run_id
+        data_tests: [not_null]

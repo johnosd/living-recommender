@@ -1,0 +1,17 @@
+sources:
+  caop:
+    id: caop
+    publisher: Direção-Geral do Território
+    responsible_party: living-recommender
+    source_page: https://www.dgterritorio.gov.pt/atividades/cartografia/cartografia-tematica/caop
+    license_id: CC-BY-4.0
+    attribution: "Fonte: Direção-Geral do Território (DGT), CAOP2025"
+    collection_method: http_download
+    frequency: annual_or_on_demand
+    territorial_level: municipality_and_parish
+    version: "2025"
+    reference_period: "2025"
+    urls:
+      continente: https://geo2.dgterritorio.gov.pt/caop/CAOP_Continente_2025-gpkg.zip
+      acores: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAA_2025-gpkg.zip
+      madeira: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAM_2025-gpkg.zip

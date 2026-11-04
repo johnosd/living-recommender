@@ -2,9 +2,9 @@
 
 Plataforma web que recomenda **onde morar em Portugal**, município a município e, dentro de cada município, freguesia a freguesia. A recomendação se baseia no orçamento de aluguel e nas preferências de cada pessoa.
 
-> **Status:** planejamento. A arquitetura e o roteiro estão definidos em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md). Ainda não há código executável neste repositório.
+> **Status:** implementação em andamento. A coleta local da CAOP e as dimensões territoriais Bronze/Silver já estão disponíveis; veja como visualizar a base no [guia de coletas](docs/runbooks/coletas.md). A arquitetura e o roteiro estão em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md).
 
-*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: planning.*
+*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: implementation in progress; local CAOP collection is available.*
 
 ---
 
@@ -68,6 +68,8 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 | Wikipedia | Texto descritivo dos municípios (CC BY-SA, com atribuição) | Município |
 
 Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência, até a integração com a API oficial do Idealista, já solicitada. Nenhum anúncio individual é publicado. Licenças e regras de uso de cada fonte estão nas seções 3.4 e 5 do plano.
+
+Para executar a coleta CAOP disponível, consulte o [guia de coletas](docs/runbooks/coletas.md).
 
 ## Roteiro
 
