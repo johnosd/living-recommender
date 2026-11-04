@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitetura living-recommender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: página de revisão técnica — diagrama largo no topo, decisões em grade abaixo */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --ink: #1b2430;
+  --muted: #5a6675;
+  --line: #d5dbe2;
+  --accent: #1d5f8a;      /* caminho de produção / navegador */
+  --lab: #9a6a12;         /* laboratório */
+  --font-display: "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171d; --surface: #1a2129; --ink: #e3e8ee; --muted: #9aa6b3;
+    --line: #2e3843; --accent: #6db3e3; --lab: #e0a94a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171d; --surface: #1a2129; --ink: #e3e8ee; --muted: #9aa6b3;
+  --line: #2e3843; --accent: #6db3e3; --lab: #e0a94a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.5; }
+main { max-width: 1360px; margin: 0 auto; padding: 32px 20px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 8px; max-width: 75ch; }
+h1 { font-family: var(--font-display); font-size: 1.9rem; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.25rem; margin: 0 0 12px; text-wrap: balance; }
+p { margin: 0; }
+.lede { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip { font-family: var(--font-mono); font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 900px; height: auto; color: var(--ink); font-family: var(--font-body); }
+figcaption { margin-top: 12px; color: var(--muted); font-size: .92rem; max-width: 90ch; }
+.acc { color: var(--accent); } .lab { color: var(--lab); }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 16px; display: grid; gap: 8px; align-content: start; }
+.card.is-lab { border-left-color: var(--lab); }
+.card h3 { margin: 0; font-size: 1.02rem; }
+.card p { font-size: .93rem; }
+.card .k { font-family: var(--font-mono); font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; max-width: 80ch; }
+ol.steps code, .card code { font-family: var(--font-mono); font-size: .85em; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Arquitetura living-recommender</h1>
+  <p class="lede">Versão para validação, de acordo com o plano v2.2. O pipeline roda uma vez por mês e publica arquivos estáticos. O ranking acontece no navegador de cada pessoa, sem servidor na hora da consulta.</p>
+  <div class="chips">
+    <span class="chip">custo estimado: US$ 1–4/mês</span>
+    <span class="chip">volume: &lt; 1 GB</span>
+    <span class="chip">atualização: mensal</span>
+    <span class="chip">sem API no MVP</span>
+  </div>
+</header>
+
+<section>
+<h2>1. Visão geral: do dado bruto ao infográfico</h2>
+<figure>
+<svg viewBox="0 0 1320 700" role="img" aria-label="Fluxo mensal: fontes são coletadas por Lambdas ou pela extensão manual, gravadas no S3 raw, transformadas por dbt e DuckDB em ECS, publicadas em S3 published e servidas pelo CloudFront ao navegador, onde o ranking é calculado. O Databricks fica num laboratório separado.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+    <marker id="al" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--lab)"/></marker>
+  </defs>
+  <g font-size="13" fill="currentColor">
+    <!-- Orquestração -->
+    <rect x="240" y="24" width="600" height="56" rx="8" fill="none" stroke="currentColor" stroke-dasharray="6 4"/>
+    <text x="540" y="47" text-anchor="middle" font-weight="600">MWAA Serverless · workflow mensal</text>
+    <text x="540" y="67" text-anchor="middle" font-size="12" opacity=".75">LambdaInvokeFunctionOperator · EcsRunTaskOperator</text>
+    <line x1="325" y1="80" x2="325" y2="146" stroke="currentColor" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    <text x="333" y="118" font-size="12">invoca</text>
+    <line x1="755" y1="80" x2="755" y2="186" stroke="currentColor" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    <text x="763" y="136" font-size="12">roda tarefa</text>
+
+    <!-- Fontes -->
+    <rect x="20" y="110" width="180" height="300" rx="8" fill="none" stroke="currentColor"/>
+    <text x="110" y="136" text-anchor="middle" font-weight="600">Fontes</text>
+    <text x="36" y="166">CAOP (DGT)</text>
+    <text x="36" y="190">Pordata / INE</text>
+    <text x="36" y="214">Censos 2021</text>
+    <text x="36" y="238">Open-Meteo / WWO</text>
+    <text x="36" y="262">Wikipedia</text>
+    <line x1="32" y1="290" x2="188" y2="290" stroke="currentColor" opacity=".3"/>
+    <text x="36" y="322">Idealista (anúncios)</text>
+    <text x="36" y="342" font-size="12" opacity=".75">publicado só agregado</text>
+
+    <line x1="200" y1="190" x2="238" y2="190" stroke="currentColor" marker-end="url(#a)"/>
+    <line x1="200" y1="327" x2="238" y2="327" stroke="currentColor" marker-end="url(#a)"/>
+
+    <!-- Coleta -->
+    <rect x="240" y="150" width="170" height="80" rx="8" fill="none" stroke="currentColor"/>
+    <text x="325" y="182" text-anchor="middle" font-weight="600">Lambdas coletoras</text>
+    <text x="325" y="204" text-anchor="middle" font-size="12">uma por fonte · Python</text>
+
+    <rect x="240" y="280" width="170" height="100" rx="8" fill="none" stroke="currentColor"/>
+    <text x="325" y="305" text-anchor="middle" font-weight="600">Extensão Chrome</text>
+    <text x="325" y="325" text-anchor="middle" font-size="12">coleta manual, mensal</text>
+    <text x="325" y="349" text-anchor="middle" font-size="12">→ CLI de upload</text>
+    <text x="325" y="369" text-anchor="middle" font-size="12" opacity=".75">sem proxy, sem captcha</text>
+
+    <!-- S3 raw -->
+    <rect x="470" y="200" width="150" height="110" rx="8" fill="none" stroke="currentColor"/>
+    <text x="545" y="232" text-anchor="middle" font-weight="600">S3 raw</text>
+    <text x="545" y="256" text-anchor="middle" font-size="12">imutável</text>
+    <text x="545" y="276" text-anchor="middle" font-size="12">+ manifest por lote</text>
+    <path d="M410 190 L440 190 L440 228 L468 228" fill="none" stroke="currentColor" marker-end="url(#a)"/>
+    <text x="416" y="182" font-size="12">grava</text>
+    <path d="M410 327 L440 327 L440 284 L468 284" fill="none" stroke="currentColor" marker-end="url(#a)"/>
+    <text x="414" y="346" font-size="12">upload</text>
+
+    <!-- ECS dbt -->
+    <rect x="670" y="188" width="170" height="150" rx="8" fill="none" stroke="currentColor"/>
+    <text x="755" y="213" text-anchor="middle" font-weight="600">ECS Fargate</text>
+    <text x="755" y="236" text-anchor="middle" font-size="12">dbt Core + DuckDB</text>
+    <text x="755" y="257" text-anchor="middle" font-size="12">bronze → silver → gold</text>
+    <text x="755" y="278" text-anchor="middle" font-size="12">testes de qualidade</text>
+    <text x="755" y="302" text-anchor="middle" font-size="12">tarefa publish</text>
+    <text x="755" y="321" text-anchor="middle" font-size="12" opacity=".75">gold → JSON / TopoJSON</text>
+    <line x1="620" y1="255" x2="668" y2="255" stroke="currentColor" marker-end="url(#a)"/>
+    <text x="644" y="247" text-anchor="middle" font-size="12">lê</text>
+
+    <!-- S3 published -->
+    <rect x="890" y="200" width="160" height="110" rx="8" fill="none" stroke="currentColor"/>
+    <text x="970" y="232" text-anchor="middle" font-weight="600">S3 published/vN</text>
+    <text x="970" y="256" text-anchor="middle" font-size="12">current.json → vN</text>
+    <text x="970" y="276" text-anchor="middle" font-size="12" opacity=".75">rollback = trocar ponteiro</text>
+    <line x1="840" y1="255" x2="888" y2="255" stroke="currentColor" marker-end="url(#a)"/>
+    <text x="864" y="247" text-anchor="middle" font-size="12">publica</text>
+
+    <!-- CloudFront -->
+    <rect x="1100" y="110" width="200" height="60" rx="8" fill="none" stroke="currentColor"/>
+    <text x="1200" y="136" text-anchor="middle" font-weight="600">CloudFront + OAC</text>
+    <text x="1200" y="156" text-anchor="middle" font-size="12">site + dados estáticos</text>
+    <path d="M1050 230 L1075 230 L1075 140 L1098 140" fill="none" stroke="currentColor" marker-end="url(#a)"/>
+
+    <!-- Navegador -->
+    <g style="color: var(--accent)">
+      <rect x="1100" y="210" width="200" height="200" rx="8" fill="none" stroke="currentColor" stroke-width="2"/>
+      <line x1="1200" y1="170" x2="1200" y2="208" stroke="currentColor" marker-end="url(#a)"/>
+      <text x="1208" y="194" font-size="12">HTTPS</text>
+    </g>
+    <text x="1200" y="238" text-anchor="middle" font-weight="600">Navegador</text>
+    <text x="1200" y="262" text-anchor="middle" font-size="12">React estático + MapLibre</text>
+    <text x="1200" y="284" text-anchor="middle" font-size="12">ranker TypeScript</text>
+    <text x="1200" y="306" text-anchor="middle" font-size="12">preferências: local / URL</text>
+    <text x="1200" y="328" text-anchor="middle" font-size="12">resultado em infográfico</text>
+    <text x="1200" y="366" text-anchor="middle" font-size="12" font-weight="600" fill="var(--accent)">nenhum servidor recebe</text>
+    <text x="1200" y="384" text-anchor="middle" font-size="12" font-weight="600" fill="var(--accent)">as preferências</text>
+
+    <!-- Laboratório -->
+    <g fill="var(--lab)">
+      <rect x="470" y="460" width="580" height="150" rx="10" fill="none" stroke="var(--lab)" stroke-dasharray="8 5"/>
+      <text x="486" y="484" font-weight="600">Laboratório · fora da produção</text>
+      <line x1="545" y1="310" x2="545" y2="498" stroke="var(--lab)" stroke-dasharray="5 4" marker-end="url(#al)"/>
+      <text x="553" y="404" font-size="12">extrato só leitura</text>
+      <line x1="730" y1="545" x2="778" y2="545" stroke="var(--lab)" stroke-dasharray="5 4" marker-end="url(#al)"/>
+      <line x1="820" y1="498" x2="820" y2="340" stroke="var(--lab)" stroke-dasharray="5 4" marker-end="url(#al)"/>
+      <text x="828" y="420" font-size="12">Fase B: seed</text>
+    </g>
+    <rect x="500" y="500" width="230" height="90" rx="8" fill="none" stroke="var(--lab)"/>
+    <text x="615" y="528" text-anchor="middle" font-weight="600">Databricks Free Edition</text>
+    <text x="615" y="550" text-anchor="middle" font-size="12">EDA · espelho Idealista em PySpark/Delta</text>
+    <text x="615" y="570" text-anchor="middle" font-size="12">MLflow · modelos de aluguel</text>
+    <rect x="780" y="500" width="250" height="90" rx="8" fill="none" stroke="var(--lab)"/>
+    <text x="905" y="528" text-anchor="middle" font-weight="600">Previsões em lote</text>
+    <text x="905" y="550" text-anchor="middle" font-size="12">por município / freguesia</text>
+    <text x="905" y="570" text-anchor="middle" font-size="12" opacity=".75">sem API, sem inferência online</text>
+
+    <!-- Legenda -->
+    <text x="20" y="474" font-weight="600">Legenda</text>
+    <line x1="20" y1="496" x2="70" y2="496" stroke="currentColor" marker-end="url(#a)"/>
+    <text x="80" y="500" font-size="12">fluxo de dados</text>
+    <line x1="20" y1="522" x2="70" y2="522" stroke="currentColor" stroke-dasharray="5 4" marker-end="url(#a)"/>
+    <text x="80" y="526" font-size="12">acionamento</text>
+    <line x1="20" y1="548" x2="70" y2="548" stroke="var(--lab)" stroke-dasharray="5 4" marker-end="url(#al)"/>
+    <text x="80" y="552" font-size="12">laboratório / opcional</text>
+
+    <!-- Transversal -->
+    <rect x="20" y="640" width="1280" height="44" rx="8" fill="none" stroke="currentColor" opacity=".5"/>
+    <text x="660" y="667" text-anchor="middle" font-size="12.5">Transversal: Terraform · GitHub Actions com OIDC · ECR · SSM Parameter Store · CloudWatch · AWS Budgets</text>
+  </g>
+</svg>
+<figcaption>Uma vez por mês, o MWAA Serverless dispara a coleta e a transformação. O resultado é publicado como uma versão nova (<code>vN</code>), e o arquivo <code>current.json</code> aponta para ela. O Databricks lê só extratos e não está no caminho crítico. Na Fase B, ele pode devolver previsões de aluguel em lote como seed do dbt.</figcaption>
+</figure>
+</section>
+
+<section>
+<h2>2. O que acontece quando alguém usa o site</h2>
+<figure>
+<svg viewBox="0 0 1320 170" role="img" aria-label="Quando alguém usa o site, o navegador baixa arquivos estáticos uma vez e calcula o ranking localmente. Mudar um peso repete só o cálculo local.">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+  </defs>
+  <g font-size="13" fill="currentColor">
+    <rect x="20" y="40" width="210" height="84" rx="8" fill="none" stroke="currentColor"/>
+    <text x="125" y="76" text-anchor="middle" font-weight="600">Abre o site</text>
+    <text x="125" y="98" text-anchor="middle" font-size="12">HTML/JS via CloudFront</text>
+
+    <rect x="285" y="40" width="210" height="84" rx="8" fill="none" stroke="currentColor"/>
+    <text x="390" y="76" text-anchor="middle" font-weight="600">GET current.json</text>
+    <text x="390" y="98" text-anchor="middle" font-size="12">descobre a versão vigente</text>
+
+    <rect x="550" y="40" width="210" height="84" rx="8" fill="none" stroke="currentColor"/>
+    <text x="655" y="68" text-anchor="middle" font-weight="600">GET vN/…</text>
+    <text x="655" y="90" text-anchor="middle" font-size="12">indicadores, criteria_catalog</text>
+    <text x="655" y="108" text-anchor="middle" font-size="12">TopoJSON do mapa</text>
+
+    <g style="color: var(--accent)">
+      <rect x="815" y="40" width="210" height="84" rx="8" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M1025 100 C 1050 150, 790 150, 815 100" fill="none" stroke="currentColor" stroke-dasharray="4 4" marker-end="url(#b)"/>
+      <text x="920" y="160" text-anchor="middle" font-size="12" fill="currentColor">muda um peso → recalcula</text>
+    </g>
+    <text x="920" y="76" text-anchor="middle" font-weight="600">Ranker local</text>
+    <text x="920" y="98" text-anchor="middle" font-size="12">&lt; 100 ms, no dispositivo</text>
+
+    <rect x="1080" y="40" width="220" height="84" rx="8" fill="none" stroke="currentColor"/>
+    <text x="1190" y="76" text-anchor="middle" font-weight="600">Infográfico</text>
+    <text x="1190" y="98" text-anchor="middle" font-size="12">mapa, top N, porquês, link</text>
+
+    <line x1="230" y1="82" x2="283" y2="82" stroke="currentColor" marker-end="url(#b)"/>
+    <line x1="495" y1="82" x2="548" y2="82" stroke="currentColor" marker-end="url(#b)"/>
+    <line x1="760" y1="82" x2="813" y2="82" stroke="currentColor" marker-end="url(#b)"/>
+    <line x1="1025" y1="82" x2="1078" y2="82" stroke="currentColor" marker-end="url(#b)"/>
+    <text x="655" y="26" text-anchor="middle" font-size="12" opacity=".75">arquivos em cache: baixados uma vez por visita</text>
+  </g>
+</svg>
+<figcaption>Esse é o ponto que mais diferencia esta arquitetura de uma solução com API. As preferências nunca saem do navegador. Mudar um peso ou um filtro repete só o passo 4, e a quantidade de usuários não muda o custo de computação.</figcaption>
+</figure>
+</section>
+
+<section>
+<h2>3. Decisões para validar</h2>
+<div class="grid">
+  <article class="card">
+    <span class="k">Entrega</span>
+    <h3>Sem API no MVP</h3>
+    <p>Os dados são estáticos e o ranking roda no navegador. Isso deixa o custo perto de zero, dispensa operar servidor e mantém as preferências no dispositivo.</p>
+    <p><strong>Reabrir se:</strong> surgir inferência por imóvel, contas de usuário ou dados grandes demais para baixar (bem acima de 5 MB).</p>
+  </article>
+  <article class="card">
+    <span class="k">Orquestração</span>
+    <h3>MWAA Serverless</h3>
+    <p>Escolha sua. Aceita só operadores do Amazon Provider, por isso o Databricks não entra por operador nativo.</p>
+    <p><strong>Plano B:</strong> Step Functions + EventBridge, se a PoC da Fase 1 falhar.</p>
+  </article>
+  <article class="card">
+    <span class="k">Transformação · ADR-001 aceita</span>
+    <h3>dbt Core + DuckDB em Fargate</h3>
+    <p>O volume fica abaixo de 1 GB, e um container curto por mês dá conta.</p>
+    <p><strong>Reabrir se:</strong> os dados processados passarem de ~50 GB ou o job passar de 30 min.</p>
+  </article>
+  <article class="card is-lab">
+    <span class="k">Laboratório · ADR-001 aceita</span>
+    <h3>Databricks fora do caminho crítico</h3>
+    <p>Entregas: EDA, pipeline espelho do Idealista em PySpark/Delta comparado ao dbt, e MLflow para o modelo de aluguel. Recebe só extratos manuais e não guarda nenhuma credencial de produção.</p>
+    <p><strong>Por que não em produção:</strong> a Free Edition proíbe uso comercial, não aceita armazenamento próprio, restringe a saída de internet, não tem operador no MWAA Serverless e não tem SLA.</p>
+  </article>
+  <article class="card is-lab">
+    <span class="k">Machine learning · Fase B</span>
+    <h3>Previsões em lote</h3>
+    <p>O modelo roda no ciclo mensal e grava as previsões por território, que são publicadas como qualquer outro indicador.</p>
+    <p><strong>Na Fase A:</strong> o aluguel usa estatística descritiva (mediana, P25–P75, n) mais o INE.</p>
+  </article>
+  <article class="card">
+    <span class="k">Dados</span>
+    <h3>Idealista manual e agregado</h3>
+    <p>Coleta mensal pela extensão, com upload e manifest, até a API oficial sair. Nenhum anúncio individual é publicado.</p>
+    <p><strong>Granularidade:</strong> ranking por município e drill-down por freguesia, com o indicador herdado sinalizado.</p>
+  </article>
+</div>
+</section>
+
+<section>
+<h2>4. Ciclo mensal, passo a passo</h2>
+<ol class="steps">
+  <li>Você roda a extensão e envia o lote do Idealista com a CLI de upload. O lote vai para <code>raw/</code> com manifest.</li>
+  <li>O workflow mensal do MWAA invoca as Lambdas coletoras das fontes públicas.</li>
+  <li>A tarefa ECS executa <code>dbt build</code> (modelos e testes). Se algum teste falhar, nada é publicado.</li>
+  <li>A tarefa publish gera os JSON e TopoJSON em <code>published/vN</code>.</li>
+  <li>Só depois disso o <code>current.json</code> passa a apontar para <code>vN</code>. Para fazer rollback, basta apontá-lo de volta para <code>vN-1</code>.</li>
+  <li>O CloudFront invalida o <code>current.json</code>, e os próximos visitantes já recebem a versão nova.</li>
+</ol>
+</section>
+</main>
+</body>
+</html>

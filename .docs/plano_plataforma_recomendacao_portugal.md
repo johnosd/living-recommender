@@ -105,7 +105,7 @@ Consequências de arquitetura: nenhum processamento pesado por requisição. A b
 | Mobilidade | Distância a polos pré-calculada (Lisboa, Porto, Faro, aeroportos, sede de distrito) | Entrevista v2 | Confirmado |
 | Granularidade | **Município → freguesia** (CAOP: DICO/DICOFRE). Ranking principal por município; drill-down por freguesia com herança sinalizada de indicadores só municipais; ilhas sem aluguel municipal recebem bandeira | Entrevista v2 + revisão 2.1 | Confirmado |
 | Aluguel no MVP | Estatística descritiva + INE; ML só na Fase B | Entrevista v2 | Confirmado |
-| Databricks | Laboratório de EDA/ML com cópia do Gold; fora do caminho crítico (como na v1, §4.1) | v1 / entrevista v2 | Confirmado |
+| Databricks | Laboratório de EDA/ML/Spark com extratos manuais; fora do caminho crítico; ML entra como previsões em lote | v1 / entrevista v2 / ADR-001 | Confirmado |
 | Recomendador | Multicritério explicável, calculado no navegador | Proposta v2 | A validar no protótipo |
 | Nuvem | AWS (conta Free/créditos), serverless, Terraform | v1 | Confirmado |
 | Domínio | Gratuito inicialmente (domínio CloudFront) | v1 | Confirmado |
@@ -220,7 +220,7 @@ flowchart TD
 - **Transformação:** uma imagem ECS Fargate com `dbt-duckdb` lê e grava Parquet no S3. O tamanho estimado é 0,5 vCPU / 1–2 GB, a medir.
 - **Publicação:** uma tarefa ECS (ou Lambda) exporta o Gold para `published/vN/`: `municipalities.json`, `indicators.json`, `rent.json`, `municipalities.topo.json`, `meta.json`. Em seguida troca o ponteiro `published/current.json` e invalida o CloudFront.
 - **Aplicação:** site estático (Next.js `output: export` ou Vite + React) com i18n PT-BR/EN. O ranking roda em uma biblioteca TypeScript pura e testada no navegador. As preferências **não saem do dispositivo**.
-- **Laboratório:** o Databricks Free recebe cópia do Gold para EDA e ML. Não participa da produção, e o Free Edition não pode ser backend de produto.
+- **Laboratório:** o Databricks Free recebe extratos manuais para EDA, para um pipeline espelho do Idealista em PySpark/Delta (comparado com o dbt) e para ML com MLflow. Na Fase B, devolve previsões de aluguel em lote como seed do dbt. Não participa da produção, e o Free Edition não pode ser backend de produto. Raciocínio completo e gatilhos de reavaliação em [ADR-001](../sdd/adr/ADR-001-duckdb-producao-databricks-laboratorio.md).
 
 ### 4.2 Por que dados estáticos + ranking no navegador (Fase A)
 
@@ -260,6 +260,8 @@ Comparar `eu-west-1` (Irlanda) e `eu-south-2` (Espanha) em três pontos: **dispo
 ---
 
 ## 5. Projeto de dados
+
+> Inventário dos processos de captura do legado e desenho de cada coletor: [fontes_de_dados.md](fontes_de_dados.md).
 
 ### 5.1 Convenção S3
 
@@ -321,7 +323,7 @@ Quando a API oficial chegar, só muda o staging; Silver e Gold continuam iguais.
 | `ingest_climate` | Trimestral | Open-Meteo (médias históricas, por centroide DICO) ∥ WWO (janela recente) → manifests |
 | `process_idealista_snapshot` | Mensal (dia 10) ou após upload; sensor de manifest novo | validar schema → dedupe → `dbt build -s +gold_rent` |
 | `build_and_publish` | Após qualquer ingestão com status `changed` | `dbt build` (todos os testes) → export `published/vN` → checagem de regressão → trocar `current.json` → invalidar CloudFront → SNS |
-| `lab_export` | Mensal | Copiar o Gold para o local acessível ao Databricks (só leitura) |
+| `lab_export` | Mensal | Gerar um extrato (Silver/Gold em Parquet) em `s3://…/lab-export/`. O autor baixa e envia manualmente ao Databricks, que não recebe nenhuma credencial AWS ([ADR-001](../sdd/adr/ADR-001-duckdb-producao-databricks-laboratorio.md)) |
 
 ### 6.2 Padrão de execução
 
@@ -531,7 +533,7 @@ living-recommender/                  # monorepo novo (privado)
     images/{dbt,publish}/            # Dockerfiles ECS
   extension/idealista/               # extensão migrada (proxy removido)
   analytics/dbt/
-  analytics/lab/                     # notebooks Databricks (EDA/ML)
+  databricks/{notebooks,experiments,bundles}/  # laboratório, fora da produção (ADR-001)
   infrastructure/terraform/
   config/sources.yml                 # catálogo de fontes + licença + periodicidade
   tests/{unit,integration,fixtures}/

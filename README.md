@@ -50,7 +50,7 @@ flowchart LR
 | Frontend | React (exportação estática), MapLibre GL, i18n PT-BR/EN |
 | Recomendador | Biblioteca TypeScript pura, guiada por um catálogo de critérios |
 | Infraestrutura | Terraform; GitHub Actions com OIDC |
-| Laboratório | Databricks Free Edition (exploração e ML, fora da produção) |
+| Laboratório | Databricks Free Edition (exploração, Spark e ML, fora da produção — ver [ADR-001](sdd/adr/ADR-001-duckdb-producao-databricks-laboratorio.md)) |
 
 Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plano_plataforma_recomendacao_portugal.md).
 
@@ -59,7 +59,9 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 | Fonte | Uso | Nível |
 |---|---|---|
 | CAOP (DGT) | Limites e códigos oficiais de municípios e freguesias | Município / freguesia |
-| Pordata / INE | Cultura, economia, emprego, salários, educação, população, saúde, segurança, migração, rendas medianas | Município |
+| Pordata / INE | Cultura, economia, emprego, salários, educação, população, saúde, segurança, migração, rendas medianas de novos contratos (INE) | Município / freguesia (rendas, onde houver) |
+| AIMA (condicional) | Estrangeiros residentes por nacionalidade (comunidade brasileira e lusófona) | Município, se disponível |
+| SNS Transparência (condicional) | Utentes sem médico de família | ACES, herdado pelos municípios |
 | Censos 2021 (INE) | População e faixas etárias | Freguesia |
 | Open-Meteo Histórico, World Weather Online | Médias climáticas, dias extremos, conforto climático | Ponto (centroide) |
 | Anúncios de arrendamento (Idealista) | Aluguel pedido, **só agregado** (mediana, P25–P75, n) | Município / freguesia |
@@ -98,7 +100,7 @@ packages/ranker/          biblioteca do recomendador
 pipelines/                coletores, CLI de upload, workflows, imagens ECS
 extension/idealista/      extensão de coleta manual
 analytics/dbt/            modelos, seeds e testes
-analytics/lab/            notebooks de laboratório
+databricks/               laboratório Spark/ML, fora da produção (ADR-001)
 infrastructure/terraform/ infraestrutura
 config/sources.yml        catálogo de fontes
 docs/{adr,runbooks}/      decisões e operação
