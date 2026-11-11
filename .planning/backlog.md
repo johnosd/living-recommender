@@ -11,7 +11,7 @@ update-bug-status.ps1.
 | Slug | Título | Status | Progresso | Última Atualização |
 | --- | --- | --- | --- | --- |
 | 001-ingestao-caop | Fundação da ingestão e dimensão territorial CAOP | Convergida | 50/50 tasks | 2026-11-11 |
-| 002-ingestao-pordata-ine | Ingestão Pordata e INE — coleta rastreável e staging por município | Em Execução | 49/50 tasks | 2026-11-11 |
+| 002-ingestao-pordata-ine | Ingestão Pordata e INE — coleta rastreável e staging por município | Implementada | 52/52 tasks | 2026-11-11 |
 
 ## Melhorias Ad-hoc
 

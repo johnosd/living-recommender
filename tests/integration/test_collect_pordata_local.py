@@ -58,8 +58,11 @@ def test_us1_changed_then_unchanged_then_only_the_altered_dataset_is_written(tmp
 def test_manual_dataset_is_not_collected_by_the_http_command(tmp_path):
     storage = LocalStorage(tmp_path / "lake")
     assert main(["--local", "--root", str(tmp_path / "lake")], downloader=offline_downloader(_texts())) == 0
-    ids = {e["dataset_id"] for e in _manifests(storage)[0]["datasets"]}
+    manifest = _manifests(storage)[0]
+    ids = {e["dataset_id"] for e in manifest["datasets"]}
     assert len(ids) == 16 and "poder_compra_per_capita_xlsx" not in ids
+    assert manifest["collection_method"] == "http_download"
+    assert {e["collection_method"] for e in manifest["datasets"]} == {"http_download"}
 
 
 def test_a_failing_dataset_gives_partial_and_exit_code_1_without_blocking_the_others(tmp_path, capsys):

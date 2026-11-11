@@ -1,4 +1,4 @@
-"""Manifest v2: uma execução com vários datasets independentes, cada um com seu estado.
+"""Manifest v2: uma execução com vários datasets independentes, cada um com seu estado e seu método de coleta.
 
 Convive com o manifest v1 da CAOP (`manifest.py`, `files[]`), que não é alterado.
 """
@@ -65,6 +65,7 @@ def make_dataset_manifest(
         raise DatasetManifestError("collected_at_utc deve estar em UTC")
     for entry in datasets:
         validate_entry(entry)
+    methods = {entry.get("collection_method") or source["collection_method"] for entry in datasets}
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "source_id": source_id,
@@ -72,7 +73,9 @@ def make_dataset_manifest(
         "collected_at_utc": collected_at_utc,
         "status": run_status(datasets),
         "license_id": source["license_id"],
-        "collection_method": source["collection_method"],
+        # O método real da execução: o comum a todos os datasets, ou `mixed`. Na carga manual do Pordata,
+        # por exemplo, o método da fonte (`http_download`) não descreve como o dataset foi obtido.
+        "collection_method": methods.pop() if len(methods) == 1 else "mixed",
         "datasets": datasets,
     }
     if source.get("attribution"):

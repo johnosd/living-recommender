@@ -61,7 +61,7 @@ Não substitui o v1 da CAOP (`schema_version: 1`, `files[]`). O v2 é por datase
   "license_id": "not_granted_by_source",
   "collection_method": "http_download",
   "datasets": [
-    {"dataset_id": "farmacias", "origin": "https://…/464.csv", "status": "changed",
+    {"dataset_id": "farmacias", "origin": "https://…/464.csv", "collection_method": "http_download", "status": "changed",
      "key": "raw/source=pordata/dataset=farmacias/run_id=<run_id>/farmacias.csv",
      "sha256": "…", "bytes": 327571, "fingerprint": "…",
      "reference_period": null, "source_release_date": null,
@@ -77,6 +77,7 @@ Não substitui o v1 da CAOP (`schema_version: 1`, `files[]`). O v2 é por datase
 - `status` do dataset: `changed`, `unchanged` ou `failed`. Em `unchanged`, `key` e `sha256` apontam para o bruto do último `changed` (como na CAOP, o `unchanged` não grava arquivo) e `previous_changed_run_id` o identifica.
 - `fingerprint`: chave de comparação. Nos CSV e na planilha é o `sha256` dos bytes; no INE é o `sha256` do JSON canônico sem `DataExtracao` (ver `logic/ingestao-datasets.md`).
 - `http` só existe nos downloads por HTTP e é informativo (auditoria; não decide `unchanged` no v1).
+- `collection_method` é **por dataset** (o do dataset, herdado da fonte quando não o redefine). O `collection_method` da execução é o método comum a todas as entradas ou `mixed`; assim a carga manual do Pordata grava `manual_upload`, e não o `http_download` da fonte. Manifests anteriores, sem o campo na entrada, valem o método da execução.
 - `reference_period` e `source_release_date`: no INE, `UltimoPref` e `DataUltimoAtualizacao`; no Pordata, nulos (o CSV não informa).
 
 **Estado vigente de um dataset** = a entrada `changed` mais recente (por `collected_at_utc`, depois `run_id`) daquele `dataset_id` em qualquer manifest da fonte, mesmo que esse manifest seja `partial`. Uma entrada `failed` nunca é estado.

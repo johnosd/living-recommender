@@ -151,12 +151,12 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 
 | Área | Estado |
 | --- | --- |
-| Fase | Todas as fases concluídas (T001–T036). Resta confirmar o CI no GitHub (enviar a branch) para fechar o último item do Checklist de Release. |
-| Coleta | `collect_pordata` (16 CSV), `collect_ine` (3 indicadores) e `load_pordata_manual` (planilha) verificados contra as fontes reais: estado por dataset, `partial` tolerado, `unchanged` estável (inclusive no INE, com a impressão digital sem horário nem ordem), destinos local e S3 com paridade provada. |
-| Staging | `build_observations` verificado contra a Silver real: 1.168.860 observações de 20 datasets, 308 municípios resolvidos, ausência nula com símbolo, cobertura por dataset em `coverage.csv`; CAOP e seu lake intactos (os dois builds convivem). |
+| Fase | Todas as fases e o Checklist de Release concluídos (T001–T038), incluindo a Phase 9 de convergência. Resta rodar o `sdd-converge` outra vez. |
+| Coleta | `collect_pordata`, `collect_ine` e `load_pordata_manual` verificados contra as fontes reais; o manifest v2 registra o método de coleta por dataset (`http_download`, `api_json`, `manual_upload`) e, na execução, o método comum ou `mixed`. |
+| Staging | `build_observations` verificado contra a Silver real: 1.168.860 observações de 20 datasets, 308 municípios resolvidos, ausência nula com símbolo, cobertura por dataset; CAOP e seu lake intactos. |
 | Contratos | 5 de 5 da 002 verdes (e 5 de 5 da CAOP); trava da 002 e da 001 íntegras. |
-| Testes | 139 testes verdes no Windows e 138 + 1 pulado no Linux; `dbt build` com 31 passos (tag `caop`) e 17 passos (tag `observations`); ruff limpo; `gitleaks` limpo nos modos `dir` e `git`. |
-| CI | Workflow com os dois `dbt build` por tag e a fixture de observações, ainda não executado no GitHub com estas mudanças; reprodução local em container Linux verde. |
+| Testes | 140 testes verdes; `dbt build` com 31 passos (tag `caop`) e 17 passos (tag `observations`); ruff limpo. |
+| CI | Verde no GitHub em `d511ec5` (PR #2, mergeado). A Phase 9 ainda não foi enviada ao GitHub. |
 
 ## Riscos e Decisões
 
@@ -178,6 +178,7 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 | R-009 | Um município renomeado na fonte reprova o staging. | Baixo: é o comportamento desejado. | Falha lista os nomes; a seed (5 linhas) é mantida à mão, em PR. |
 | R-010 | **Decisão de execução:** a resolução do município ficou **em Python** (a função do contrato, reutilizada), e o dbt testa o resultado (`not_null`, `relationships`); o plano previa a resolução em SQL pelo seed. O `stg_observation` ficou **sem particionamento físico**: um `data.parquet` único com `source_id`/`dataset_id`, como na CAOP. | Baixo: evita duas implementações da mesma regra e simplifica a promoção; a leitura por dataset continua por filtro. | Uma só regra testada pelo contrato 5; o particionamento por dataset pode ser reavaliado se o volume crescer (hoje ~1,2 milhão de linhas). |
 | R-011 | **Decisão de execução:** o `build_caop` passou a promover **por tabela** (`promote_paths`), em vez de trocar `lake/bronze` e `lake/silver` inteiros. | Médio se não feito: reconstruir a CAOP apagaria o staging de observações. | Resolvido: testes do `build_caop` (5 testes de build) seguem verdes e `test_rebuilding_the_caop_does_not_erase_the_observation_staging` prova a convivência. |
+| R-012 | **Decisão de convergência (F-001):** o manifest v2 registra o método de coleta **por dataset**, e o da execução é o comum ou `mixed`. Antes, a carga manual do Pordata gravava `http_download` (o método da fonte). | Baixo: trilha de auditoria imprecisa, sem efeito sobre o estado dos datasets nem sobre o staging. | Resolvido: corrigido em `datasets.py`/`dataset_manifest.py`, com testes nas três CLIs e verificação no manifest real; manifests antigos continuam legíveis. |
 
 ## Execution Notes
 
@@ -197,18 +198,18 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 | 2026-11-11 | US4 | T027–T028 concluídas: modelo de cobertura, teste de consistência, `coverage.csv` e tabela no terminal; 123 testes e dbt 31 + 17 passos verdes. | US5: planilha manual do Pordata (T029–T033). |
 | 2026-11-11 | US5 | T029–T033 concluídas: leitor e validador da planilha com `openpyxl`, `load_pordata_manual`, fixture e testes; validado também com a planilha real do autor (3.388 observações); 135 testes e dbt 31 + 17 passos verdes. | Polish: documentação, coleta real e gate final (T034–T036). |
 | 2026-11-11 | Phase 8 (Polish) | T034–T036 concluídas: documentação alinhada; coleta real das três fontes e build contra a Silver real (1.168.860 observações, 308 municípios, CAOP intacta); achado e correção da ordem variável das linhas do INE (R-008); gate local e `gitleaks` (dir e git) limpos; reprodução do CI em Linux verde (138 + 1 pulado). | CI no GitHub (exige enviar a branch); depois `sdd-converge`. |
+| 2026-11-11 | CI | Branch enviada (commit `d511ec5`) e PR #2 mergeado: `Python quality` verde no GitHub em push e em pull_request, com os passos novos do dbt de observações e o job `secrets`. Último item do Checklist de Release marcado; status Implementada. | `sdd-converge`. |
+| 2026-11-11 | Phase 9 (Convergence) | T037–T038 concluídas: método de coleta registrado por dataset no manifest v2 (a carga manual deixou de gravar `http_download`), com testes e verificação no dado real; `quickstart.md` corrigido; 140 testes e dbt 31 + 17 passos verdes. | `sdd-converge` outra vez; enviar a Phase 9 ao GitHub. |
 
-**PRÓXIMO**: Enviar a branch ao GitHub e conferir o workflow `Python quality` (jobs `quality` e `secrets`); então marcar o item "CI e `gitleaks` verdes" do Checklist de Release, atualizar o status para Implementada e rodar `sdd-converge`.
+**PRÓXIMO**: Rodar o `sdd-converge` outra vez para confirmar que não restam achados e sincronizar o status final; a Phase 9 ainda precisa ser enviada ao GitHub para o CI rodar sobre ela.
 
 ## Arquivos Principais
 
 <!-- Sobrescrita a cada checkpoint — foco da etapa atual, não a árvore inteira. -->
 
-- `README.md`, `docs/runbooks/coletas.md` e `.docs/fontes_de_dados.md` — documentação alinhada ao código e à coleta real.
-- `pipelines/collectors/ine/fingerprint.py` e `tests/unit/test_ine_fingerprint.py` — impressão digital sem horário nem ordem das linhas (R-008).
-- `pipelines/cli/{collect_pordata,collect_ine,load_pordata_manual,build_observations}.py` e `pipelines/cli/_common.py`, `_promote.py` — as CLIs da feature.
-- `analytics/dbt/models/bronze/`, `seeds/municipality_synonyms.csv`, `tests/observations_*.sql` — dbt das observações (tag `observations`).
-- `.github/workflows/python.yml` — passos de observações no job `quality`.
+- `pipelines/collectors/_shared/datasets.py` e `dataset_manifest.py` — `collection_method` por dataset e método da execução.
+- `sdd/specs/002-ingestao-pordata-ine/data-model.md` e `quickstart.md` — regra do método e correções de documentação.
+- `tests/unit/test_dataset_catalog_and_manifest.py` e os testes de integração das três CLIs — prova do método por dataset.
 
 ## Cuidados para Retomada
 
@@ -230,3 +231,4 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 - Mudar o algoritmo da impressão digital do INE faz os estados já gravados (com o algoritmo anterior) aparecerem como `changed` uma vez por dataset: aceitável, mas é um raw extra por indicador. Foi o que ocorreu na coleta real de 2026-11-11, e por isso as coletas do INE feitas antes da correção foram descartadas e refeitas.
 - Ao chamar `docker run -w /repo` use o PowerShell: o Git Bash converte `/repo` num caminho do Windows e o Docker recusa (`working directory ... is invalid`). Para o `gitleaks` no modo `dir`, varra uma cópia limpa dos arquivos (`git ls-files -co --exclude-standard`), nunca a raiz com `.data` e `.venv`.
 - A cobertura que importa para o Gold está em `.data/lake/bronze/coverage.csv`: `ensino_nao_superior` tem o último ano (2024) vazio, então use `latest_period_with_data` (2023) e não `latest_period`.
+- Leia o método de coleta sempre da **entrada do dataset**; o do nível da execução é um resumo (`mixed` quando há mais de um). Manifests anteriores a 2026-11-11 não têm o campo na entrada e valem o método da execução.

@@ -51,6 +51,7 @@ def _entry(dataset: dict[str, Any], status: str, **fields: Any) -> dict[str, Any
     entry = {
         "dataset_id": dataset["id"],
         "origin": dataset.get("origin") or dataset.get("indicator"),
+        "collection_method": dataset.get("collection_method"),
         "status": status,
         "key": None,
         "sha256": None,

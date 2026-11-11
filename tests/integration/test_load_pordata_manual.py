@@ -33,8 +33,11 @@ def test_us5_changed_then_unchanged_then_changed_and_the_operator_file_is_never_
     raw = _raw(storage)
     (key,) = raw
     assert f"dataset={DATASET}/run_id=" in key and key.endswith(".xlsx")
-    entry = _last_manifest(storage)["datasets"][0]
+    manifest = _last_manifest(storage)
+    entry = manifest["datasets"][0]
     assert entry["dataset_id"] == DATASET and entry["status"] == "changed"
+    # a planilha foi entregue à mão: nem o dataset nem a execução podem dizer `http_download`
+    assert entry["collection_method"] == "manual_upload" and manifest["collection_method"] == "manual_upload"
     assert entry["sha256"] == before and storage.get(entry["key"]) == source.read_bytes()
 
     assert main(argv) == 0

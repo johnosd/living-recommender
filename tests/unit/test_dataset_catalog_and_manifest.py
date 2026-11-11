@@ -150,3 +150,16 @@ def test_same_time_is_resolved_by_run_id_and_other_sources_or_versions_are_ignor
     storage.put("manifests/fonte/legado.json", json.dumps({"schema_version": 1, "source_id": "fonte"}).encode())
     states = latest_dataset_states(storage, "fonte")
     assert states["d1"]["run_id"] == "r2"
+
+
+def test_run_collection_method_is_the_one_all_datasets_share_or_mixed():
+    """Regressão da carga manual: o método da fonte (`http_download`) não descreve um dataset `manual_upload`."""
+    source = {"license_id": "x", "collection_method": "http_download"}
+    common = {"source_id": "fonte", "run_id": "r1", "collected_at_utc": "2026-11-11T12:00:00Z"}
+    manual = {**_entry("d1"), "collection_method": "manual_upload"}
+    http = {**_entry("d2"), "collection_method": "http_download"}
+    assert make_dataset_manifest(source, datasets=[manual], **common)["collection_method"] == "manual_upload"
+    assert make_dataset_manifest(source, datasets=[http], **common)["collection_method"] == "http_download"
+    assert make_dataset_manifest(source, datasets=[manual, http], **common)["collection_method"] == "mixed"
+    # entradas sem o campo (manifests anteriores): vale o método da fonte
+    assert make_dataset_manifest(source, datasets=[_entry("d3")], **common)["collection_method"] == "http_download"
