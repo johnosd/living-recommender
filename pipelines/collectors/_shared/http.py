@@ -1,5 +1,6 @@
 """Download HTTP responsável com arquivo temporário e retentativas limitadas."""
 
+import contextlib
 import os
 import tempfile
 import time
@@ -73,29 +74,28 @@ class HttpDownloader:
             raise FileExistsError(destination)
         destination.parent.mkdir(parents=True, exist_ok=True)
         last_error: Exception | None = None
-        for attempt in range(1, self.max_attempts + 1):
-            self.rate_limiter.wait()
-            fd, temp_name = tempfile.mkstemp(prefix=".download-", dir=destination.parent)
-            temp = Path(temp_name)
-            try:
-                with os.fdopen(fd, "wb") as output:
-                    if self.client is None:
-                        with httpx.Client() as client:
-                            self._stream(client, url, output)
-                    else:
-                        self._stream(self.client, url, output)
-                os.link(temp, destination)
-                return destination
-            except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as exc:
-                last_error = exc
-                if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code not in RETRYABLE_STATUS:
-                    break
-            except Exception:
-                raise
-            finally:
-                temp.unlink(missing_ok=True)
-            if attempt < self.max_attempts:
-                self.sleep(self.backoff * 2 ** (attempt - 1))
+        with contextlib.ExitStack() as stack:
+            client = self.client or stack.enter_context(httpx.Client())
+            for attempt in range(1, self.max_attempts + 1):
+                self.rate_limiter.wait()
+                fd, temp_name = tempfile.mkstemp(prefix=".download-", dir=destination.parent)
+                temp = Path(temp_name)
+                try:
+                    with os.fdopen(fd, "wb") as output:
+                        self._stream(client, url, output)
+                    os.link(temp, destination)
+                    return destination
+                except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as exc:
+                    last_error = exc
+                    if (
+                        isinstance(exc, httpx.HTTPStatusError)
+                        and exc.response.status_code not in RETRYABLE_STATUS
+                    ):
+                        break
+                finally:
+                    temp.unlink(missing_ok=True)
+                if attempt < self.max_attempts:
+                    self.sleep(self.backoff * 2 ** (attempt - 1))
         raise DownloadError(f"download falhou após {attempt} tentativa(s): {url}: {last_error}") from last_error
 
     def _stream(self, client: httpx.Client, url: str, output) -> None:

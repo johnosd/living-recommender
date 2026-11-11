@@ -4,7 +4,7 @@
 
 **Prerequisites**: `spec.md` e `plan.md`; teste P1 travado em `contract-tests.lock`.
 
-**Organization**: setup/fundação → US1 P1 → US2 P2 → US3 P3 → Polish. IDs `T001`–`T030` são estáveis; `T031` foi acrescentada na US2 a pedido do usuário para visualizar as dimensões. `[P]` indica arquivos independentes; contratos travados não são editados pelo executor.
+**Organization**: setup/fundação → US1 P1 → US2 P2 → US3 P3 → Polish. IDs `T001`–`T030` são estáveis; `T031` foi acrescentada na US2 a pedido do usuário para visualizar as dimensões; `T033`–`T036` formam a Phase 4.1 (simplificação, 2026-11-11). `[P]` indica arquivos independentes; contratos travados não são editados pelo executor.
 
 ## Path Conventions
 
@@ -136,6 +136,44 @@
 - Contrato: fase sem contrato novo; `uv run --locked python -m pytest -q tests/contracts/test_caop_collection_contract.py --basetemp .pytest_tmp` → 5/5 verdes na suíte completa; `.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 001-ingestao-caop` → PASS, trava íntegra.
 - Testes executados: `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 27 passed; `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local` → 31/31 passos verdes na fixture; `uv run --locked python -m pipelines.cli.build_caop --local --root .data` → 308 municípios/3259 freguesias reais; regressão Windows falhou antes da correção e passou depois, com 30 repetições da concorrência verdes; sintaxe JavaScript do HTML validada com `node --check`.
 - Pendências: execução do CI no GitHub e backend S3 simulado pertencem às fases seguintes. A conexão do navegador automatizado recusou a sessão; o HTML foi gerado e validado estruturalmente, mas a interação visual no navegador ainda depende de abertura pelo operador.
+
+---
+
+## Phase 4.1: Simplificação do que existe (descoberta pós-US2, a pedido do usuário)
+
+**Objetivo**: reduzir duplicação e código morto da coleta/transformação antes de acrescentar o backend S3, sem alterar comportamento, contratos P1 nem a interface pública da CLI.
+
+**Origem**: revisão de 2026-11-11 ("a coleta de dados está complexa"). Tasks T033–T036 são descobertas fora do plano original; IDs novos, sem renumerar as anteriores.
+
+### Implementation
+
+- [X] T033 Unificar a extração de ZIP/GeoPackage: mover `_extract_gpkgs` de `transform.py` para `schema.py` como `extract_gpkgs` (contagem 1/2 GeoPackages, limite de inspeção, caminho inseguro, `BadZipFile`) e criar `select_layers` (camadas `_municipios`/`_freguesias`); `validate_caop_archive` e `prepare_caop` passam a usar as duas funções. Mensagens de erro unificadas (nenhum teste depende delas). Sem mudar regras de validação (US1/AC4, FR-008, FR-012).
+- [X] T034 Remover código morto e redundâncias de baixo risco: `LocalStorage.get_file` (sem uso); `list_keys()` chamado uma única vez em `handler.py`; em `http.py`, o `except Exception: raise` sem efeito e a criação de um `httpx.Client` por tentativa (um por chamada) (FR-003, FR-004).
+- [X] T035 Remover o filtro `where source_run_id = ...` de `stg_caop_municipalities.sql` e `stg_caop_parishes.sql`. O diretório preparado é novo a cada build; a proveniência continua garantida pelos testes `municipality_provenance`/`parish_provenance` de `caop_quality.sql`, que passam a ser a única guarda e reprovam em vez de descartar linhas em silêncio (FR-014/015).
+
+### Testes da Fase
+
+- [X] T036 Rodar a suíte completa e os gates sem editar o contrato travado: `ruff`, `pytest` (27 testes na linha de base), `dbt build` sobre a fixture e `check-contract-tests.ps1`; acrescentar um teste de `extract_gpkgs`/`select_layers` se a cobertura existente não cobrir os dois ramos (1 e 2 GeoPackages) (FR-017).
+
+**Critério de Conclusão**: comportamento idêntico (27/27 pytest, 5/5 contratos, 31 passos dbt, trava íntegra); `_extract_gpkgs` deixa de existir em `transform.py`; nenhum arquivo de contrato alterado.
+
+**Avaliado e descartado (não é simplificação)**:
+
+- Remover `--local`: faz parte do contrato da CLI (`contracts/caop-cli.md`, FR-009) e os testes de integração o passam. Será exclusivo de `--s3` na US3.
+- Fundir `_validate_spatial` ao `normalize_layer`: as duas checagens são diferentes. O normalizador testa o ponto no CRS de origem; a CLI testa a Silver que será entregue, depois do WGS84 e do dbt. Um teste a chama diretamente.
+- Tornar `preflight` parte obrigatória da interface do storage: o `MemoryStorage` do contrato travado não o tem, então o `hasattr` precisa ficar.
+- Remover `delete_prefix`: a rotina de recuperação de órfãos S3 (R-002) vai precisar dele.
+- Remover os `cast(...)` do staging: protegem o tipo de colunas inteiramente nulas, como `parish_type`.
+
+**Fora desta fase (aguardam decisão do usuário)**: `--force-check` (no-op documentado), `_canonical_path`/R-007, `strict_metadata`, adiar a US3 e detecção de `unchanged` por `HEAD`/ETag.
+
+**Registro da Fase**:
+
+- Status: concluída em 2026-11-11 (T033–T036).
+- Feito: `extract_gpkgs` e `select_layers` em `schema.py` passaram a ser usadas pela validação e pela transformação (a cópia em `transform.py` foi removida); `LocalStorage.get_file` removido; `list_keys()` chamado uma vez no coletor; `http.py` sem o `except` inútil e com um único `httpx.Client` por download; filtro `where source_run_id` removido dos dois modelos de staging (a proveniência segue garantida por `caop_quality.sql`). Saldo no código de produção: 76 inserções e 92 remoções (−16 linhas); o ganho principal é ter um só ponto de mudança para o formato da DGT e testes dos ramos de erro da extração, antes sem cobertura.
+- Contrato: `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 5/5 contratos verdes dentro da suíte; `.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 001-ingestao-caop` → PASS, trava íntegra. Nenhum arquivo de contrato editado.
+- Testes executados: `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 30 passed (27 da linha de base + 3 novos em `tests/unit/test_caop_archive.py`); `uv run --locked python -m tests.fixtures.caop.ci_seed --root .data/ci` seguido de `uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local` → 31/31 passos; `uv run --locked python -m pipelines.cli.build_caop --local --root .data` sobre os ZIPs reais → 308 municípios e 3259 freguesias, e `validate_caop_archive` nos três ZIPs reais reproduziu a tabela R1 (278/3049, 16/144, 3/12, 11/54). Uma iteração a mais: o teste novo falhou na primeira execução por diretório de destino inexistente (erro do teste, não do código) e por ordem de imports.
+- Pendências: itens "fora desta fase" aguardam decisão do usuário (registrados em `.planning/backlog.md`). Esta fase não altera comportamento, então nada muda em US1/US2 nem na documentação operacional.
 
 ---
 

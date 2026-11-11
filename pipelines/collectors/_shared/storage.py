@@ -77,10 +77,6 @@ class LocalStorage:
     def get(self, key: str) -> bytes:
         return self._path(key).read_bytes()
 
-    def get_file(self, key: str, destination: str | Path) -> None:
-        with self._path(key).open("rb") as input_stream, Path(destination).open("wb") as output:
-            shutil.copyfileobj(input_stream, output, length=1024 * 1024)
-
     def local_path(self, key: str) -> Path:
         """Expõe caminho validado para leitores locais de arquivos grandes."""
         return self._path(key)

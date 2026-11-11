@@ -1,9 +1,7 @@
 """Prepara a CAOP geográfica para os modelos Bronze e Silver do dbt."""
 
-import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from zipfile import ZipFile
 
 import geopandas as gpd
 import pandas as pd
@@ -13,10 +11,11 @@ from pipelines.collectors._shared.catalog import REGIONS
 from pipelines.collectors.caop.names import normalize_name
 from pipelines.collectors.caop.schema import (
     EXPECTED_CRS,
-    MAX_UNCOMPRESSED_BYTES,
     MUNICIPALITY_CODE,
     PARISH_CODE,
     CaopSchemaError,
+    extract_gpkgs,
+    select_layers,
 )
 
 REGION_NAMES = {
@@ -87,24 +86,6 @@ def normalize_layer(
     return pd.DataFrame(rows)
 
 
-def _extract_gpkgs(archive: Path, region: str, directory: Path) -> list[Path]:
-    with ZipFile(archive) as zipped:
-        members = [item for item in zipped.infolist() if item.filename.lower().endswith(".gpkg")]
-        if len(members) != (2 if region == "acores" else 1):
-            raise CaopSchemaError(f"{region}: quantidade de GeoPackages inesperada")
-        if sum(item.file_size for item in members) > MAX_UNCOMPRESSED_BYTES:
-            raise CaopSchemaError(f"{region}: ZIP excede o limite de inspeção")
-        paths = []
-        for member in members:
-            if Path(member.filename).name != member.filename:
-                raise CaopSchemaError(f"{region}: caminho inseguro no ZIP")
-            destination = directory / member.filename
-            with zipped.open(member) as source, destination.open("wb") as target:
-                shutil.copyfileobj(source, target, length=1024 * 1024)
-            paths.append(destination)
-        return paths
-
-
 def prepare_caop(
     archives: dict[str, Path], manifest: dict, output_dir: Path, *, processed_at_utc: str
 ) -> dict[str, int]:
@@ -124,13 +105,10 @@ def prepare_caop(
     all_rows: dict[str, list[pd.DataFrame]] = {"municipios": [], "freguesias": []}
     with TemporaryDirectory(prefix="caop-transform-", dir=output_dir) as tmp:
         for region in REGIONS:
-            for path in _extract_gpkgs(Path(archives[region]), region, Path(tmp)):
-                layers = {name for name, _ in pyogrio.list_layers(path)}
+            for path in extract_gpkgs(archives[region], region, Path(tmp)):
+                layers = select_layers(path)
                 for kind, bucket in all_rows.items():
-                    matching = [name for name in layers if name.endswith(f"_{kind}")]
-                    if len(matching) != 1:
-                        raise CaopSchemaError(f"{path.name}: camada {kind} ausente ou ambígua")
-                    frame = pyogrio.read_dataframe(path, layer=matching[0])
+                    frame = pyogrio.read_dataframe(path, layer=layers[kind])
                     bucket.append(
                         normalize_layer(frame, kind=kind, region=region, provenance=provenance)
                     )

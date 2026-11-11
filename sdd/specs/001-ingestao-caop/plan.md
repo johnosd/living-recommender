@@ -134,11 +134,11 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 
 | Área | Estado |
 | --- | --- |
-| Fase | Setup, Foundational, US1 e US2 concluídos (T001–T024, T031–T032); próxima fase US3/S3 simulado. |
+| Fase | Setup, Foundational, US1, US2 e Phase 4.1 de simplificação concluídos (T001–T024, T031–T036); próxima fase US3/S3 simulado. |
 | Fonte real | Três ZIPs da CAOP2025 coletados em `.data/raw/`; Bronze/Silver locais gerados com 308 municípios, 3259 freguesias e 18 `dtmnfr` alfanuméricos. |
 | Coleta e transformação | Coletor local, checksums e manifests; normalização geoespacial e `dbt build` em área temporária com promoção após qualidade. |
 | Visualização | `.data/explore/caop.html`, `municipios.csv` e `freguesias.csv` gerados da Silver real; guia em `docs/runbooks/coletas.md`. |
-| Testes | 27/27 pytest, Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local passou. |
+| Testes | 30/30 pytest, Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local repetido após a simplificação (308 municípios, 3259 freguesias). |
 | CI | Workflow atualizado para gerar fixture e rodar dbt; execução remota no GitHub pendente. |
 
 ## Riscos e Decisões
@@ -166,13 +166,15 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | 2026-11-04 | US1 | T011–T015 concluídas: fonte real inspecionada, coletor/CLI local e fixtures; 16/16 pytest, 5/5 contratos e Ruff verdes. | Resolver R-006 antes da US2; CI remoto e S3 ainda pendentes. |
 | 2026-11-04 | Documentação operacional | Criado `docs/runbooks/coletas.md` a pedido do usuário, com execução local, saídas e status; README aponta para o guia. | Coleta real pela CLI permanece sem execução; R-006 bloqueia US2. |
 | 2026-11-04 | US2 | T016–T024, T031–T032 concluídas: Bronze/Silver, 308/3259 linhas reais, visualizador HTML/CSV e correção da concorrência Windows; 27 pytest e 31 passos dbt verdes. | US3/S3 simulado e CI remoto pendentes; navegador automatizado indisponível para inspeção visual do HTML. |
+| 2026-11-11 | Phase 4.1 (simplificação) | T033–T036 concluídas após revisão pedida pelo usuário: extração ZIP/GeoPackage unificada em `schema.py`, código morto e redundâncias removidos, filtro redundante do staging dbt retirado; 30 pytest, 31 passos dbt e build real verdes. Cinco itens da proposta original foram descartados após verificação (ver Cuidados). | Decisão do usuário sobre `--force-check`, `_canonical_path`, `strict_metadata`, adiar US3 e `HEAD`/ETag; US3/S3 e CI remoto pendentes. |
 
-**PRÓXIMO**: executar a Fase 5 (US3), implementando backend S3 simulado com paridade de chaves/manifests e negativa de permissão antes do download.
+**PRÓXIMO**: decidir os itens da ideia de simplificação no backlog e então executar a Fase 5 (US3), implementando backend S3 simulado com paridade de chaves/manifests e negativa de permissão antes do download.
 
 ## Arquivos Principais
 
 <!-- Sobrescrita a cada checkpoint pelo sdd-execute. -->
 
+- `pipelines/collectors/caop/schema.py` — validação do bruto e extração/seleção de camadas (`extract_gpkgs`, `select_layers`), compartilhadas com a transformação.
 - `pipelines/collectors/caop/transform.py` e `pipelines/collectors/caop/names.py` — preparo geográfico e nomes.
 - `analytics/dbt/` — staging Bronze, dimensões Silver e testes de qualidade.
 - `pipelines/cli/build_caop.py` e `pipelines/cli/view_caop.py` — build local e visualização.
@@ -188,3 +190,4 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 - T011 fechou a inspeção real: o ZIP dos Açores tem dois GeoPackages com EPSG:5014/5015; os outros usam EPSG:3763 e EPSG:5016. Os 18 códigos alfanuméricos oficiais não podem ser filtrados para satisfazer o aceite numérico da US2.
 - A Fase 4 preserva `dtmnfr` como `dicofre` texto de seis caracteres; a emenda de US2/AC1 foi aprovada pelo autor e registrada em R-006.
 - O explorador HTML é gerado a partir da Silver com `uv run --locked python -m pipelines.cli.view_caop --root .data`; fica fora do Git em `.data/explore/`. A automação do navegador recusou a conexão nesta sessão; CSV, payload e sintaxe JavaScript foram verificados localmente.
+- Armadilhas da simplificação (2026-11-11), para não repetir a proposta: `--local` é contrato da CLI e é passado pelos testes; `_validate_spatial` de `build_caop.py` valida a Silver entregue (WGS84 + dbt) e não duplica o `normalize_layer`; o `hasattr(storage, "preflight")` do coletor é exigido porque o `MemoryStorage` do contrato travado não tem `preflight`; `delete_prefix` será usado na recuperação de órfãos S3 (R-002); os `cast(...)` do staging protegem o tipo de colunas inteiramente nulas, como `parish_type`.

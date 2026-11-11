@@ -38,9 +38,8 @@ def collect_caop(
         raise CollectionError("run_id inválido")
     manifest_key = f"manifests/caop/{run_id}.json"
     raw_prefix = f"raw/source=caop/version={source['version']}/run_id={run_id}/"
-    if manifest_key in storage.list_keys() or any(
-        key.startswith(raw_prefix) for key in storage.list_keys()
-    ):
+    existing = storage.list_keys()
+    if manifest_key in existing or any(key.startswith(raw_prefix) for key in existing):
         raise CollectionError(f"run_id já utilizado: {run_id}")
     try:
         if hasattr(storage, "preflight"):

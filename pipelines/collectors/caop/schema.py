@@ -51,49 +51,62 @@ def _validate_layer(path: Path, layer: str, kind: str, crs: str) -> set[str]:
     return codes
 
 
-def validate_caop_archive(region: str, archive: str | Path) -> list[dict]:
-    """Lê todas as bases do ZIP e confere camadas, campos, códigos e CRS."""
-    if region not in REGIONS:
-        raise CaopSchemaError(f"região desconhecida: {region}")
-    archive = Path(archive)
+def extract_gpkgs(archive: str | Path, region: str, directory: Path) -> list[Path]:
+    """Extrai os GeoPackages do ZIP com os limites de segurança, para validar e transformar."""
     try:
-        with ZipFile(archive) as zipped, TemporaryDirectory(prefix="caop-schema-") as tmp:
+        with ZipFile(archive) as zipped:
             members = [item for item in zipped.infolist() if item.filename.lower().endswith(".gpkg")]
             expected_count = 2 if region == "acores" else 1
             if len(members) != expected_count:
                 raise CaopSchemaError(f"{region}: esperados {expected_count} GeoPackage(s)")
             if sum(item.file_size for item in members) > MAX_UNCOMPRESSED_BYTES:
                 raise CaopSchemaError(f"{region}: ZIP excede o limite de inspeção")
-            found_crs = set()
-            results = []
+            paths = []
             for member in members:
                 if Path(member.filename).name != member.filename:
                     raise CaopSchemaError(f"{region}: caminho inseguro no ZIP")
-                path = Path(tmp) / member.filename
-                with zipped.open(member) as source, path.open("wb") as target:
+                destination = directory / member.filename
+                with zipped.open(member) as source, destination.open("wb") as target:
                     shutil.copyfileobj(source, target, length=1024 * 1024)
-                layers = {name: geometry for name, geometry in pyogrio.list_layers(path)}
-                selected = {}
-                for kind in ("municipios", "freguesias"):
-                    matching = [name for name in layers if name.endswith(f"_{kind}")]
-                    if len(matching) != 1:
-                        raise CaopSchemaError(f"{path.name}: camada {kind} ausente ou ambígua")
-                    selected[kind] = matching[0]
-                municipality_info = pyogrio.read_info(path, layer=selected["municipios"])
-                crs = municipality_info["crs"]
-                if crs not in EXPECTED_CRS[region] or crs in found_crs:
-                    raise CaopSchemaError(f"{path.name}: CRS inesperado ou repetido: {crs}")
-                found_crs.add(crs)
-                municipalities = _validate_layer(path, selected["municipios"], "municipios", crs)
-                parishes = _validate_layer(path, selected["freguesias"], "freguesias", crs)
-                if not {code[:4] for code in parishes}.issubset(municipalities):
-                    raise CaopSchemaError(f"{path.name}: freguesia sem município")
-                results.append(
-                    {"member": member.filename, "crs": crs, "layers": selected,
-                     "municipalities": len(municipalities), "parishes": len(parishes)}
-                )
-            if found_crs != EXPECTED_CRS[region]:
-                raise CaopSchemaError(f"{region}: grupos/CRS incompletos")
-            return results
+                paths.append(destination)
+            return paths
     except BadZipFile as exc:
         raise CaopSchemaError(f"{region}: ZIP inválido") from exc
+
+
+def select_layers(path: Path) -> dict[str, str]:
+    """Encontra a única camada de municípios e a única de freguesias de um GeoPackage."""
+    names = [name for name, _ in pyogrio.list_layers(path)]
+    selected = {}
+    for kind in ("municipios", "freguesias"):
+        matching = [name for name in names if name.endswith(f"_{kind}")]
+        if len(matching) != 1:
+            raise CaopSchemaError(f"{path.name}: camada {kind} ausente ou ambígua")
+        selected[kind] = matching[0]
+    return selected
+
+
+def validate_caop_archive(region: str, archive: str | Path) -> list[dict]:
+    """Lê todas as bases do ZIP e confere camadas, campos, códigos e CRS."""
+    if region not in REGIONS:
+        raise CaopSchemaError(f"região desconhecida: {region}")
+    with TemporaryDirectory(prefix="caop-schema-") as tmp:
+        found_crs = set()
+        results = []
+        for path in extract_gpkgs(archive, region, Path(tmp)):
+            selected = select_layers(path)
+            crs = pyogrio.read_info(path, layer=selected["municipios"])["crs"]
+            if crs not in EXPECTED_CRS[region] or crs in found_crs:
+                raise CaopSchemaError(f"{path.name}: CRS inesperado ou repetido: {crs}")
+            found_crs.add(crs)
+            municipalities = _validate_layer(path, selected["municipios"], "municipios", crs)
+            parishes = _validate_layer(path, selected["freguesias"], "freguesias", crs)
+            if not {code[:4] for code in parishes}.issubset(municipalities):
+                raise CaopSchemaError(f"{path.name}: freguesia sem município")
+            results.append(
+                {"member": path.name, "crs": crs, "layers": selected,
+                 "municipalities": len(municipalities), "parishes": len(parishes)}
+            )
+        if found_crs != EXPECTED_CRS[region]:
+            raise CaopSchemaError(f"{region}: grupos/CRS incompletos")
+        return results

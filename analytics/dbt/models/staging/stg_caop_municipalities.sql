@@ -19,4 +19,3 @@ select
     cast(collected_at_utc as varchar) as collected_at_utc,
     cast(processed_at_utc as varchar) as processed_at_utc
 from read_parquet('{{ env_var('CAOP_PREPARED_DIR', '.data/ci/prepared') }}/municipalities.parquet')
-where source_run_id = '{{ env_var('CAOP_SOURCE_RUN_ID', 'ci-fixture') }}'
