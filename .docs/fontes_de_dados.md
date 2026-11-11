@@ -89,39 +89,65 @@ Na proposta, cada fonte vira um **coletor declarado em `config/sources.yml`**. O
 
 ### 3.2 Catálogo de fontes (`config/sources.yml`)
 
-```yaml
-- id: pordata
-  owner: Fundação Francisco Manuel dos Santos
-  license: "Uso livre com citação (Fonte: PORDATA)"
-  method: http_download
-  runtime: lambda
-  schedule: monthly            # ingest_public_monthly
-  territorial_level: municipio
-  join_key: nome_regiao        # resolvido por seed municipality_synonyms
-  datasets:
-    - id: farmacias
-      category: saude
-      url: https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/464.csv
-      format: pordata_long_csv
-      expected_columns: ["01. Ano", "02. Nome Região (Portugal)", "03. Âmbito Geográfico", "09. Valor"]
-    # … demais 22 datasets migrados do pordataFiles.json + 845
+**Formato implementado** (spec 001, fonte `caop`): o arquivo tem a chave raiz `sources`, um mapa em que a chave é o `source_id`. Os campos obrigatórios são `id`, `publisher`, `responsible_party`, `license_id`, `collection_method`, `frequency`, `territorial_level`, `version`, `reference_period` e `urls`. Para a CAOP, `urls` é um mapa por região (`continente`, `acores`, `madeira`) com URLs HTTPS. Um coletor recusa qualquer fonte que não esteja no catálogo.
 
-- id: open_meteo
-  license: CC BY 4.0
-  method: api
-  runtime: lambda
-  schedule: quarterly          # ingest_climate
-  territorial_level: centroide_municipio
-  params: { daily: [temperature_2m_mean, temperature_2m_max, temperature_2m_min,
-                    apparent_temperature_mean, precipitation_sum, windspeed_10m_max,
-                    sunshine_duration], years: 1995-2024 }
+```yaml
+sources:
+  caop:
+    id: caop
+    publisher: Direção-Geral do Território
+    responsible_party: living-recommender
+    license_id: CC-BY-4.0
+    attribution: "Fonte: Direção-Geral do Território (DGT), CAOP2025"
+    collection_method: http_download
+    frequency: annual_or_on_demand
+    territorial_level: municipality_and_parish
+    version: "2025"
+    reference_period: "2025"
+    urls:
+      continente: https://geo2.dgterritorio.gov.pt/caop/CAOP_Continente_2025-gpkg.zip
+      acores: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAA_2025-gpkg.zip
+      madeira: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAM_2025-gpkg.zip
+```
+
+A validação do catálogo (`pipelines/collectors/_shared/catalog.py`) ainda é específica da CAOP: exige as três regiões e o método `http_download`. Ela será generalizada na spec do segundo coletor (Pordata), que valida o padrão. As entradas abaixo são a **proposta** para as próximas fontes, já nas chaves reais (`publisher`, `license_id`, `collection_method`); `runtime`, `schedule`, `join_key`, `datasets` e `params` são campos previstos que ainda não são validados.
+
+```yaml
+sources:
+  pordata:
+    id: pordata
+    publisher: Fundação Francisco Manuel dos Santos
+    license_id: "Uso livre com citação (Fonte: PORDATA)"
+    collection_method: http_download
+    runtime: lambda
+    schedule: monthly            # ingest_public_monthly
+    territorial_level: municipio
+    join_key: nome_regiao        # resolvido por seed municipality_synonyms
+    datasets:
+      - id: farmacias
+        category: saude
+        url: https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/464.csv
+        format: pordata_long_csv
+        expected_columns: ["01. Ano", "02. Nome Região (Portugal)", "03. Âmbito Geográfico", "09. Valor"]
+      # … demais 22 datasets migrados do pordataFiles.json + 845
+
+  open_meteo:
+    id: open_meteo
+    license_id: CC-BY-4.0
+    collection_method: api
+    runtime: lambda
+    schedule: quarterly          # ingest_climate
+    territorial_level: centroide_municipio
+    params: { daily: [temperature_2m_mean, temperature_2m_max, temperature_2m_min,
+                      apparent_temperature_mean, precipitation_sum, windspeed_10m_max,
+                      sunshine_duration], years: 1995-2024 }
 ```
 
 ### 3.3 Desenho por fonte
 
 | Fonte (`source_id`) | Substitui | Como coleta | Gatilho | Runtime | Destino em `raw/` | Chave territorial | Observações |
 |---|---|---|---|---|---|---|---|
-| `caop` | L4, L13, parte do L7/L8 | Download do GeoPackage oficial da DGT | Anual / sob demanda (`ingest_reference`) | ECS (GDAL; o arquivo é grande para Lambda) | `source=caop/version=<ano>/` | É a própria dimensão (`dico`, `dicofre`) | Gera `dim_municipality`, `dim_parish`, centroides, áreas, TopoJSON e a correspondência 2013→2025 |
+| `caop` | L4, L13, parte do L7/L8 | Download do GeoPackage oficial da DGT | Anual / sob demanda (`ingest_reference`) | ECS (GDAL; o arquivo é grande para Lambda) | `source=caop/version=<ano>/` | É a própria dimensão (`dico`, `dicofre`) | Gera `dim_municipality`, `dim_parish`, pontos representativos, áreas, TopoJSON e a correspondência 2013→2025. **Entregue pela spec 001:** `raw/`, Bronze e as duas dimensões Silver, com área em km² e ponto dentro do polígono (`representative_point`, não o centroide geométrico). TopoJSON e a correspondência 2013→2025 ficam para specs futuras. Atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025", CC-BY-4.0. Para reprocessar, basta rodar `build_caop`; ele sempre parte do último manifest `changed`. Objetos S3 sem manifest `changed` são órfãos de um crash e podem ser apagados (`delete_prefix`) |
 | `pordata` | L1, L2, L3 | GET de cada dataset do catálogo; `HEAD` antes (ETag/Last-Modified) para detectar mudança | Mensal | Lambda | `source=pordata/release=<data>/run_id=…/<dataset>.csv` | Nome → `dico` por seed | Validar `expected_columns`. L2 (descoberta de links) não é migrado: datasets novos entram no catálogo por PR |
 | `ine` | L14 | **API JSON de indicadores do INE**, por código de indicador (`varcd`), em vez dos links `clientFiles` | Mensal (as rendas locais saem por trimestre) | Lambda | `source=ine/release=<data>/…/<varcd>.json` | Código geográfico do INE = DICO/DICOFRE | Mapear os `varcd` de "taxa de criminalidade" e das **Estatísticas de Rendas da Habitação ao nível local** (mediana €/m² de novos contratos; série revista em 2026 com dados da AT), por município e pelas freguesias onde o INE publica. **Entra na v0** como referência oficial do aluguel, ao lado do Idealista (§5) |
 | `aima` | — (novo) | Download do **Relatório de Migrações e Asilo** (PDF anual da AIMA) e extração das tabelas de estrangeiros residentes por nacionalidade | Anual | ECS ou CLI local (extração de PDF) | `source=aima/rma=<ano>/relatorio.pdf` + `tabelas.csv` extraídas | Nome do município (ou distrito) → `dico` por seed | **Condicional:** só entra se houver dado **por município**. Indicadores: % de brasileiros, % de lusófonos (CPLP), % do total de estrangeiros. Se o relatório só trouxer distritos, a fonte é descartada (§5) |
@@ -145,33 +171,54 @@ Na proposta, cada fonte vira um **coletor declarado em `config/sources.yml`**. O
 
 ### 3.4 Estrutura do código
 
+**Implementado** (spec 001, fonte `caop`):
+
 ```text
 pipelines/
   collectors/
-    _shared/                 # http (UA, retry, rate limit), s3/local writer, manifest, sha256, ssm
-    caop/  pordata/  ine/  censos2021/  open_meteo/  wwo/  wikipedia/
-      handler.py             # entrada Lambda: check() → extract() → write_manifest()
-      schema.py              # validação mínima do bruto (colunas, tipos)
-      test_handler.py        # testes com fixtures gravadas (sem rede)
+    _shared/
+      catalog.py             # lê e valida config/sources.yml
+      http.py                # HttpDownloader: User-Agent, timeout, rate limit, retry com backoff
+      manifest.py            # manifest versionado, SHA-256, último `changed`
+      storage.py             # LocalStorage (mesmo layout de chaves do S3)
+      storage_s3.py          # S3Storage (escrita condicional, sem sobrescrever)
+    caop/
+      handler.py             # collect_caop(): fronteira pública, dependências injetadas
+      schema.py              # validação do ZIP/GeoPackage; extração e seleção de camadas
+      transform.py           # GeoPackage → Parquet (área, ponto representativo, WGS84)
+      names.py               # normalização única de nomes
   cli/
-    upload_snapshot.py       # Idealista manual
-config/
-  sources.yml                # catálogo (§3.2)
-  poles.yml                  # Lisboa, Porto, Faro, aeroportos, sedes de distrito
+    collect_caop.py          # --local | --s3 --bucket [--prefix]
+    build_caop.py            # raw → Bronze/Silver, com promoção após os testes
+    view_caop.py             # explorador HTML e CSVs
 analytics/dbt/
-  seeds/{municipality_synonyms,parish_synonyms,parish_crosswalk_2013_2025}.csv
-  models/staging/stg_<fonte>__<dataset>.sql
+  models/staging/stg_caop_{municipalities,parishes}.sql
+  models/marts/dim_{municipality,parish}.sql
+tests/{contracts,unit,integration,fixtures}/   # sem rede; S3 simulado com moto
 ```
 
-Interface comum de um coletor:
+**Previsto** para as próximas fontes:
+
+```text
+pipelines/collectors/pordata/  ine/  censos2021/  open_meteo/  wwo/  wikipedia/
+pipelines/cli/upload_snapshot.py   # Idealista manual
+config/poles.yml                   # Lisboa, Porto, Faro, aeroportos, sedes de distrito
+analytics/dbt/seeds/{municipality_synonyms,parish_synonyms,parish_crosswalk_2013_2025}.csv
+analytics/dbt/models/staging/stg_<fonte>__<dataset>.sql
+```
+
+**Fronteira de um coletor.** Em vez de uma classe com `check()`/`extract()`, a spec 001 adotou uma função com dependências injetadas, o que permite testá-la sem rede e trocar o destino sem mudar a lógica:
 
 ```python
-class Collector(Protocol):
-    source_id: str
-    def check(self, ctx: RunContext) -> CheckResult: ...         # mudou desde o último manifest?
-    def extract(self, ctx: RunContext) -> list[RawFile]: ...     # baixa e grava em raw/
-    # write_manifest() vem de _shared, igual para todos
+def collect_caop(
+    catalog, *, storage, downloader, validator, run_id, collected_at_utc, work_dir
+) -> dict: ...
+# storage:    LocalStorage ou S3Storage (put, put_file, get, delete, list_keys, preflight)
+# downloader: (url, destino) -> baixa um arquivo; HttpDownloader em produção
+# validator:  (região, arquivo) -> levanta exceção se o bruto for inválido
 ```
+
+A função baixa e valida tudo antes de gravar o `raw/`, compara os checksums com o último manifest `changed` (`unchanged` não grava bruto novo) e escreve o manifest `changed` ou `failed`. A forma da interface será revista quando o Pordata, o segundo coletor, validar o padrão.
 
 ### 3.5 Destino das regras de negócio do legado
 

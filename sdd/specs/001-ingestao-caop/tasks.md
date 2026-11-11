@@ -210,23 +210,23 @@
 
 ### Implementation
 
-- [ ] T028 [P] Atualizar `README.md` e `.docs/fontes_de_dados.md` com comando local, CAOP/atribuição, arquitetura Raw/Bronze/Silver, ausência de Gold nesta feature e como reprocessar/limpar órfãos (FR-001/011/014, constitution III/IV/V).
-- [ ] T029 Executar `quickstart.md` com fixture e, se a DGT estiver acessível, uma coleta real local das três regiões; registrar URL/licença/versão e não inserir brutos em Git (FR-008/017, SC-001/002).
-- [ ] T030 Executar CI/local: `ruff`, pytest completo, `dbt build`, `check-contract-tests.ps1`; conferir os cinco SCs e o gate de segredos; atualizar `sdd/specs/001-ingestao-caop/plan.md`, `tasks.md` e `.planning/backlog.md` somente como o `sdd-execute` prescreve (SC-001–005, constitution Quality Gates).
+- [X] T028 [P] Atualizar `README.md` e `.docs/fontes_de_dados.md` com comando local, CAOP/atribuição, arquitetura Raw/Bronze/Silver, ausência de Gold nesta feature e como reprocessar/limpar órfãos (FR-001/011/014, constitution III/IV/V).
+- [X] T029 Executar `quickstart.md` com fixture e, se a DGT estiver acessível, uma coleta real local das três regiões; registrar URL/licença/versão e não inserir brutos em Git (FR-008/017, SC-001/002).
+- [X] T030 Executar CI/local: `ruff`, pytest completo, `dbt build`, `check-contract-tests.ps1`; conferir os cinco SCs e o gate de segredos; atualizar `sdd/specs/001-ingestao-caop/plan.md`, `tasks.md` e `.planning/backlog.md` somente como o `sdd-execute` prescreve (SC-001–005, constitution Quality Gates).
 
 ### Testes da Fase
 
-- [ ] Conferir a suíte completa `uv run --locked python -m pytest -q --basetemp .pytest_tmp`, o S3 simulado e a execução local do `dbt build`; nenhum teste automatizado exige rede.
+- [X] Conferir a suíte completa `uv run --locked python -m pytest -q --basetemp .pytest_tmp`, o S3 simulado e a execução local do `dbt build`; nenhum teste automatizado exige rede.
 
 **Critério de Conclusão**: todos os requisitos/SC rastreados; contratos 5/5 verdes e trava íntegra; lint/dbt/pytest/CI verdes; quickstart executado; documentação e backlog sincronizados.
 
 **Registro da Fase**:
 
-- Status:
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: concluída em 2026-11-11 (T028–T030). A T037 da Phase 7 foi executada junto com a T028 por tratar do mesmo arquivo.
+- Feito: README atualizado de forma cirúrgica (status com S3, estrutura real do repositório, atribuição da DGT/CC-BY-4.0, instruções de ambiente Python; sem tocar no roteiro). `.docs/fontes_de_dados.md` alinhado ao código: §3.2 com o catálogo real e as próximas fontes nas chaves reais; §3.3 com o que a spec 001 entrega, o que fica para depois, atribuição e como reprocessar/limpar órfãos; §3.4 com a estrutura implementada e a fronteira `collect_caop` com dependências injetadas, no lugar do `Protocol` inexistente. Quickstart executado com a coleta real (ver testes).
+- Contrato: `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 5/5 contratos verdes dentro da suíte; `.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 001-ingestao-caop` → PASS, trava íntegra.
+- Testes executados: `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 38 passed; `uv run --locked python -m tests.fixtures.caop.ci_seed --root .data/ci` + `uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local` → 31/31 passos. **Coleta real (distinta da prova automatizada):** `uv run --locked python -m pipelines.cli.collect_caop --local --root .data` contra a DGT → `unchanged` em 47 s, mesmos tamanhos de 04/11 (111647845, 15909724 e 15235290 bytes), nenhum raw novo (1 diretório de run, 2 manifests); isso exercita o `http.py` alterado na Phase 4.1. `build_caop` e `view_caop` sobre o dado real → 308 municípios e 3259 freguesias; Silver real: `dico` e `dicofre` únicos, 0 freguesias sem município, 0 prefixos divergentes, 0 áreas ≤ 0, 0 pontos nulos, 18 códigos com letras, "Vila Real de Santo António" preservado e normalizado, proveniência CAOP 2025/CC-BY-4.0; `lake/gold` e `published` não existem. Varredura própria de padrões de credencial nos arquivos versionados → nenhum achado (só placeholders `test` do moto), nenhum arquivo de `.data/` ou `.env` versionado.
+- Pendências: (1) o `gitleaks` do CI **não** foi executado localmente (Docker Desktop parado); a varredura própria é mais fraca e não substitui o job `secrets`, que só roda em PR. (2) O CI remoto passou em `8dd4ca3`, mas os commits `8814d8a` e `a13a43c` não foram enviados; segue na T038, que exige autorização do usuário. Por isso o item "CI e verificação de segredos verdes" do checklist continua aberto. (3) A spec cita "Lagoa e Calheta" como homônimos (US2/AC5), mas na CAOP2025 o município dos Açores se chama "Calheta de São Jorge"; o único homônimo real é "Lagoa" (0806 em Faro, 4201 em São Miguel), distinguido por código e região. A AC5 está comprovada com a Lagoa; o exemplo da spec é impreciso e não foi editado. (4) R-008 (S3 real) segue aberto.
 
 ### Checklist de Release
 
@@ -235,11 +235,11 @@
 - [X] Fase 3 (US1) concluída.
 - [X] Fase 4 (US2) concluída.
 - [X] Fase 5 (US3) concluída.
-- [ ] Cinco contratos verdes no pytest completo; `check-contract-tests.ps1` íntegro.
+- [X] Cinco contratos verdes no pytest completo; `check-contract-tests.ps1` íntegro.
 - [ ] `ruff`, `pytest` e `dbt build` verdes com fixtures sem rede; CI e verificação de segredos verdes.
-- [ ] Licença/atribuição e catálogo DGT corretos; nenhum bruto real ou credencial no Git.
-- [ ] `quickstart.md` executado; coleta real local, se disponível, distinguida da prova automatizada.
-- [ ] Nenhum Gold/publicação/deploy AWS introduzido nesta feature.
+- [X] Licença/atribuição e catálogo DGT corretos; nenhum bruto real ou credencial no Git.
+- [X] `quickstart.md` executado; coleta real local, se disponível, distinguida da prova automatizada.
+- [X] Nenhum Gold/publicação/deploy AWS introduzido nesta feature.
 
 ---
 
@@ -267,3 +267,23 @@
 | SC-003 | T025–T027 |
 | SC-004 | T001, T002, T024, T030 |
 | SC-005 | T012, T014, T027, T030 |
+
+---
+
+## Phase 7: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-11. Esta fase só cobre lacunas que **nenhuma task aberta** já possui. O README (F-002) segue na T028, a coleta real na T029 e o gate final na T030; não foram duplicados. IDs continuam a numeração (`T037`+).
+
+- [X] T037 [HIGH, F-001, Constitution Quality Gate 6 / FR-001] Alinhar `.docs/fontes_de_dados.md` ao que foi construído, junto com a T028: §3.2 passa a descrever o catálogo real (`sources:` como mapa, com `publisher`, `responsible_party`, `license_id`, `collection_method`, `frequency`, `territorial_level`, `version`, `reference_period` e `urls` por região); §3.4 passa a descrever a fronteira `collect_caop(catalog, storage, downloader, validator, run_id, collected_at_utc, work_dir)` com dependências injetadas e os backends `LocalStorage`/`S3Storage`, no lugar do `Protocol` com `check()`/`extract()`, que não existe no código.
+- [ ] T038 [MEDIUM, F-003, SC-004 / plan: CI] Enviar os commits `8814d8a` e `a13a43c` à branch, conferir que o workflow `Python quality` passa no Linux (incluindo os 8 testes de S3 com moto) e corrigir as menções a "CI remoto pendente" em `plan.md`/`tasks.md` pelo resultado verificado (o run `41932012620` já passou em `8dd4ca3`). Exercitar o job `secrets`, que só roda em PR (Constitution I), uma vez e registrar o resultado. Push e PR são ações externas: pedir autorização ao usuário antes.
+- [X] T039 [MEDIUM, F-004, SC-001] Sincronizar `quickstart.md` com a realidade: remover "Após o projeto dbt existir", trazer o comando do `dbt build` com `ci_seed`, substituir a seção "S3 simulado" pelo comando `pytest tests/integration/test_caop_s3.py` e pelo uso de `--s3 --bucket`, e registrar que `--force-check` não altera o status. Na execução da T029, repetir a coleta real pela CLI (a última foi antes das mudanças de `http.py` e `handler.py`) e anotar o resultado.
+
+**Critério de Conclusão**: `.docs/fontes_de_dados.md` e `quickstart.md` sem divergência do código; CI remoto verde para os commits atuais, com o texto "pendente" corrigido; coleta real repetida após a simplificação. R-008 (S3 real) permanece como risco aberto, registrado no `plan.md`.
+
+**Registro da Fase**:
+
+- Status: parcial em 2026-11-11 (T037 e T039 concluídas; T038 aguarda autorização do usuário para push/PR).
+- Feito: T037 (executada junto com a T028): `.docs/fontes_de_dados.md` §3.2/§3.3/§3.4 alinhado ao catálogo e à fronteira `collect_caop` reais. T039: `quickstart.md` reescrito com os comandos efetivamente executados e os resultados observados: checagens automatizadas (ruff, 38 testes, trava), `dbt build` sobre a fixture com `ci_seed` (31 passos), cenário real de coleta/build/visualização, nota de que `--force-check` não altera o status, seção de S3 com o comando de pytest e o de `--s3 --bucket`, e o esclarecimento dos homônimos da CAOP2025 (Lagoa; Calheta de São Jorge). A recoleta real que a T039 pedia já havia sido feita na T029 e não foi repetida, para não duplicar ~143 MB de tráfego contra a DGT.
+- Contrato: `check-contract-tests.ps1 -Slug 001-ingestao-caop` → PASS, trava íntegra; 5/5 contratos verdes na suíte da T030. Nenhum arquivo de contrato editado.
+- Testes executados: `docker run --rm -v "${PWD}:/repo" -w /repo ghcr.io/gitleaks/gitleaks:v8.30.1 git --no-banner --redact --exit-code 1 .` (mesmo comando e versão do job `secrets` do CI, com o Docker já disponível) → 6 commits escaneados, `no leaks found`, exit 0. Isso resolve a pendência (1) do Registro da Phase 6, em que o `gitleaks` não havia rodado. O scan cobre o histórico commitado, como no CI, e não as alterações ainda não commitadas.
+- Pendências: T038 — enviar `8814d8a` e `a13a43c` à branch, conferir o workflow `Python quality` no Linux (incluindo os 8 testes de S3 com moto), exercitar o job `secrets` num PR e corrigir as menções a CI pendente. Push e PR são ações externas e exigem autorização. O item "CI e verificação de segredos verdes" do Checklist de Release segue aberto por isso. R-008 (S3 real) segue aberto.

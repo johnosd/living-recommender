@@ -134,12 +134,12 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 
 | Área | Estado |
 | --- | --- |
-| Fase | Setup, Foundational, US1, US2, Phase 4.1 e US3 concluídos (T001–T027, T031–T036); resta a Phase 6 (Polish: T028–T030). |
-| Fonte real | Três ZIPs da CAOP2025 coletados em `.data/raw/`; Bronze/Silver locais gerados com 308 municípios, 3259 freguesias e 18 `dtmnfr` alfanuméricos. |
+| Fase | Todas as fases concluídas, exceto a Phase 7 (Convergence), parcial: T037 e T039 feitas; resta a T038 (enviar os commits e conferir o CI remoto), que exige autorização do usuário para push/PR. |
+| Fonte real | Três ZIPs da CAOP2025 coletados em `.data/raw/`; recoleta real de 2026-11-11 deu `unchanged` (mesmos bytes). Bronze/Silver locais com 308 municípios, 3259 freguesias e 18 `dtmnfr` alfanuméricos. |
 | Coleta e transformação | Coletor com destino local ou S3 (`--s3 --bucket [--prefix]`), checksums e manifests; normalização geoespacial e `dbt build` em área temporária com promoção após qualidade. O build lê só do disco local. |
 | Visualização | `.data/explore/caop.html`, `municipios.csv` e `freguesias.csv` gerados da Silver real; guia em `docs/runbooks/coletas.md`. |
 | Testes | 38/38 pytest (8 de S3 simulado com moto), Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local repetido após a simplificação (308 municípios, 3259 freguesias). Nenhum teste contra AWS real. |
-| CI | Workflow atualizado para gerar fixture e rodar dbt; execução remota no GitHub pendente. |
+| CI | O workflow `Python quality` passou no GitHub em `8dd4ca3` (lint, pytest, fixture e `dbt build`). Os commits `8814d8a` e `a13a43c` (simplificação e S3) ainda não foram enviados, e o job `secrets` (só em PR) nunca rodou no GitHub. O mesmo `gitleaks` v8.30.1 rodou localmente via Docker sobre os 6 commits: `no leaks found`. |
 
 ## Riscos e Decisões
 
@@ -169,13 +169,17 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | 2026-11-04 | US2 | T016–T024, T031–T032 concluídas: Bronze/Silver, 308/3259 linhas reais, visualizador HTML/CSV e correção da concorrência Windows; 27 pytest e 31 passos dbt verdes. | US3/S3 simulado e CI remoto pendentes; navegador automatizado indisponível para inspeção visual do HTML. |
 | 2026-11-11 | Phase 4.1 (simplificação) | T033–T036 concluídas após revisão pedida pelo usuário: extração ZIP/GeoPackage unificada em `schema.py`, código morto e redundâncias removidos, filtro redundante do staging dbt retirado; 30 pytest, 31 passos dbt e build real verdes. Cinco itens da proposta original foram descartados após verificação (ver Cuidados). | Decisão do usuário sobre `--force-check`, `_canonical_path`, `strict_metadata`, adiar US3 e `HEAD`/ETag; US3/S3 e CI remoto pendentes. |
 | 2026-11-11 | US3 | T025–T027 concluídas: `S3Storage` com escrita condicional, `--s3 --bucket [--prefix]`, preflight antes de qualquer listagem; 8 testes com S3 simulado cobrem paridade com o local (AC1), falha antes do download (AC2), modo local sem SDK (AC3) e limpeza/rerun após falha; 38 pytest e 31 passos dbt verdes. | Verificar `IfNoneMatch` num bucket real (R-008); CI remoto no GitHub; Phase 6 (README, quickstart, gate final). |
+| 2026-11-11 | Phase 6 (Polish) | T028–T030 concluídas (e T037 junto com a T028): README e `.docs/fontes_de_dados.md` alinhados ao código; quickstart executado com coleta real contra a DGT (`unchanged`, 47 s, bytes idênticos aos de 04/11) e build/visualização sobre o dado real; gate local com ruff, 38 pytest, 31 passos dbt e trava íntegra. | `gitleaks` não rodou localmente (Docker parado); CI remoto dos commits atuais e job `secrets` (T038); `quickstart.md` ainda defasado (T039). |
+| 2026-11-11 | Phase 7 (Convergence) | T037 e T039 concluídas: `.docs/fontes_de_dados.md` e `quickstart.md` alinhados ao código; `gitleaks` v8.30.1 do CI executado localmente via Docker (`no leaks found`, 6 commits). | T038: push dos commits `8814d8a` e `a13a43c`, conferência do workflow no Linux e exercício do job `secrets` em PR (exige autorização). |
 
-**PRÓXIMO**: executar a Fase 6 (Polish): T028 (README e `.docs/fontes_de_dados.md`), T029 (quickstart e coleta real) e T030 (gate final do CI/local), depois `sdd-converge`.
+**PRÓXIMO**: obter autorização do usuário para a T038 (push dos commits e, se desejado, PR para exercitar o job `secrets`), conferir o workflow no GitHub e então rodar `sdd-converge` de novo.
 
 ## Arquivos Principais
 
 <!-- Sobrescrita a cada checkpoint pelo sdd-execute. -->
 
+- `README.md`, `.docs/fontes_de_dados.md` e `docs/runbooks/coletas.md` — documentação alinhada ao código (T028/T037).
+- `sdd/specs/001-ingestao-caop/quickstart.md` — próximo a sincronizar (T039).
 - `pipelines/collectors/_shared/storage_s3.py` e `pipelines/cli/collect_caop.py` — backend S3 e seleção de destino; `tests/integration/test_caop_s3.py` — prova com S3 simulado.
 - `pipelines/collectors/caop/schema.py` — validação do bruto e extração/seleção de camadas (`extract_gpkgs`, `select_layers`), compartilhadas com a transformação.
 - `pipelines/collectors/caop/transform.py` e `pipelines/collectors/caop/names.py` — preparo geográfico e nomes.
