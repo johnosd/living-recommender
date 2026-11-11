@@ -185,22 +185,22 @@
 
 ### Implementation
 
-- [ ] T025 [P] Criar `pipelines/collectors/_shared/storage_s3.py` usando Boto3, com prefixo por run, escrita sem sobrescrita, pré-teste de escrita/remoção antes da rede, limpeza de falha e listagem de manifests; nenhuma conta AWS real (FR-009/010, US3/AC1–3).
-- [ ] T026 Integrar `--s3 --bucket [--prefix]` em `pipelines/cli/collect_caop.py` e backend em `pipelines/collectors/caop/handler.py`, mantendo a API pública/contratos P1 (FR-009/011, SC-003).
+- [X] T025 [P] Criar `pipelines/collectors/_shared/storage_s3.py` usando Boto3, com prefixo por run, escrita sem sobrescrita, pré-teste de escrita/remoção antes da rede, limpeza de falha e listagem de manifests; nenhuma conta AWS real (FR-009/010, US3/AC1–3).
+- [X] T026 Integrar `--s3 --bucket [--prefix]` em `pipelines/cli/collect_caop.py` e backend em `pipelines/collectors/caop/handler.py`, mantendo a API pública/contratos P1 (FR-009/011, SC-003).
 
 ### Testes da Fase
 
-- [ ] T027 Criar `tests/integration/test_caop_s3.py` com simulador S3 ou Stubber: paridade de chaves/manifest, ausência de credenciais no modo local, negativa de escrita antes do download, falha de upload com limpeza lógica e rerun idempotente (US3/AC1–3, FR-007/009/010/017, SC-003/005).
+- [X] T027 Criar `tests/integration/test_caop_s3.py` com simulador S3 ou Stubber: paridade de chaves/manifest, ausência de credenciais no modo local, negativa de escrita antes do download, falha de upload com limpeza lógica e rerun idempotente (US3/AC1–3, FR-007/009/010/017, SC-003/005).
 
 **Critério de Conclusão**: testes S3 simulados e contratos P1 verdes, paridade local/S3 demonstrada, falha de permissão antes da rede e nenhuma dependência de AWS real.
 
 **Registro da Fase**:
 
-- Status:
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: concluída em 2026-11-11 (T025–T027).
+- Feito: `S3Storage` em `storage_s3.py` com a mesma interface do `LocalStorage` (`put`, `put_file`, `get`, `delete`, `delete_prefix`, `list_keys`, `preflight`), prefixo opcional e escrita condicional `IfNoneMatch="*"` (o S3 recusa sobrescrever; vira `FileExistsError`, como no disco). `collect_caop` ganhou `--s3 --bucket [--prefix]`, exclusivo de `--local`, e mostra o destino no resumo. No `handler.py`, o `preflight` agora roda antes de qualquer listagem do destino, e a listagem entrou no mesmo tratamento de erro; sem isso, um bucket sem permissão de leitura escaparia como traceback em vez de "destino sem permissão ou inacessível". O helper `offline_downloader` foi movido para `tests/fixtures/caop/build.py` e reaproveitado pelos dois testes de CLI. Runbook atualizado com a seção S3.
+- Contrato: `uv run --locked python -m pytest -q tests/contracts/test_caop_collection_contract.py --basetemp .pytest_tmp` → 5/5 verdes; `.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 001-ingestao-caop` → PASS, trava íntegra. Nenhum arquivo de contrato editado; o `hasattr(storage, "preflight")` foi mantido porque o `MemoryStorage` do contrato não tem `preflight`.
+- Testes executados: `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 38 passed (30 anteriores + 8 em `tests/integration/test_caop_s3.py`: paridade de chaves/bytes/manifest local×S3 (AC1), prefixo, escrita negada e bucket inexistente falhando antes de qualquer download (AC2), modo local sem criar cliente AWS (AC3), falha de upload com limpeza e rerun `changed` → `unchanged`, validação de argumentos e S3Storage sem sobrescrita); `uv run --locked python -m tests.fixtures.caop.ci_seed --root .data/ci` seguido de `dbt build` → 31/31 passos. Antes de implementar, um experimento descartável confirmou que o moto simula `IfNoneMatch` (412 `PreconditionFailed`); o `upload_file` do boto3 não aceita `IfNoneMatch`, por isso `put_file` usa `put_object` (limite de 5 GB; os ZIPs têm ~110 MB no máximo).
+- Pendências: nenhuma execução contra conta AWS real, por escopo (S3 simulado). A premissa de que o S3 real aceita `IfNoneMatch` nas regiões candidatas (`eu-west-1`, `eu-south-2`) vem do conhecimento da funcionalidade, não foi testada aqui. `build_caop` ainda lê só do disco. A recuperação de órfãos S3 (R-002) continua sem rotina própria; `delete_prefix` existe para ela. CI remoto no GitHub ainda não executado.
 
 ---
 
@@ -234,7 +234,7 @@
 - [X] Fase 2 (fundação) concluída.
 - [X] Fase 3 (US1) concluída.
 - [X] Fase 4 (US2) concluída.
-- [ ] Fase 5 (US3) concluída.
+- [X] Fase 5 (US3) concluída.
 - [ ] Cinco contratos verdes no pytest completo; `check-contract-tests.ps1` íntegro.
 - [ ] `ruff`, `pytest` e `dbt build` verdes com fixtures sem rede; CI e verificação de segredos verdes.
 - [ ] Licença/atribuição e catálogo DGT corretos; nenhum bruto real ou credencial no Git.

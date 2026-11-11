@@ -1,5 +1,6 @@
 """Cria ZIPs CAOP mínimos para testes sem rede."""
 
+import shutil
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -7,6 +8,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import geopandas as gpd
 import pyogrio
 from shapely.geometry import box
+
+from pipelines.collectors._shared.catalog import get_source, load_catalog
 
 GROUPS = {
     "continente": [("cont", "EPSG:3763", "0302", "0302FA")],
@@ -48,3 +51,18 @@ def make_archive(region: str, directory: str | Path, *, invalid_parish: bool = F
             pyogrio.write_dataframe(parish, path, layer=f"{prefix}_freguesias", append=True)
             zipped.write(path, arcname=path.name)
     return archive
+
+
+def make_archives(directory: str | Path, **options) -> dict[str, Path]:
+    return {region: make_archive(region, directory, **options) for region in GROUPS}
+
+
+def offline_downloader(archives: dict[str, Path]):
+    """Troca a rede por cópia dos ZIPs sintéticos, endereçados pelas URLs do catálogo."""
+    urls = get_source(load_catalog())["urls"]
+    by_url = {url: archives[region] for region, url in urls.items()}
+
+    def download(url, destination):
+        shutil.copyfile(by_url[url], destination)
+
+    return download

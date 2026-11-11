@@ -134,11 +134,11 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 
 | Área | Estado |
 | --- | --- |
-| Fase | Setup, Foundational, US1, US2 e Phase 4.1 de simplificação concluídos (T001–T024, T031–T036); próxima fase US3/S3 simulado. |
+| Fase | Setup, Foundational, US1, US2, Phase 4.1 e US3 concluídos (T001–T027, T031–T036); resta a Phase 6 (Polish: T028–T030). |
 | Fonte real | Três ZIPs da CAOP2025 coletados em `.data/raw/`; Bronze/Silver locais gerados com 308 municípios, 3259 freguesias e 18 `dtmnfr` alfanuméricos. |
-| Coleta e transformação | Coletor local, checksums e manifests; normalização geoespacial e `dbt build` em área temporária com promoção após qualidade. |
+| Coleta e transformação | Coletor com destino local ou S3 (`--s3 --bucket [--prefix]`), checksums e manifests; normalização geoespacial e `dbt build` em área temporária com promoção após qualidade. O build lê só do disco local. |
 | Visualização | `.data/explore/caop.html`, `municipios.csv` e `freguesias.csv` gerados da Silver real; guia em `docs/runbooks/coletas.md`. |
-| Testes | 30/30 pytest, Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local repetido após a simplificação (308 municípios, 3259 freguesias). |
+| Testes | 38/38 pytest (8 de S3 simulado com moto), Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local repetido após a simplificação (308 municípios, 3259 freguesias). Nenhum teste contra AWS real. |
 | CI | Workflow atualizado para gerar fixture e rodar dbt; execução remota no GitHub pendente. |
 
 ## Riscos e Decisões
@@ -154,6 +154,7 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | R-005 | A CAOP tem três URLs, enquanto `source_url` estava descrito no singular. | Médio: ambiguidade no schema do manifest. | Resolvido: `spec.md` explicita `source_url` como mapa por região; catálogo e `manifest.py` usam esse formato. |
 | R-006 | A US2/AC1 exigia `dicofre` de seis dígitos, mas 18 códigos oficiais CAOP2025 têm letras após os quatro dígitos municipais. | Alto: o aceite excluiria freguesias válidas ou exigiria inventar códigos. | Resolvido: autor aprovou emenda de US2/AC1 e `data-model.md` para seis caracteres (`[0-9]{4}[0-9A-Z]{2}`), preservando `dtmnfr` oficial; US2 liberada. |
 | R-007 | `Path.resolve()` no Windows retornou ocasionalmente `\\?\C:\...` para o mesmo caminho durante duas coletas concorrentes, e a comparação literal o tratou como fora da raiz. | Médio: teste de concorrência e coleta local podem falhar sem corrupção do bruto. | Resolvido: normalizar prefixo Windows antes da checagem de contenção; regressão reproduziu o erro antes da correção e 30 repetições da concorrência passaram depois. |
+| R-008 | O "nunca sobrescrever" no S3 depende de escrita condicional (`IfNoneMatch="*"`), validada só no moto; o `upload_file` do boto3 não a aceita, então `put_file` usa `put_object` (limite de 5 GB). | Médio: se o S3 real das regiões candidatas se comportar diferente, a imutabilidade do raw deixa de ser garantida pelo backend (o `run_id` exclusivo continua protegendo o prefixo). | Verificar contra um bucket real antes do primeiro uso em produção (spec de infraestrutura); ZIPs atuais têm ~110 MB. |
 
 ## Execution Notes
 
@@ -167,13 +168,15 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | 2026-11-04 | Documentação operacional | Criado `docs/runbooks/coletas.md` a pedido do usuário, com execução local, saídas e status; README aponta para o guia. | Coleta real pela CLI permanece sem execução; R-006 bloqueia US2. |
 | 2026-11-04 | US2 | T016–T024, T031–T032 concluídas: Bronze/Silver, 308/3259 linhas reais, visualizador HTML/CSV e correção da concorrência Windows; 27 pytest e 31 passos dbt verdes. | US3/S3 simulado e CI remoto pendentes; navegador automatizado indisponível para inspeção visual do HTML. |
 | 2026-11-11 | Phase 4.1 (simplificação) | T033–T036 concluídas após revisão pedida pelo usuário: extração ZIP/GeoPackage unificada em `schema.py`, código morto e redundâncias removidos, filtro redundante do staging dbt retirado; 30 pytest, 31 passos dbt e build real verdes. Cinco itens da proposta original foram descartados após verificação (ver Cuidados). | Decisão do usuário sobre `--force-check`, `_canonical_path`, `strict_metadata`, adiar US3 e `HEAD`/ETag; US3/S3 e CI remoto pendentes. |
+| 2026-11-11 | US3 | T025–T027 concluídas: `S3Storage` com escrita condicional, `--s3 --bucket [--prefix]`, preflight antes de qualquer listagem; 8 testes com S3 simulado cobrem paridade com o local (AC1), falha antes do download (AC2), modo local sem SDK (AC3) e limpeza/rerun após falha; 38 pytest e 31 passos dbt verdes. | Verificar `IfNoneMatch` num bucket real (R-008); CI remoto no GitHub; Phase 6 (README, quickstart, gate final). |
 
-**PRÓXIMO**: decidir os itens da ideia de simplificação no backlog e então executar a Fase 5 (US3), implementando backend S3 simulado com paridade de chaves/manifests e negativa de permissão antes do download.
+**PRÓXIMO**: executar a Fase 6 (Polish): T028 (README e `.docs/fontes_de_dados.md`), T029 (quickstart e coleta real) e T030 (gate final do CI/local), depois `sdd-converge`.
 
 ## Arquivos Principais
 
 <!-- Sobrescrita a cada checkpoint pelo sdd-execute. -->
 
+- `pipelines/collectors/_shared/storage_s3.py` e `pipelines/cli/collect_caop.py` — backend S3 e seleção de destino; `tests/integration/test_caop_s3.py` — prova com S3 simulado.
 - `pipelines/collectors/caop/schema.py` — validação do bruto e extração/seleção de camadas (`extract_gpkgs`, `select_layers`), compartilhadas com a transformação.
 - `pipelines/collectors/caop/transform.py` e `pipelines/collectors/caop/names.py` — preparo geográfico e nomes.
 - `analytics/dbt/` — staging Bronze, dimensões Silver e testes de qualidade.

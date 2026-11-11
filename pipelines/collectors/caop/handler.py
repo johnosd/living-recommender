@@ -38,14 +38,14 @@ def collect_caop(
         raise CollectionError("run_id inválido")
     manifest_key = f"manifests/caop/{run_id}.json"
     raw_prefix = f"raw/source=caop/version={source['version']}/run_id={run_id}/"
-    existing = storage.list_keys()
-    if manifest_key in existing or any(key.startswith(raw_prefix) for key in existing):
-        raise CollectionError(f"run_id já utilizado: {run_id}")
-    try:
+    try:  # antes de qualquer rede: o destino precisa aceitar escrita e listagem
         if hasattr(storage, "preflight"):
             storage.preflight()
+        existing = storage.list_keys()
     except Exception as exc:
-        raise CollectionError(f"destino sem permissão: {exc}") from exc
+        raise CollectionError(f"destino sem permissão ou inacessível: {exc}") from exc
+    if manifest_key in existing or any(key.startswith(raw_prefix) for key in existing):
+        raise CollectionError(f"run_id já utilizado: {run_id}")
 
     work_dir = Path(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)

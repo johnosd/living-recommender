@@ -1,6 +1,6 @@
 # Coletas de dados
 
-Este guia descreve a coleta **local da CAOP**, a construção das dimensões territoriais e como visualizar os resultados. O destino S3 pertence à próxima fase da [spec de ingestão CAOP](../../sdd/specs/001-ingestao-caop/spec.md).
+Este guia descreve a coleta da CAOP (local ou em S3), a construção das dimensões territoriais e como visualizar os resultados. O contexto está na [spec de ingestão CAOP](../../sdd/specs/001-ingestao-caop/spec.md).
 
 ## Pré-requisitos
 
@@ -33,6 +33,24 @@ uv run --locked python -m pipelines.cli.collect_caop --local --root .data/caop-t
 ```
 
 É possível passar `--force-check`. Na implementação atual, toda execução já baixa e verifica os três arquivos; essa opção não força um novo `changed` quando os checksums continuam iguais.
+
+## Coletar para um bucket S3
+
+O mesmo comando grava no S3 com as **mesmas chaves** do modo local (`raw/…` e `manifests/caop/…`):
+
+```powershell
+uv run --locked python -m pipelines.cli.collect_caop --s3 --bucket <bucket> [--prefix <prefixo>]
+```
+
+- `--local` e `--s3` são exclusivos, e `--bucket`/`--prefix` só valem com `--s3`. Com `--prefix ambiente/dev`, todas as chaves ficam sob `ambiente/dev/`.
+- As credenciais vêm só da cadeia padrão da AWS (variáveis de ambiente, perfil ou papel IAM). Nenhuma é lida de arquivo do repositório. O modo local continua sem exigir credenciais.
+- Antes de baixar qualquer ZIP, a CLI grava e apaga uma chave de prova (`.probe/…`). Se o bucket não existir ou não aceitar escrita, o comando falha logo, com `destino sem permissão ou inacessível`, sem baixar nada e sem criar manifest.
+- A escrita é condicional (`IfNoneMatch`): o S3 recusa gravar sobre uma chave que já existe, como o `os.link` do modo local.
+- O S3 não grava três objetos de forma atômica. Se a falha for capturada, a CLI apaga os arquivos do run e registra um manifest `failed`. Se o processo for morto no meio, podem sobrar ZIPs sem manifest; nenhum leitor os trata como coleta válida, e só o manifest `changed` marca uma coleta como completa.
+- `--root` continua indicando a pasta local, usada aqui só para os arquivos temporários do download.
+- Esta fase foi validada contra um S3 simulado (moto). Nenhuma execução em conta AWS real foi feita.
+
+O `build_caop` ainda lê apenas do disco local; construir a partir do S3 não faz parte desta feature.
 
 ## Onde os arquivos ficam
 
@@ -94,4 +112,4 @@ Os dados são arquivos Parquet locais, não um servidor de banco de dados. O exp
 
 ## Estado da verificação
 
-Em 2026-11-04, os três ZIPs oficiais foram coletados em `.data/raw/` e transformados localmente: 308 municípios, 3.259 freguesias e 18 códigos de freguesia com letras. A fixture sintética nacional passou no `dbt build`; a execução real local também passou. Isso não demonstra execução no CI remoto ou no S3, ainda pendentes.
+Em 2026-11-04, os três ZIPs oficiais foram coletados em `.data/raw/` e transformados localmente: 308 municípios, 3.259 freguesias e 18 códigos de freguesia com letras. A fixture sintética nacional passou no `dbt build`; a execução real local também passou. Isso não demonstra execução no CI remoto, ainda pendente. O destino S3 foi exercitado só contra um S3 simulado (moto), não contra uma conta AWS real.
