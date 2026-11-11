@@ -23,6 +23,7 @@ from pipelines.collectors.open_meteo.municipalities import (
     check_municipalities,
     load_climate_municipalities,
 )
+from pipelines.collectors.open_meteo.points import build_points
 from pipelines.collectors.open_meteo.transform import read_climate_response
 
 PROMOTED = tuple("lake/bronze/" + name for name in
@@ -64,8 +65,7 @@ def prepare_climate(root: Path, output_dir: Path, *, processed_at_utc: str, cata
             digest = file_digest(path, key=state["key"], region=dico)
             if (digest["sha256"], digest["bytes"]) != (state["sha256"], state["bytes"]):
                 raise ClimateBuildError(f"checksum ou tamanho alterado: {state['key']}")
-            frame = read_climate_response(path)
-            frame = frame[frame.variable.isin([v["id"] for v in source["variables"]])].copy()
+            frame = read_climate_response(path, variables=[v['id'] for v in source['variables']])
             for key, value in {
                 "source_id": "open_meteo", "dico": dico, "model": state["model"],
                 "window_start": start, "window_end": end, "source_run_id": state["run_id"],
@@ -79,9 +79,41 @@ def prepare_climate(root: Path, output_dir: Path, *, processed_at_utc: str, cata
     pd.DataFrame([{"variable": v["id"], "unit": v["unit"], "window_start": start, "window_end": end,
                    "expected_days": (end-start).days+1, "model": source["model"]}
                   for v in source["variables"]]).to_parquet(output_dir / "climate_meta.parquet", index=False)
+    build_points(current, source).to_parquet(output_dir / "climate_points.parquet", index=False)
     return {"observations": count, "municipalities": len(current), "variables": len(source["variables"]),
             "not_collected": sorted(codes-set(current)), "model": source["model"],
             "window": f"{start}/{end}"}
+
+
+
+def write_coverage(root: Path, municipalities):
+    base = Path(root) / "lake/bronze"
+    coverage = pd.read_parquet(base / "rpt_climate_coverage/data.parquet").sort_values("variable")
+    points = pd.read_parquet(base / "rpt_climate_points/data.parquet").sort_values("dico")
+    report = coverage.copy()
+    report["not_collected"] = report["not_collected_dico"].map(
+        lambda codes: "; ".join(f"{code} {municipalities.get(code, '')}" for code in codes))
+    report["gaps"] = report["gaps"].map(lambda gaps: "; ".join(
+        f"{gap['dico']} {municipalities.get(gap['dico'], '')}: {gap['missing_days']} dias"
+        for gap in ([] if gaps is None else gaps)))
+    report.drop(columns="not_collected_dico").to_csv(base / "climate_coverage.csv", sep=";", index=False, encoding="utf-8-sig")
+    point_report = points.copy()
+    point_report.insert(1, "name", point_report.dico.map(municipalities))
+    point_report.to_csv(base / "climate_points.csv", sep=";", index=False, encoding="utf-8-sig")
+    return coverage, points
+
+
+def format_coverage(frame, points):
+    first = frame.iloc[0]
+    lines = [f"Cobertura ({first.window_start} a {first.window_end}, modelo {first.model}):"]
+    for row in frame.itertuples():
+        lines.append(f"  {row.variable:<30} {row.municipalities_complete}/{row.municipalities_expected}"
+                     f"  com lacuna: {row.municipalities_with_gaps}  não coletados: {row.municipalities_not_collected}")
+    divergent = int(points["diverged"].eq(True).sum())
+    sea = int(points["elevation_m"].eq(0).sum())
+    threshold = points["threshold_km"].dropna().iloc[0]
+    lines.append(f"  Pontos divergentes (> {threshold:g} km): {divergent} | elevação 0 m: {sea}")
+    return "\n".join(lines)
 
 
 def _run_dbt(candidate: Path, silver: Path):
@@ -102,6 +134,37 @@ def _run_dbt(candidate: Path, silver: Path):
         raise ClimateBuildError(f"dbt build falhou (código {result.returncode}):\n{detail}")
 
 
+def _promote_climate(root: Path, candidate: Path):
+    """CSV e tabelas voltam juntos à versão anterior se qualquer renomeação falhar."""
+    changed = []
+    try:
+        for name in ('climate_coverage.csv', 'climate_points.csv'):
+            staged = candidate / 'lake/bronze' / name
+            current = root / 'lake/bronze' / name
+            backup = current.with_name(f'.previous-{name}-{candidate.name}')
+            current.parent.mkdir(parents=True, exist_ok=True)
+            existed = current.exists()
+            if existed:
+                os.replace(current, backup)
+            try:
+                os.replace(staged, current)
+            except OSError:
+                if existed:
+                    os.replace(backup, current)
+                raise
+            changed.append((current, staged, backup, existed))
+        promote_paths(root, candidate, PROMOTED)
+    except OSError:
+        for current, staged, backup, existed in reversed(changed):
+            os.replace(current, staged)
+            if existed:
+                os.replace(backup, current)
+        raise
+    for _, _, backup, existed in changed:
+        if existed:
+            backup.unlink()
+
+
 def build_climate(root=Path(".data"), *, catalog=None):
     root = Path(root).resolve()
     silver = root / "lake/silver"
@@ -116,8 +179,9 @@ def build_climate(root=Path(".data"), *, catalog=None):
         for relative in PROMOTED:
             (candidate / relative).mkdir(parents=True, exist_ok=True)
         _run_dbt(candidate, silver)
-        promote_paths(root, candidate, [r for r in PROMOTED if (candidate / r / "data.parquet").exists()])
-        return counts
+        coverage, points = write_coverage(candidate, {t["dico"]: t["name"] for t in load_climate_municipalities(silver)})
+        _promote_climate(root, candidate)
+        return {**counts, "coverage": coverage, "points": points}
     finally:
         if candidate.exists():
             shutil.rmtree(candidate)
@@ -137,6 +201,8 @@ def main(argv=None):
     print(f"Clima: {result['observations']} linhas de {result['municipalities']} municípios "
           f"({result['variables']} variáveis, {result['window']}, {result['model']})")
     print(f"  Bronze: {args.root / 'lake/bronze/stg_climate_daily'}")
+    print(format_coverage(result["coverage"], result["points"]))
+    print(f"  Detalhe: {args.root / 'lake/bronze/climate_coverage.csv'} e climate_points.csv")
     return 0
 
 

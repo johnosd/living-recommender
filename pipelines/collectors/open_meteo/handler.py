@@ -1,4 +1,5 @@
 """Coleta o clima diário com estado independente por município."""
+import hashlib
 import json
 
 from pipelines.collectors._shared.catalog import get_climate_source
@@ -8,9 +9,16 @@ from pipelines.collectors.open_meteo.municipalities import check_municipalities
 from pipelines.collectors.open_meteo.validate import validate_open_meteo_response
 
 
+def variables_signature(source: dict) -> str:
+    pairs = sorted((variable['id'], variable['unit']) for variable in source['variables'])
+    canonical = json.dumps(pairs, ensure_ascii=False, separators=(',', ':'))
+    return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+
+
 def is_current_state(state: dict, source: dict) -> bool:
     period = f"{source['window']['start']}/{source['window']['end']}"
-    return state.get("reference_period") == period and state.get("model") == source["model"]
+    return (state.get("reference_period") == period and state.get("model") == source["model"]
+            and state.get('variables_signature') == variables_signature(source))
 
 
 def collect_open_meteo(catalog, *, municipalities, storage, fetcher, run_id, collected_at_utc,
@@ -31,6 +39,7 @@ def collect_open_meteo(catalog, *, municipalities, storage, fetcher, run_id, col
         except (ValueError, OSError):
             doc = {}
         meta["entry_extra"] = {
+            'variables_signature': variables_signature(source),
             "model": source["model"], "requested_lat": item["latitude"], "requested_lon": item["longitude"],
             "returned_lat": doc.get("latitude"), "returned_lon": doc.get("longitude"),
             "elevation_m": doc.get("elevation"), "timezone": doc.get("timezone"),

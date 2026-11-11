@@ -141,7 +141,7 @@ Ao fim da transformação, o operador recebe um relatório que diz, por variáve
 **Cota e retomada**
 
 - **FR-012**: Ao receber a indicação de limite diário esgotado, o sistema DEVE parar de consultar a fonte, registrar no manifest os municípios restantes como `pending` (motivo: cota) e terminar com um código de saída distinto de sucesso e de falha de dado. Esgotamento dos limites por minuto ou por hora DEVE gerar espera limitada (um número máximo de esperas por município) e a coleta continua; se o limite persistir depois das esperas, ou se o operador optar por não esperar, o caso é tratado como cota esgotada, com os mesmos `pending` e o mesmo código de saída.
-- **FR-013**: Em uma nova execução, o sistema DEVE consultar apenas os municípios sem estado vigente `changed` para a mesma janela e modelo. Um município com estado vigente DEVE ser ignorado sem chamada à fonte, a menos que o operador peça uma recoleta explícita.
+- **FR-013**: Em uma nova execução, o sistema DEVE consultar apenas os municípios sem estado vigente `changed` para a mesma janela, modelo e conjunto de variáveis/unidades. Um município com estado vigente DEVE ser ignorado sem chamada à fonte, a menos que o operador peça uma recoleta explícita.
 - **FR-014**: O sistema DEVE permitir ao operador limitar a execução a um número máximo de municípios, para controlar o gasto de cota.
 - **FR-015**: O manifest DEVE permitir saber, a partir de uma ou várias execuções, quais municípios estão completos para a janela vigente e quais faltam.
 
@@ -212,3 +212,5 @@ Ao fim da transformação, o operador recebe um relatório que diz, por variáve
 
 - Q: A segunda execução, sem mudança na fonte, deve reconsultar os 308 municípios e registrar `unchanged` (US1/AC2, SC-001), ou pular os que já têm estado vigente (FR-013)? → A: Pular. Reconsultar custaria de novo toda a cota (~3 dias). Sem recoleta explícita, o comando não consulta a fonte e informa que não há nada a coletar; `unchanged` aparece quando o operador pede a recoleta explícita, para confirmar a fonte ou detectar revisões. US1/AC2–3 e SC-001 foram alinhados ao FR-013 (achado A-001 do Analyze).
 - Q: Os limites por minuto e por hora devem gerar espera ilimitada (FR-012 original)? → A: Não: espera **limitada** por município. Persistindo o limite depois das esperas, ou se o operador optar por não esperar, o caso é tratado como cota esgotada (`pending` e o mesmo código de saída), o que mantém a execução retomável em vez de bloqueá-la por horas. FR-012 e US2/AC3 foram alinhados (achado A-002 do Analyze). Os números exatos de esperas são do plano (D5).
+
+- Decisão durante execução (2026-11-11): mudanças no conjunto de variáveis ou nas unidades provocam nova coleta automaticamente, mesmo com janela e modelo iguais. Reordenar a lista não muda a configuração. Entradas antigas sem assinatura devem ser recoletadas.

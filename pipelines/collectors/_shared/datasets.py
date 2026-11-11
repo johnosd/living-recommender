@@ -201,8 +201,11 @@ def collect_items(
     try:
         for index, dataset in enumerate(todo):
             try:
+                state = states.get(dataset['id'])
+                if state is not None and state_is_current is not None and not state_is_current(dataset, state):
+                    state = None  # nova configuração precisa virar estado, mesmo com bytes iguais
                 entries.append(_collect_one(
-                    dataset, source_id=source_id, state=states.get(dataset["id"]), storage=storage,
+                    dataset, source_id=source_id, state=state, storage=storage,
                     fetcher=fetcher, validator=validator, fingerprint=fingerprint, run_id=run_id,
                     work_dir=work_dir,
                 ))

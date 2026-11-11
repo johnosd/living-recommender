@@ -201,15 +201,19 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 ### Implementation
 
-- [ ] T029 [P] [US4] `+ pipelines/collectors/open_meteo/points.py`: `haversine_km` (raio 6371,0088 km) e `build_points(states, source)` → `climate_points.parquet` (colunas de `data-model.md` §4, `diverged = distance_km > point_divergence_km`); `prepare_climate` (T025) passa a gravá-lo (FR-020)
-- [ ] T030 [US4] `+ analytics/dbt/models/climate/rpt_climate_coverage.sql` e `rpt_climate_points.sql` (definições de `logic/coleta-clima.md` §8 e `data-model.md` §5) + testes em `schema.yml` (`variable` único e não nulo; contagens consistentes: completos + com lacuna + não coletados = 308) e `tests/climate_coverage_consistency.sql` (FR-019, FR-020)
-- [ ] T031 [US4] ~ `pipelines/cli/build_climate.py`: `write_coverage` (`climate_coverage.csv` e `climate_points.csv`, `;` e `utf-8-sig`, ausentes com nome) e `format_coverage` (tabela legível com janela, modelo, divergentes e elevação 0 m), no estilo de `build_observations.py` (FR-020; US4/AC2)
-- [ ] T032 [P] [US4] ~ `.github/workflows/python.yml`: passos "Prepare climate fixture" e "Build dbt climate from fixture" (`OBS_SILVER_DIR=.data/ci-climate/lake/silver`, `--select tag:climate`), com `hashFiles` como os da spec 002 (SC-007)
+- [X] T029 [P] [US4] `+ pipelines/collectors/open_meteo/points.py`: `haversine_km` (raio 6371,0088 km) e `build_points(states, source)` → `climate_points.parquet` (colunas de `data-model.md` §4, `diverged = distance_km > point_divergence_km`); `prepare_climate` (T025) passa a gravá-lo (FR-020)
+- [X] T030 [US4] `+ analytics/dbt/models/climate/rpt_climate_coverage.sql` e `rpt_climate_points.sql` (definições de `logic/coleta-clima.md` §8 e `data-model.md` §5) + testes em `schema.yml` (`variable` único e não nulo; contagens consistentes: completos + com lacuna + não coletados = 308) e `tests/climate_coverage_consistency.sql` (FR-019, FR-020)
+- [X] T031 [US4] ~ `pipelines/cli/build_climate.py`: `write_coverage` (`climate_coverage.csv` e `climate_points.csv`, `;` e `utf-8-sig`, ausentes com nome) e `format_coverage` (tabela legível com janela, modelo, divergentes e elevação 0 m), no estilo de `build_observations.py` (FR-020; US4/AC2)
+- [X] T032 [P] [US4] ~ `.github/workflows/python.yml`: passos "Prepare climate fixture" e "Build dbt climate from fixture" (`OBS_SILVER_DIR=.data/ci-climate/lake/silver`, `--select tag:climate`), com `hashFiles` como os da spec 002 (SC-007)
 
 ### Testes da Fase
 
-- [ ] T033 [P] [US4] `tests/unit/test_climate_points.py`: haversine contra valores conhecidos (Lisboa–Porto ≈ 274 km), `diverged` no limite de 25 km, elevação 0 preservada
-- [ ] T034 [US4] `tests/integration/test_climate_coverage.py`: fixture com 300 completos, 3 com lacuna, 5 não coletados e 1 ponto a 40 km → contagens, listas e CSV conforme US4/AC1; variável sem nenhum dado aparece com cobertura 0; relatório preservado junto da saída (US4/AC1–3)
+- [X] T033 [P] [US4] `tests/unit/test_climate_points.py`: haversine contra valores conhecidos (Lisboa–Porto ≈ 274 km), `diverged` no limite de 25 km, elevação 0 preservada
+- [X] T034 [US4] `tests/integration/test_climate_coverage.py`: fixture com 300 completos, 3 com lacuna, 5 não coletados e 1 ponto a 40 km → contagens, listas e CSV conforme US4/AC1; variável sem nenhum dado aparece com cobertura 0; relatório preservado junto da saída (US4/AC1–3)
+
+- [X] T034+1 [US4] Descoberta na revisão de T034: persistir assinatura de variáveis/unidades e comparar configuração antes de deduplicar; modelo novo com JSON idêntico deve virar estado `changed` (decisão explícita do autor, R-012); testes em `test_open_meteo_state.py`.
+- [X] T034+2 [US4] Descoberta na revisão de T031: promover os dois CSV e as três tabelas com rollback conjunto; testar destino bloqueado em cada caminho (`test_climate_promotion.py`, R-013).
+- [X] T034+3 [US4] Descoberta na revisão de T034: ignorar extras antes da transformação; testar variável extra malformada tolerada pelo validador (R-014).
 
 **Critério de Conclusão**: T033 e T034 verdes; `dbt build --select tag:climate` verde na fixture, local e no CI; `climate_coverage.csv` e `climate_points.csv` legíveis; contratos 5/5 e três travas íntegras.
 
@@ -217,11 +221,12 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Registro da Fase**:
 
-- Status: (vazio — preenchido pelo sdd-execute ao fechar o checkpoint)
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: concluída
+- Feito: Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida
+- Contrato: três travas íntegras (001, 002, 003); 5/5 contratos verdes na suíte completa
+- Testes executados: uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; contratos 5/5; dbt tag:climate 23/23; ruff limpo; três travas íntegras
+- Pendências: Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes
+
 
 ---
 
@@ -241,7 +246,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] Fase 3 (User Story 1) concluída
 - [X] Fase 4 (User Story 2) concluída
 - [X] Fase 5 (User Story 3) concluída
-- [ ] Fase 6 (User Story 4) concluída
+- [X] Fase 6 (User Story 4) concluída
 - [ ] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro para 001, 002 e 003
 - [ ] `uv run --locked ruff check pipelines tests` limpo
 - [ ] `uv run --locked python -m pytest -q --basetemp .pytest_tmp` verde, sem rede

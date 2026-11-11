@@ -46,12 +46,13 @@ Ordem e determinismo: o handler entrega os itens ordenados por `dico`; `max_item
 ```python
 def is_current(item, state, source) -> bool:
     return (state.get("reference_period") == f"{source['window']['start']}/{source['window']['end']}"
-            and state.get("model") == source["model"])
+            and state.get("model") == source["model"]
+            and state.get("variables_signature") == variables_signature(source))
 ```
 
 - Sem `--recollect`: `skip_current=True`. Município com estado atual não gera chamada; aparece em `skipped_current`.
-- Com `--recollect`: `skip_current=False`. O estado anterior (de qualquer janela) é comparado pela impressão digital: igual → `unchanged`; diferente → `changed`.
-- Janela ou modelo novos no catálogo: nenhum estado é atual, os 308 voltam a ser trabalho, e os brutos antigos permanecem (constitution V).
+- Com `--recollect`: `skip_current=False`. Somente um estado de configuração compatível é comparado pela impressão digital; uma configuração diferente exige `changed`, mesmo com JSON idêntico. Na mesma configuração: igual → `unchanged`; diferente → `changed`.
+- Janela, modelo ou variáveis/unidades novos no catálogo: nenhum estado é atual, os 308 voltam a ser trabalho, e os brutos antigos permanecem (constitution V).
 - `remaining` (campo do resultado) = municípios sem estado atual que **não** foram tentados por causa de `max_items`. Os `pending` por cota estão no manifest e não entram em `remaining`. A CLI mostra "restantes" como `pending + remaining`.
 
 ## 3. Impressão digital (T009)
@@ -156,12 +157,12 @@ O fetcher injetado só escreve o arquivo; quem registra metadados é o handler, 
 
 ## 7. Staging (T024, T025)
 
-`read_climate_response(path)` (T024): lê o JSON e devolve o DataFrame `variable, date, value, unit`.
+`read_climate_response(path, *, variables=None)` (T024): lê o JSON e devolve o DataFrame `variable, date, value, unit`.
 
 - `date`: cada texto de `daily.time` vira `datetime.date` por `date.fromisoformat`. **Nenhuma** conversão de fuso, `pd.to_datetime` com `utc=True` ou `tz_localize`.
 - `value`: `None` → `NaN` em `float64`. Nenhum `fillna`. Valor `0` legítimo continua `0`.
 - `unit`: `daily_units[<variável>]` literal.
-- Só as variáveis do bruto, na ordem do documento; um município completo tem `13 × 730` linhas.
+- Só as variáveis selecionadas do catálogo, na ordem do documento; extras são ignoradas antes da leitura de valores/unidades; um município completo tem `13 × 730` linhas.
 
 `prepare_climate(root, output_dir, *, processed_at_utc, catalog=None)` (T025) em `pipelines/cli/build_climate.py`:
 
@@ -188,3 +189,8 @@ Falhas: nenhum município atual → erro; bruto ausente ou com `sha256`/tamanho 
 - O relatório cobre **todas** as variáveis do catálogo (via `climate_meta.parquet`), mesmo as sem nenhuma linha.
 - `rpt_climate_points` cobre os 308 da dimensão; `collected = false` para os não coletados, com as colunas de ponto nulas.
 - Ausência nunca é preenchida, nem por município vizinho que partilhe a mesma célula da grade (R-004).
+
+## Emendas verificadas na execução
+
+- `variables_signature`: SHA-256 do JSON canônico da lista ordenada de pares `(id, unit)`. A ordem declarativa não muda a assinatura. Janela/modelo continuam separados. Estado sem assinatura não é atual.
+- O build inclui ambos os CSV e as três tabelas na mesma promoção com rollback (R-013).

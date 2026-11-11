@@ -25,3 +25,18 @@ models:
         data_tests: [not_null]
       - name: license_id
         data_tests: [not_null]
+
+  - name: rpt_climate_coverage
+    description: Cobertura por variável, com ausentes e lacunas explícitos; missing_days_total soma lacunas dos coletados.
+    columns:
+      - name: variable
+        data_tests: [not_null, unique]
+      - name: municipalities_expected
+        data_tests: [not_null]
+  - name: rpt_climate_points
+    description: Todos os municípios, com distância até a célula da fonte quando coletados.
+    columns:
+      - name: dico
+        data_tests: [not_null, unique]
+      - name: collected
+        data_tests: [not_null]

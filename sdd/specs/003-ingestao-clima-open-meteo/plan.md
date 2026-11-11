@@ -33,7 +33,7 @@ Como o plano gratuito comporta ~100 a 140 municípios por dia, a coleta é **ret
 - **D3. `pending` é uma entrada, nunca estado.** Entrada `pending` exige `error`, não tem `key`/`sha256` e é ignorada por `latest_dataset_states`. Status da execução: `failed` se todas falharam; `partial` se houver `failed` ou `pending`; senão `changed`/`unchanged`.
 - **D4. Modelo e requisição fixos.** `models=era5`, `timezone=auto`, 13 variáveis do catálogo, **uma requisição por município com a janela inteira**. Mudar modelo, janela ou variáveis é mudança de catálogo e torna todos os municípios pendentes de novo; os brutos antigos permanecem.
 - **D5. Cota por classificação do 429.** `reason` com `minutely` → espera 61 s (até 5×); `hourly` → espera 3.605 s (1×); `daily` → `QuotaExhausted` sem esperar; 429 sem palavra reconhecida é tratado como `hourly`. `--no-wait` e esperas esgotadas viram `QuotaExhausted`. `QuotaExhausted` e Ctrl+C marcam o item corrente e os seguintes como `pending` e a execução sai com **código 2**; `failed` sai com **1** e vence.
-- **D6. Estado atual.** Um município está atual se o `reference_period` (a janela) e o `model` da sua entrada `changed` mais recente forem iguais aos do catálogo. Sem `--recollect`, a execução pula os atuais sem chamar a fonte; com ele, consulta e compara a impressão digital. Sem nada a fazer: `up_to_date`, sem manifest e sem consumir `run_id`.
+- **D6. Estado atual.** Um município está atual se o `reference_period` (a janela) o `model` e a assinatura ordenada de variáveis/unidades da sua entrada `changed` mais recente forem iguais aos do catálogo. Entradas sem assinatura exigem recoleta; reordenar a lista não altera a assinatura. Sem `--recollect`, a execução pula os atuais sem chamar a fonte; com ele, consulta e compara a impressão digital. Sem nada a fazer: `up_to_date`, sem manifest e sem consumir `run_id`.
 - **D7. Mudança por impressão digital sem `generationtime_ms`.** O `sha256` do manifest é o dos bytes; o `fingerprint` é o JSON canônico sem `generationtime_ms`, o único campo volátil observado (research R5). O bruto guarda os bytes originais.
 - **D8. O dia é o dia local.** A data de cada observação é o texto de `daily.time` (a fonte agrega no fuso do município com `timezone=auto`), convertido para `date` sem deslocamento de fuso.
 - **D9. Ausente é ausente.** `null` da fonte → valor nulo; `0` legítimo continua `0`; nenhum `fillna`, interpolação, herança entre municípios que dividem a mesma célula da grade, nem conversão de unidade. Nulos esparsos **não** reprovam o bruto; variável inteiramente nula, dias faltantes ou unidade diferente **reprovam**.
@@ -162,9 +162,9 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Fase 5 | Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes |
-| Evidência | pytest completo 197/197; contratos 5/5; integração build 4/4; dbt climate 14/14; ruff e 3 travas íntegros |
-| Pendente | Relatórios US4; catálogo explícito das fixtures documentado em R-011 |
+| Fase 6 | Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida |
+| Evidência | uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; contratos 5/5; dbt tag:climate 23/23; ruff limpo; três travas íntegras |
+| Pendente | Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes |
 
 ## Riscos e Decisões
 
@@ -188,6 +188,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | R-011 | Fixtures usam janela curta, diferente do catálogo real de 730 dias. | Baixo: build não deve confundir períodos. | `build_climate` recebe catálogo injetado ou `--catalog` explícito; o seed grava `catalog.yml`. Quickstart usa esse argumento, sem alterar o catálogo de produção. |
 
+| R-012 | D4 e D6 divergiam sobre mudança de variáveis. | Alto: pularia coleta de variável nova. | Resolvido: autor escolheu recoleta automática em 2026-11-11; assinatura das variáveis/unidades persistida e comparada junto com janela/modelo. Deduplicação só entre configurações compatíveis, inclusive na troca de modelo com JSON igual. |
+| R-013 | CSV aberto no Excel pode falhar depois da promoção dos Parquet. | Alto: relatórios e tabelas ficariam divergentes. | Promoção dos dois CSV e três tabelas numa transação com rollback; testes de PermissionError em cada destino; helper compartilhado das specs anteriores preservado. |
+| R-014 | Variável extra malformada é tolerada na coleta mas podia bloquear a transformação. | Baixo: bruto aceito não chegaria ao staging. | Filtrar as variáveis declaradas antes de percorrer as séries; parâmetro opcional mantém a interface dos contratos. |
+
 ## Execution Notes
 
 <!--
@@ -203,9 +207,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 3 | Coleta 308 municípios local e S3 simulado; validação e impressão digital implementadas | US2 retomada já verde pelo núcleo; faltam HTTP429 e transformação. S3 teve 2 iterações por filtro do snapshot |
 | 2026-11-11 | Fase 4 | Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2 | Transformação e build US3 |
 | 2026-11-11 | Fase 5 | Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes | Relatórios US4; catálogo explícito das fixtures documentado em R-011 |
+| 2026-11-11 | Fase 6 | Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida | Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes |
 
 
-**PRÓXIMO**: fase 6; Relatórios US4; catálogo explícito das fixtures documentado em R-011
+**PRÓXIMO**: fase 7; Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes
 
 ## Arquivos Principais
 

@@ -21,3 +21,12 @@ def test_dates_nulls_zero_and_units(tmp_path, start, end):
     assert sorted(set(frame['date'])) == [datetime.date.fromisoformat(s) for s in doc['daily']['time']]
     assert frame[frame.variable == 'precipitation_sum']['value'].iloc[0] == 0
     assert dict(zip(frame.variable, frame.unit, strict=True)) == VARIABLES
+
+
+def test_catalog_selection_ignores_malformed_extra_series(tmp_path):
+    doc = json.loads(open_meteo_response())
+    doc['daily']['extra_not_requested'] = ['unexpected']
+    path = tmp_path / 'extra.json'
+    path.write_text(json.dumps(doc), encoding='utf-8')
+    frame = read_climate_response(path, variables=list(VARIABLES))
+    assert len(frame) == 65 and set(frame.variable) == set(VARIABLES)

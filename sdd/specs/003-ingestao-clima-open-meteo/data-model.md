@@ -83,6 +83,7 @@ Entrada do manifest para um município (campos novos em **negrito**):
 | `status` | `changed`, `unchanged`, `failed` ou **`pending`** |
 | `key`, `sha256`, `bytes`, `fingerprint` | como na spec 002; `fingerprint` é a impressão digital sem `generationtime_ms` (R5) |
 | `reference_period` | `"2024-11-01/2026-10-31"` (a janela) |
+| **`variables_signature`** | SHA-256 dos pares `(id, unit)` ordenados, configuração da coleta |
 | **`model`** | `"era5"` |
 | **`requested_lat`**, **`requested_lon`** | coordenadas do ponto representativo (as pedidas) |
 | **`returned_lat`**, **`returned_lon`** | coordenadas devolvidas pela fonte (a célula da grade) |
@@ -91,7 +92,7 @@ Entrada do manifest para um município (campos novos em **negrito**):
 
 Uma entrada `pending` traz só `dataset_id`, `status`, `error` e os campos nulos padrão; nunca `key`. O status da execução (`run_status`) passa a ser `failed` se **todas** falharam; `partial` se alguma falhou ou ficou `pending`; senão `changed` (se alguma mudou) ou `unchanged`.
 
-O estado vigente de um município é a entrada `changed` mais recente (`latest_dataset_states`, inalterado). Ele é **atual** se `reference_period` for igual à janela do catálogo **e** `model` for igual ao do catálogo; senão o município conta como pendente de trabalho (janela ou modelo novo).
+O estado vigente de um município é a entrada `changed` mais recente (`latest_dataset_states`, inalterado). Ele é **atual** se `reference_period` for igual à janela do catálogo **e** `model` e `variables_signature` forem iguais aos do catálogo; senão o município conta como pendente de trabalho (janela, modelo ou variáveis/unidades novos).
 
 ## 4. Staging: `climate_daily.parquet` (preparado em Python, T025; os pontos, T029)
 
@@ -108,7 +109,7 @@ Entrada do dbt. Uma linha por município, variável e dia:
 | `model` | texto | `model` da entrada |
 | `window_start`, `window_end` | data | `reference_period` da entrada |
 | `source_run_id` | texto | `run_id` do estado |
-| `license_id`, `attribution` | texto | catálogo |
+| `license_id`, `attribution`, `usage_restriction` | texto | catálogo |
 | `collected_at_utc`, `processed_at_utc` | texto | estado / hora do build |
 
 Chave: (`dico`, `variable`, `date`). Volume: 308 × 13 × 730 = **2.922.920 linhas**. A escrita é em fluxo (um grupo de linhas por município) para não manter tudo em memória.

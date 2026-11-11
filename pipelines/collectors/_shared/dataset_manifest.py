@@ -80,6 +80,9 @@ def make_dataset_manifest(
     }
     if source.get("attribution"):
         manifest["attribution"] = source["attribution"]
+    for field in ('model', 'window', 'variables', 'usage_restriction'):
+        if source.get(field) is not None:
+            manifest[field] = source[field]
     return manifest
 
 
