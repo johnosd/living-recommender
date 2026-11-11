@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  # Silver da spec 001, já promovida em `lake/silver`; o build exige que ela exista.
+  - name: caop_silver
+    meta:
+      external_location: "{{ env_var('OBS_SILVER_DIR', '.data/ci-obs/lake/silver') }}/{name}/data.parquet"
+    tables:
+      - name: dim_municipality
+
+models:
+  - name: stg_observation
+    description: Observações municipais em formato longo (Pordata e INE), uma linha por dataset, município, período e filtros.
+    columns:
+      - name: source_id
+        data_tests: [not_null]
+      - name: dataset_id
+        data_tests: [not_null]
+      - name: dico
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: period
+        data_tests: [not_null]
+      - name: unit
+        data_tests: [not_null]
+      - name: source_run_id
+        data_tests: [not_null]
+      - name: license_id
+        data_tests: [not_null]
+
+  - name: rpt_observation_coverage
+    description: Cobertura municipal por dataset no período mais recente; a ausência é listada, nunca imputada.
+    columns:
+      - name: dataset_id
+        data_tests: [not_null, unique]
+      - name: latest_period
+        data_tests: [not_null]
+      - name: municipalities_expected
+        data_tests: [not_null]

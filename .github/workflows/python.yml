@@ -26,7 +26,13 @@ jobs:
         run: uv run --locked python -m tests.fixtures.caop.ci_seed --root .data/ci
       - name: Build dbt from fixture
         if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/caop/ci_seed.py') != '' }}
-        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:caop
+      - name: Prepare observations fixture
+        if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/observations/ci_seed.py') != '' }}
+        run: uv run --locked python -m tests.fixtures.observations.ci_seed --root .data/ci-obs
+      - name: Build dbt observations from fixture
+        if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/observations/ci_seed.py') != '' }}
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:observations
 
   secrets:
     if: github.event_name == 'pull_request'

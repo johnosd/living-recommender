@@ -15,3 +15,61 @@ sources:
       continente: https://geo2.dgterritorio.gov.pt/caop/CAOP_Continente_2025-gpkg.zip
       acores: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAA_2025-gpkg.zip
       madeira: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAM_2025-gpkg.zip
+
+  pordata:
+    id: pordata
+    publisher: PORDATA (Fundação Francisco Manuel dos Santos)
+    responsible_party: living-recommender
+    # R-001 (plan 002): os Termos Legais do Pordata não concedem licença de reutilização;
+    # o autor decidiu coletar mesmo assim, como risco aceito.
+    license_id: not_granted_by_source
+    attribution: "Fonte: PORDATA"
+    collection_method: http_download
+    frequency: monthly
+    territorial_level: municipality
+    name_column: "Nome Região (Portugal)"
+    expected_labels: [Ano, "Nome Região (Portugal)", "Âmbito Geográfico", Escala, Símbolo, Valor]
+    datasets:
+      - {id: populacao_residente_sexo_idade, pordata_table: 1, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_4/1.csv"}
+      - {id: densidade_populacional, pordata_table: 4, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_4/4.csv"}
+      - {id: agencias_bancarias, pordata_table: 295, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/295.csv"}
+      - {id: populacao_estrangeira_residente, pordata_table: 354, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/354.csv"}
+      - {id: ensino_superior, pordata_table: 375, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/375.csv"}
+      - {id: ensino_nao_superior, pordata_table: 379, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/379.csv"}
+      - {id: desemprego_registado, pordata_table: 439, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/439.csv"}
+      - {id: farmacias, pordata_table: 464, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/464.csv"}
+      - {id: hospitais, pordata_table: 470, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/470.csv"}
+      - {id: crimes_registados_policias, pordata_table: 559, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_14/559.csv"}
+      - {id: crimes_por_categoria, pordata_table: 560, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/560.csv"}
+      - {id: ganho_medio_mensal, pordata_table: 581, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/581.csv"}
+      - {id: recintos_cinema, pordata_table: 623, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/623.csv"}
+      - {id: sessoes_espetaculos_ao_vivo, pordata_table: 631, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/631.csv"}
+      - {id: edificios_concluidos, pordata_table: 978, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/978.csv"}
+      - {id: fogos_concluidos, pordata_table: 980, origin: "https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/980.csv"}
+      # Sem URL estável: o site só exporta por botão JavaScript. O operador entrega o Excel
+      # (load_pordata_manual). Também existe o indicador equivalente na fonte `ine`.
+      - {id: poder_compra_per_capita_xlsx, collection_method: manual_upload, format: xlsx, unit: "Número índice (Portugal = 100)"}
+
+  ine:
+    id: ine
+    publisher: Instituto Nacional de Estatística, IP – Portugal
+    responsible_party: living-recommender
+    license_id: CC-BY-4.0
+    attribution: "Instituto Nacional de Estatística, IP – Portugal"
+    collection_method: api_json
+    frequency: monthly
+    territorial_level: municipality
+    api_url: https://www.ine.pt/ine/json_indicador/pindica.jsp
+    datasets:
+      - id: rendas_novos_contratos
+        indicator: "0014698"
+        unit: "€/m²"
+        params: {Dim1: T, Dim2: "lvl@5"}
+      - id: taxa_criminalidade
+        indicator: "0008074"
+        unit: "‰"
+        params: {Dim1: T, Dim2: "lvl@5", Dim3: "T,1,2,3,4,5,6"}
+      - id: poder_compra_per_capita
+        indicator: "0014580"
+        unit: "Número índice (Portugal = 100)"
+        params: {Dim1: T, Dim2: "lvl@5"}

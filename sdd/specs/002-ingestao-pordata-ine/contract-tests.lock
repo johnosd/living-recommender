@@ -1,0 +1,12 @@
+{
+  "feature": "002-ingestao-pordata-ine",
+  "lockedAt": "2026-11-11 15:34",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_dataset_ingestion_contract.py",
+      "sha256": "d0a426f3bcb79153418e262b18134152a8584ecb78f415ac21173badc450a602",
+      "tests": "unknown"
+    }
+  ]
+}

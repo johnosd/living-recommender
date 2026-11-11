@@ -1,3 +1,4 @@
+{{ config(tags=['caop']) }}
 -- Uma linha retornada reprova o build. O ponto dentro do polígono é verificado
 -- pelo normalizador e novamente pela CLI antes da promoção da Silver.
 with municipalities as (

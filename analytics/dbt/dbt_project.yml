@@ -6,3 +6,14 @@ model-paths: ['models']
 test-paths: ['tests']
 target-path: 'target'
 clean-targets: ['target']
+
+# Cada feature tem sua tag e cada build roda `--select tag:<feature>`; um `dbt build` sem
+# seleção executaria modelos sem as entradas da outra feature (plan 002, R-007).
+models:
+  caop_territory:
+    staging:
+      +tags: ['caop']
+    marts:
+      +tags: ['caop']
+    bronze:
+      +tags: ['observations']

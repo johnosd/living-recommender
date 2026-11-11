@@ -134,12 +134,13 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 
 | Área | Estado |
 | --- | --- |
-| Fase | Todas as fases concluídas, exceto a Phase 7 (Convergence), parcial: T037 e T039 feitas; resta a T038 (enviar os commits e conferir o CI remoto), que exige autorização do usuário para push/PR. |
+| Fase | Todas as fases concluídas, incluindo a Phase 7 (Convergence): T001–T039. Falta apenas rodar `sdd-converge` outra vez para confirmar a convergência. |
 | Fonte real | Três ZIPs da CAOP2025 coletados em `.data/raw/`; recoleta real de 2026-11-11 deu `unchanged` (mesmos bytes). Bronze/Silver locais com 308 municípios, 3259 freguesias e 18 `dtmnfr` alfanuméricos. |
 | Coleta e transformação | Coletor com destino local ou S3 (`--s3 --bucket [--prefix]`), checksums e manifests; normalização geoespacial e `dbt build` em área temporária com promoção após qualidade. O build lê só do disco local. |
 | Visualização | `.data/explore/caop.html`, `municipios.csv` e `freguesias.csv` gerados da Silver real; guia em `docs/runbooks/coletas.md`. |
 | Testes | 38/38 pytest (8 de S3 simulado com moto), Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local repetido após a simplificação (308 municípios, 3259 freguesias). Nenhum teste contra AWS real. |
-| CI | O workflow `Python quality` passou no GitHub em `8dd4ca3` (lint, pytest, fixture e `dbt build`). Os commits `8814d8a` e `a13a43c` (simplificação e S3) ainda não foram enviados, e o job `secrets` (só em PR) nunca rodou no GitHub. O mesmo `gitleaks` v8.30.1 rodou localmente via Docker sobre os 6 commits: `no leaks found`. |
+| CI | Verde no GitHub em `f6fce21`, nos runs de push (43068328762) e de pull_request (43068428750): job `quality` (lint, pytest, fixture e `dbt build`) e job `secrets` (gitleaks sobre o histórico). PR #1 mergeado em `main`. Histórico: o workflow já havia passado em `8dd4ca3`.
+| CI (histórico) | O workflow `Python quality` passou no GitHub em `8dd4ca3` (lint, pytest, fixture e `dbt build`). Os commits `8814d8a` e `a13a43c` (simplificação e S3) ainda não foram enviados, e o job `secrets` (só em PR) nunca rodou no GitHub. O mesmo `gitleaks` v8.30.1 rodou localmente via Docker sobre os 6 commits: `no leaks found`; o job `quality` foi reproduzido num container Linux a partir de `f6fce21` (37 passed, 1 skipped do Windows, dbt 31/31), sem substituir o run do GitHub. |
 
 ## Riscos e Decisões
 
@@ -149,8 +150,8 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | --- | --- | --- | --- |
 | R-001 | Esquema/camadas dos três GeoPackages reais ainda não inspecionados. | Alto: mapeamento e validação P1/P2. | Resolvido: T011 inspecionou três ZIPs/quatro GeoPackages reais, registrou camadas/campos/CRS em `research.md` R1 e criou fixture sintética. |
 | R-002 | S3 não transaciona três objetos; crash pode deixar órfãos físicos. | Médio: limpeza operacional, sem visibilidade lógica. | Manifest `changed` só ao fim; leitores ignoram órfãos; remover em recuperação; falhas capturadas limpam run. |
-| R-003 | DGT pode mudar URL, edição ou licença. | Médio: coleta/atribuição. | Catálogo revisado por edição; metadados registrados no manifest; erro explícito para HTML/ZIP inválido. |
-| R-004 | CRS distintos e multipartes tornam área/ponto fáceis de errar. | Alto: dimensões incorretas. | GeoPandas por região/grupo, testes de contenção e fixture com exclave; 308 municípios como gate. |
+| R-003 | DGT pode mudar URL, edição ou licença. | Médio: coleta/atribuição. | Resolvido: catálogo revisado por edição (reconferido em 2026-11-04 e na recoleta real de 2026-11-11); metadados registrados no manifest; erro explícito para HTML/ZIP inválido. |
+| R-004 | CRS distintos e multipartes tornam área/ponto fáceis de errar. | Alto: dimensões incorretas. | Resolvido: GeoPandas por região/grupo, testes de contenção e fixture com exclave; 308 municípios como gate. |
 | R-005 | A CAOP tem três URLs, enquanto `source_url` estava descrito no singular. | Médio: ambiguidade no schema do manifest. | Resolvido: `spec.md` explicita `source_url` como mapa por região; catálogo e `manifest.py` usam esse formato. |
 | R-006 | A US2/AC1 exigia `dicofre` de seis dígitos, mas 18 códigos oficiais CAOP2025 têm letras após os quatro dígitos municipais. | Alto: o aceite excluiria freguesias válidas ou exigiria inventar códigos. | Resolvido: autor aprovou emenda de US2/AC1 e `data-model.md` para seis caracteres (`[0-9]{4}[0-9A-Z]{2}`), preservando `dtmnfr` oficial; US2 liberada. |
 | R-007 | `Path.resolve()` no Windows retornou ocasionalmente `\\?\C:\...` para o mesmo caminho durante duas coletas concorrentes, e a comparação literal o tratou como fora da raiz. | Médio: teste de concorrência e coleta local podem falhar sem corrupção do bruto. | Resolvido: normalizar prefixo Windows antes da checagem de contenção; regressão reproduziu o erro antes da correção e 30 repetições da concorrência passaram depois. |
@@ -171,8 +172,10 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | 2026-11-11 | US3 | T025–T027 concluídas: `S3Storage` com escrita condicional, `--s3 --bucket [--prefix]`, preflight antes de qualquer listagem; 8 testes com S3 simulado cobrem paridade com o local (AC1), falha antes do download (AC2), modo local sem SDK (AC3) e limpeza/rerun após falha; 38 pytest e 31 passos dbt verdes. | Verificar `IfNoneMatch` num bucket real (R-008); CI remoto no GitHub; Phase 6 (README, quickstart, gate final). |
 | 2026-11-11 | Phase 6 (Polish) | T028–T030 concluídas (e T037 junto com a T028): README e `.docs/fontes_de_dados.md` alinhados ao código; quickstart executado com coleta real contra a DGT (`unchanged`, 47 s, bytes idênticos aos de 04/11) e build/visualização sobre o dado real; gate local com ruff, 38 pytest, 31 passos dbt e trava íntegra. | `gitleaks` não rodou localmente (Docker parado); CI remoto dos commits atuais e job `secrets` (T038); `quickstart.md` ainda defasado (T039). |
 | 2026-11-11 | Phase 7 (Convergence) | T037 e T039 concluídas: `.docs/fontes_de_dados.md` e `quickstart.md` alinhados ao código; `gitleaks` v8.30.1 do CI executado localmente via Docker (`no leaks found`, 6 commits). | T038: push dos commits `8814d8a` e `a13a43c`, conferência do workflow no Linux e exercício do job `secrets` em PR (exige autorização). |
+| 2026-11-11 | Phase 7 (Convergence) | Job `quality` reproduzido em container Linux (Python 3.12.12) a partir de `f6fce21`: ruff limpo, 37 passed e 1 skipped (teste só do Windows), `dbt build` 31/31. Branch 3 commits à frente do `origin`; nada enviado. | T038: run real no GitHub e job `secrets` em PR, que exigem push/PR autorizados pelo usuário. |
+| 2026-11-11 | Phase 7 (Convergence) | T038 concluída com evidência real: o usuário enviou os commits e abriu o PR #1 (mergeado em `main`); `Python quality` verde em push e em pull_request, com `quality` e `secrets` passando em `f6fce21`. Phase 7 completa (T037–T039). | Rodar `sdd-converge` para confirmar a convergência; R-008 (S3 real) segue aberto. |
 
-**PRÓXIMO**: obter autorização do usuário para a T038 (push dos commits e, se desejado, PR para exercitar o job `secrets`), conferir o workflow no GitHub e então rodar `sdd-converge` de novo.
+**PRÓXIMO**: rodar `sdd-converge` para confirmar que as lacunas F-001 a F-004 foram cobertas e, se convergir limpo, sincronizar o status final.
 
 ## Arquivos Principais
 
@@ -198,3 +201,25 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 - A Fase 4 preserva `dtmnfr` como `dicofre` texto de seis caracteres; a emenda de US2/AC1 foi aprovada pelo autor e registrada em R-006.
 - O explorador HTML é gerado a partir da Silver com `uv run --locked python -m pipelines.cli.view_caop --root .data`; fica fora do Git em `.data/explore/`. A automação do navegador recusou a conexão nesta sessão; CSV, payload e sintaxe JavaScript foram verificados localmente.
 - Armadilhas da simplificação (2026-11-11), para não repetir a proposta: `--local` é contrato da CLI e é passado pelos testes; `_validate_spatial` de `build_caop.py` valida a Silver entregue (WGS84 + dbt) e não duplica o `normalize_layer`; o `hasattr(storage, "preflight")` do coletor é exigido porque o `MemoryStorage` do contrato travado não tem `preflight`; `delete_prefix` será usado na recuperação de órfãos S3 (R-002); os `cast(...)` do staging protegem o tipo de colunas inteiramente nulas, como `parish_type`.
+
+## Resultado Final
+
+**Convergida em 2026-11-11** (`sdd-converge`, segunda passada: nenhum achado acionável). 50/50 tasks (T001–T039), 5/5 contratos P1 verdes e trava íntegra; PR #1 mergeado em `main` com `Python quality` (`quality` e `secrets`) verde no GitHub em push e em pull_request.
+
+**O que foi construído.** Um coletor da CAOP2025 com destino local ou S3 (`collect_caop --local | --s3 --bucket [--prefix]`): baixa os três ZIPs da DGT, valida ZIP/GeoPackage/camadas/códigos/CRS antes de gravar, guarda o raw imutável com SHA-256 e registra um manifest `changed`, `unchanged` ou `failed`. A partir do último manifest `changed`, `build_caop` prepara Parquet (área por CRS métrico e `representative_point()` em WGS84), roda o dbt-duckdb (Bronze e Silver, com testes) em área temporária e só promove a saída após todos os gates. Resultado real: 308 municípios e 3259 freguesias (18 códigos com letras preservados). Há também `view_caop` (explorador HTML e CSVs). Sem Gold, `published/` nem deploy AWS, como previsto.
+
+**Desvios em relação ao plano original** (detalhe nas Execution Notes):
+
+- `dicofre` passou a texto de seis caracteres `[0-9]{4}[0-9A-Z]{2}` por causa dos 18 códigos oficiais alfanuméricos (R-006, emenda aprovada na US2/AC1).
+- `source_url` do manifest virou mapa por região (R-005).
+- Foram acrescentadas T031 (explorador HTML/CSV, a pedido do usuário) e T032 (comparação de caminhos do Windows, R-007).
+- Phase 4.1 (T033–T036), pedida pelo usuário: extração ZIP/GeoPackage unificada em `schema.py`, código morto removido e filtro redundante do staging retirado. Cinco itens da proposta original foram descartados após verificação (`--local`, `_validate_spatial`, `preflight` obrigatório, `delete_prefix` e os `cast` do staging).
+- US3: o `put_file` do S3 usa `put_object` com `IfNoneMatch="*"` porque o `upload_file` do boto3 não aceita escrita condicional. O `preflight` passou a rodar antes de qualquer listagem do destino, para que a falta de permissão vire uma mensagem clara.
+- Phase 7 (Convergence, T037–T039): `.docs/fontes_de_dados.md` e `quickstart.md` alinhados ao código.
+
+**Limitações conhecidas e aceitas** (não bloqueiam a convergência):
+
+- **R-008:** o `IfNoneMatch` foi validado só no moto. Confirmar num bucket real antes do primeiro uso na AWS.
+- **R-002 / D3:** não existe rotina automática que remova prefixos órfãos deixados por um crash no S3. Eles ficam invisíveis aos leitores, porque só o manifest `changed` vale, e a limpeza é manual com `delete_prefix`. A `logic/ingestao-e-territorio.md` menciona uma "rotina de recuperação"; ela ficou para a spec de infraestrutura.
+- Pendentes de decisão do usuário no backlog: `--force-check` (no-op), `_canonical_path`, `strict_metadata`, detecção de `unchanged` por `HEAD`/ETag.
+- Exemplo impreciso na US2/AC5: o homônimo "Calheta" não existe na CAOP2025 (o dos Açores é "Calheta de São Jorge"); o único é "Lagoa". A AC5 está comprovada com ela. A spec não foi editada.

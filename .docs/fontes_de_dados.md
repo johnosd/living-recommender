@@ -110,26 +110,11 @@ sources:
       madeira: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAM_2025-gpkg.zip
 ```
 
-A validação do catálogo (`pipelines/collectors/_shared/catalog.py`) ainda é específica da CAOP: exige as três regiões e o método `http_download`. Ela será generalizada na spec do segundo coletor (Pordata), que valida o padrão. As entradas abaixo são a **proposta** para as próximas fontes, já nas chaves reais (`publisher`, `license_id`, `collection_method`); `runtime`, `schedule`, `join_key`, `datasets` e `params` são campos previstos que ainda não são validados.
+A validação do catálogo (`pipelines/collectors/_shared/catalog.py`) tem dois caminhos: `get_source` (CAOP, com as três regiões em `urls`) e `get_dataset_source` (fontes com `datasets` independentes, como `pordata` e `ine`, da spec 002), que valida fonte e datasets antes de qualquer rede e deixa cada dataset herdar `expected_labels`, `name_column` e `api_url` da fonte. As entradas `pordata` e `ine` reais estão em `config/sources.yml`: 16 CSV por HTTP e a planilha de poder de compra por carga manual (`manual_upload`) no Pordata, e 3 indicadores (`api_json`) no INE. O Pordata usa `license_id: not_granted_by_source` (risco aceito, R-001); o INE, `CC-BY-4.0`. A entrada `open_meteo` abaixo continua sendo uma proposta.
 
 ```yaml
 sources:
-  pordata:
-    id: pordata
-    publisher: Fundação Francisco Manuel dos Santos
-    license_id: "Uso livre com citação (Fonte: PORDATA)"
-    collection_method: http_download
-    runtime: lambda
-    schedule: monthly            # ingest_public_monthly
-    territorial_level: municipio
-    join_key: nome_regiao        # resolvido por seed municipality_synonyms
-    datasets:
-      - id: farmacias
-        category: saude
-        url: https://ffmspstdlspub01.blob.core.windows.net/data/Modelo_20/464.csv
-        format: pordata_long_csv
-        expected_columns: ["01. Ano", "02. Nome Região (Portugal)", "03. Âmbito Geográfico", "09. Valor"]
-      # … demais 22 datasets migrados do pordataFiles.json + 845
+  # pordata e ine: já implementados (spec 002); ver o catálogo real em config/sources.yml.
 
   open_meteo:
     id: open_meteo
@@ -148,8 +133,8 @@ sources:
 | Fonte (`source_id`) | Substitui | Como coleta | Gatilho | Runtime | Destino em `raw/` | Chave territorial | Observações |
 |---|---|---|---|---|---|---|---|
 | `caop` | L4, L13, parte do L7/L8 | Download do GeoPackage oficial da DGT | Anual / sob demanda (`ingest_reference`) | ECS (GDAL; o arquivo é grande para Lambda) | `source=caop/version=<ano>/` | É a própria dimensão (`dico`, `dicofre`) | Gera `dim_municipality`, `dim_parish`, pontos representativos, áreas, TopoJSON e a correspondência 2013→2025. **Entregue pela spec 001:** `raw/`, Bronze e as duas dimensões Silver, com área em km² e ponto dentro do polígono (`representative_point`, não o centroide geométrico). TopoJSON e a correspondência 2013→2025 ficam para specs futuras. Atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025", CC-BY-4.0. Para reprocessar, basta rodar `build_caop`; ele sempre parte do último manifest `changed`. Objetos S3 sem manifest `changed` são órfãos de um crash e podem ser apagados (`delete_prefix`) |
-| `pordata` | L1, L2, L3 | GET de cada dataset do catálogo; `HEAD` antes (ETag/Last-Modified) para detectar mudança | Mensal | Lambda | `source=pordata/release=<data>/run_id=…/<dataset>.csv` | Nome → `dico` por seed | Validar `expected_columns`. L2 (descoberta de links) não é migrado: datasets novos entram no catálogo por PR |
-| `ine` | L14 | **API JSON de indicadores do INE**, por código de indicador (`varcd`), em vez dos links `clientFiles` | Mensal (as rendas locais saem por trimestre) | Lambda | `source=ine/release=<data>/…/<varcd>.json` | Código geográfico do INE = DICO/DICOFRE | Mapear os `varcd` de "taxa de criminalidade" e das **Estatísticas de Rendas da Habitação ao nível local** (mediana €/m² de novos contratos; série revista em 2026 com dados da AT), por município e pelas freguesias onde o INE publica. **Entra na v0** como referência oficial do aluguel, ao lado do Idealista (§5) |
+| `pordata` | L1, L2, L3 | GET dos 16 CSV do catálogo, cada um com estado próprio (`unchanged` por `sha256`); `ETag`/`Last-Modified` são só registrados no manifest, sem GET condicional por ora. A planilha de poder de compra entra por **carga manual** (`load_pordata_manual`), porque o site só a oferece por um botão JavaScript | Mensal | Lambda | `source=pordata/dataset=<id>/run_id=<run>/<arquivo>` | Nome → `dico` por seed | Colunas validadas pelo rótulo (o prefixo numérico varia por dataset). **Licença não concedida** pelos Termos Legais (risco aceito, R-001). O dataset 845 segue sem URL. L2 (descoberta de links) não é migrado: datasets novos entram no catálogo por PR |
+| `ine` | L14 | **API JSON de indicadores do INE**, por código de indicador (`varcd`), em vez dos links `clientFiles` | Mensal (as rendas locais saem por trimestre) | Lambda | `source=ine/dataset=<id>/run_id=<run>/<id>.json` | Código geográfico da API: os 4 últimos caracteres são o `dico` (308 de 308 conferem com a CAOP) | Mapeados na spec 002: rendas `0014698` (€/m², anual), criminalidade `0008074` (‰, com as 7 categorias de crime) e poder de compra per capita `0014580` (bienal), todos por município (`Dim2=lvl@5`); freguesia fica fora. A API não envia `ETag`, devolve `DataExtracao` e a ordem das linhas variáveis, então a mudança é detectada por uma impressão digital canônica. **Cobertura das rendas: 247 dos 308 municípios em 2025** (222 em 2020), porque o INE só publica unidades com contratos suficientes. **Entra na v0** como referência oficial do aluguel, ao lado do Idealista (§5) |
 | `aima` | — (novo) | Download do **Relatório de Migrações e Asilo** (PDF anual da AIMA) e extração das tabelas de estrangeiros residentes por nacionalidade | Anual | ECS ou CLI local (extração de PDF) | `source=aima/rma=<ano>/relatorio.pdf` + `tabelas.csv` extraídas | Nome do município (ou distrito) → `dico` por seed | **Condicional:** só entra se houver dado **por município**. Indicadores: % de brasileiros, % de lusófonos (CPLP), % do total de estrangeiros. Se o relatório só trouxer distritos, a fonte é descartada (§5) |
 | `sns` | — (novo) | Portal **SNS Transparência**: download do indicador de utentes inscritos sem médico de família, por ACES | Mensal | Lambda | `source=sns/release=<data>/…/utentes_sem_mf.csv` | ACES → `dico` por seed `aces_municipios` (um ACES cobre vários municípios) | **Condicional:** só entra se a extração for estável (download ou API, não scraping de painel). Indicador: % de utentes sem médico de família no ACES, herdado pelos municípios do ACES e sinalizado como tal (§5) |
 | `censos` | — (novo) | Download dos quadros por freguesia do **censo mais recente** (hoje o de 2021; o próximo é o de 2031) | A cada novo censo | Lambda | `source=censos/edicao=<ano>/…` | `dicofre` (divisão de 2013) → correspondência | Base dos indicadores próprios das freguesias. Entre censos, só há estimativas anuais por município (INE) |
@@ -171,7 +156,7 @@ sources:
 
 ### 3.4 Estrutura do código
 
-**Implementado** (spec 001, fonte `caop`):
+**Implementado** (spec 001, fonte `caop`; spec 002, fontes `pordata` e `ine`):
 
 ```text
 pipelines/
@@ -182,6 +167,12 @@ pipelines/
       manifest.py            # manifest versionado, SHA-256, último `changed`
       storage.py             # LocalStorage (mesmo layout de chaves do S3)
       storage_s3.py          # S3Storage (escrita condicional, sem sobrescrever)
+      datasets.py            # collect_datasets(): fontes com vários datasets, estado e falha por dataset (spec 002)
+      dataset_manifest.py    # manifest v2 (datasets[]) e estado vigente por dataset
+      municipality.py        # resolve_municipality_names(): nome → dico (sinônimo ou nome único)
+      observations.py        # esquema do Parquet longo de observações
+    pordata/                 # validate.py (CSV pelo rótulo), xlsx.py (planilha manual), transform.py, handler.py, manual.py
+    ine/                     # fingerprint.py (JSON canônico), validate.py, fetch.py, transform.py, handler.py
     caop/
       handler.py             # collect_caop(): fronteira pública, dependências injetadas
       schema.py              # validação do ZIP/GeoPackage; extração e seleção de camadas
@@ -191,19 +182,25 @@ pipelines/
     collect_caop.py          # --local | --s3 --bucket [--prefix]
     build_caop.py            # raw → Bronze/Silver, com promoção após os testes
     view_caop.py             # explorador HTML e CSVs
+    collect_pordata.py       # 16 CSV por HTTP; falha de um dataset não bloqueia os outros
+    collect_ine.py           # 3 indicadores da API JSON
+    load_pordata_manual.py   # planilha de poder de compra exportada à mão
+    build_observations.py    # estado vigente → stg_observation + cobertura (coverage.csv)
 analytics/dbt/
   models/staging/stg_caop_{municipalities,parishes}.sql
   models/marts/dim_{municipality,parish}.sql
+  models/bronze/stg_observation.sql, rpt_observation_coverage.sql   # tag `observations`
+  seeds/municipality_synonyms.csv                                  # 5 grafias que exigem sinônimo
 tests/{contracts,unit,integration,fixtures}/   # sem rede; S3 simulado com moto
 ```
 
 **Previsto** para as próximas fontes:
 
 ```text
-pipelines/collectors/pordata/  ine/  censos2021/  open_meteo/  wwo/  wikipedia/
+pipelines/collectors/censos2021/  open_meteo/  wwo/  wikipedia/
 pipelines/cli/upload_snapshot.py   # Idealista manual
 config/poles.yml                   # Lisboa, Porto, Faro, aeroportos, sedes de distrito
-analytics/dbt/seeds/{municipality_synonyms,parish_synonyms,parish_crosswalk_2013_2025}.csv
+analytics/dbt/seeds/{parish_synonyms,parish_crosswalk_2013_2025}.csv
 analytics/dbt/models/staging/stg_<fonte>__<dataset>.sql
 ```
 
@@ -217,6 +214,8 @@ def collect_caop(
 # downloader: (url, destino) -> baixa um arquivo; HttpDownloader em produção
 # validator:  (região, arquivo) -> levanta exceção se o bruto for inválido
 ```
+
+Para fontes com vários datasets independentes (`pordata`, `ine`), a spec 002 acrescentou `collect_datasets(catalog, source_id, *, storage, fetcher, validator, run_id, collected_at_utc, work_dir, fingerprint=None, dataset_ids=None)`: o estado vigente, a validação e a falha são **por dataset** (`partial` quando algum falha, sem bloquear os demais), e `fingerprint` permite comparar o conteúdo sem o que varia a cada chamada (no INE, o horário de extração e a ordem das linhas).
 
 A função baixa e valida tudo antes de gravar o `raw/`, compara os checksums com o último manifest `changed` (`unchanged` não grava bruto novo) e escreve o manifest `changed` ou `failed`. A forma da interface será revista quando o Pordata, o segundo coletor, validar o padrão.
 
@@ -266,7 +265,7 @@ Critério de entrada: a fonte precisa (a) cobrir um fator de decisão de peso pa
 
 | Fonte | Por que entra | Condição |
 |---|---|---|
-| **INE: Rendas da Habitação ao nível local** (série revista em 2026 com dados da AT) | O aluguel é o critério nº 1. O Idealista só tem n ≥ 10 em cerca de 195 localidades. O INE dá uma mediana oficial de novos contratos para todos os municípios e para parte das freguesias, e o legado já usava a versão XLS | Entra na v0, via a API do INE (`source_id: ine`) |
+| **INE: Rendas da Habitação ao nível local** (série revista em 2026 com dados da AT) | O aluguel é o critério nº 1. O Idealista só tem n ≥ 10 em cerca de 195 localidades. O INE dá uma mediana oficial de novos contratos para 247 dos 308 municípios em 2025 (222 em 2020; só publica unidades com contratos suficientes) e para parte das freguesias, e o legado já usava a versão XLS | Entra na v0, via a API do INE (`source_id: ine`) |
 | **AIMA: estrangeiros por nacionalidade** | "Onde vivem brasileiros e lusófonos" é decisivo para o público. Os dados atuais (Pordata 354) só dão o total de estrangeiros | Entra **só se** houver dado por **município**. Se for só por distrito, fica fora, porque não diferencia o ranking |
 | **SNS: utentes sem médico de família** | O acesso a médico de família é uma das maiores preocupações de quem chega, e varia muito entre regiões | Entra **se** for possível extrair por ACES de forma estável e mapear os ACES para municípios |
 
