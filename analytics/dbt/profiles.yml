@@ -1,0 +1,8 @@
+caop_territory:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('CAOP_DUCKDB_PATH', '.data/ci/caop.duckdb') }}"
+      schema: main
+      threads: 2

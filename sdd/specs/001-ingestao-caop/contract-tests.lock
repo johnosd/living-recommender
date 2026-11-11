@@ -1,0 +1,12 @@
+{
+  "feature": "001-ingestao-caop",
+  "lockedAt": "2026-11-04 15:00",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_caop_collection_contract.py",
+      "sha256": "27c3d5cdad05f567a991a592426b81f246c05a9020c6aa4a0e9e0ed517e7ab93",
+      "tests": "unknown"
+    }
+  ]
+}

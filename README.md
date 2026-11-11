@@ -2,9 +2,9 @@
 
 Plataforma web que recomenda **onde morar em Portugal**, município a município e, dentro de cada município, freguesia a freguesia. A recomendação se baseia no orçamento de aluguel e nas preferências de cada pessoa.
 
-> **Status:** planejamento. A arquitetura e o roteiro estão definidos em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md). Ainda não há código executável neste repositório.
+> **Status:** implementação em andamento. A coleta da CAOP (em disco local ou em um bucket S3) e as dimensões territoriais Bronze/Silver já estão disponíveis; veja como executar e visualizar a base no [guia de coletas](docs/runbooks/coletas.md). A arquitetura e o roteiro estão em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md).
 
-*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: planning.*
+*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: implementation in progress; CAOP collection (local or S3) is available.*
 
 ---
 
@@ -69,6 +69,10 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 
 Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência, até a integração com a API oficial do Idealista, já solicitada. Nenhum anúncio individual é publicado. Licenças e regras de uso de cada fonte estão nas seções 3.4 e 5 do plano.
 
+**Atribuição da CAOP:** Fonte: Direção-Geral do Território (DGT), CAOP2025, licença CC-BY-4.0. O catálogo de fontes, com URLs, versão e licença, é o [config/sources.yml](config/sources.yml).
+
+Para executar a coleta CAOP disponível, consulte o [guia de coletas](docs/runbooks/coletas.md).
+
 ## Roteiro
 
 | Fase | Entrega | Estado |
@@ -87,12 +91,20 @@ Marco intermediário: uma **v0 só com municípios** publicada por volta da sema
 Estado atual:
 
 ```text
-.docs/        plano de arquitetura e implementação
-.planning/    fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
-.agents/      skills do agente de desenvolvimento
+.docs/                   plano de arquitetura e implementação
+.planning/               fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
+.agents/                 skills do agente de desenvolvimento
+sdd/                     ADRs (adr/) e specs das features (specs/)
+config/sources.yml       catálogo de fontes (CAOP)
+pipelines/               coletor da CAOP, storage local/S3 e CLIs (collect, build, view)
+analytics/dbt/           modelos Bronze/Silver e testes de qualidade
+tests/                   unitários, integração, contrato e fixtures sintéticas
+docs/runbooks/           guias de operação (coletas)
 ```
 
-Estrutura prevista (seção 11 do plano):
+Dados gerados ficam em `.data/`, ignorada pelo Git. O lake segue `raw/` imutável → `lake/bronze/` → `lake/silver/`; ainda não há `lake/gold/` nem `published/`.
+
+Estrutura prevista completa (seção 11 do plano), com o que ainda não existe:
 
 ```text
 apps/web/                 site
@@ -103,7 +115,7 @@ analytics/dbt/            modelos, seeds e testes
 databricks/               laboratório Spark/ML, fora da produção (ADR-001)
 infrastructure/terraform/ infraestrutura
 config/sources.yml        catálogo de fontes
-docs/{adr,runbooks}/      decisões e operação
+docs/runbooks/            operação (ADRs ficam em sdd/adr/)
 ```
 
 ## Como contribuir
@@ -114,7 +126,15 @@ O desenvolvimento segue um fluxo de *Spec-Driven Development* descrito em [.plan
 2. Cada funcionalidade → `spec.md` → `plan.md` + `tasks.md` → implementação → convergência, em `sdd/specs/`.
 3. Ideias e bugs → [.planning/backlog.md](.planning/backlog.md).
 
-Instruções de ambiente local (Python, Node, dbt, Terraform) serão adicionadas junto com o primeiro código executável.
+**Ambiente local (Python).** Requer [uv](https://docs.astral.sh/uv/); o projeto usa Python 3.12 (`.python-version`). Na raiz do repositório:
+
+```powershell
+uv sync --locked
+uv run --locked ruff check pipelines tests
+uv run --locked python -m pytest -q --basetemp .pytest_tmp
+```
+
+Os testes não usam rede nem conta AWS; o S3 é simulado com moto. A coleta, o build e a visualização estão no [guia de coletas](docs/runbooks/coletas.md). As instruções de Node e Terraform serão adicionadas quando esses componentes existirem.
 
 **Regras básicas:**
 

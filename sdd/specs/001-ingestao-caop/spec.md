@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-03
 
-**Status**: Especificada
+**Status**: Convergência Pendente
 
 **Input**: "fundação da ingestão + CAOP — referências em .docs/" (ver `.docs/fontes_de_dados.md` §3 e `.docs/plano_plataforma_recomendacao_portugal.md` §5–§6)
 
@@ -21,7 +21,7 @@
   - gravação no destino local ou S3, com o mesmo layout de chaves.
 - **Coletor da CAOP vigente**, cobrindo Continente, Madeira e Açores, executável por um comando do operador em modo local.
 - **Gravador S3** implementado e validado contra um S3 simulado, sem conta AWS real.
-- **Projeto de transformação mínimo** com o staging da CAOP e as dimensões `dim_municipality` e `dim_parish`, incluindo para cada território:
+- **Projeto de transformação mínimo** seguindo as camadas já definidas no ADR-002: `raw/` preserva os arquivos originais, `lake/bronze/` faz o staging da CAOP e `lake/silver/` reúne as dimensões territoriais harmonizadas `dim_municipality` e `dim_parish` (a camada comum, ou SOT). Cada território inclui:
   - o código oficial;
   - o nome oficial e o nome normalizado;
   - a hierarquia (distrito/ilha → município → freguesia);
@@ -34,6 +34,7 @@
 - Deploy em AWS (Lambda/ECS), Terraform, workflows de orquestração e agendamento. Ficam para a spec de infraestrutura e para a spec 3.
 - Outros coletores (Pordata, INE, Open-Meteo, Wikipedia, Censos, WWO, Idealista, distâncias, AIMA, SNS). Ficam para as specs 2 e 3.
 - Geometrias simplificadas para a web (TopoJSON) e publicação em `published/vN`.
+- Modelos especializados em `lake/gold/` (a camada especializada, ou spec); serão criados pelas features que consomem as dimensões territoriais.
 - Tabela de correspondência de freguesias 2013→2025 (necessária só com os Censos, na spec 2).
 - Seeds de sinônimos por fonte (`municipality_synonyms`, `parish_synonyms`).
 - Histórico de versões da CAOP nas dimensões (`valid_from`/`valid_to`). As dimensões refletem só a versão vigente, e as versões antigas ficam preservadas no bruto.
@@ -51,7 +52,7 @@ O operador (o autor do projeto) roda um único comando, que baixa a CAOP vigente
 
 **Acceptance Scenarios**:
 
-1. **Given** um destino local vazio, **When** o operador executa a coleta da CAOP, **Then** os arquivos das três regiões ficam gravados em `raw/source=caop/version=<ano>/run_id=<id>/`, e um manifest com status `changed` fica em `manifests/caop/<run_id>.json` com `source_url`, `collected_at_utc`, `reference_period`/versão, `license_id`, `collection_method` e, por arquivo, `sha256` e tamanho.
+1. **Given** um destino local vazio, **When** o operador executa a coleta da CAOP, **Then** os arquivos das três regiões ficam gravados em `raw/source=caop/version=<ano>/run_id=<id>/`, e um manifest com status `changed` fica em `manifests/caop/<run_id>.json` com `source_url` como mapa `{continente, acores, madeira}`, `collected_at_utc`, `reference_period`/versão, `license_id`, `collection_method` e, por arquivo, `sha256` e tamanho.
 2. **Given** uma coleta anterior bem-sucedida, **When** o operador executa a coleta de novo e a fonte não mudou, **Then** nenhum arquivo bruto novo é gravado e um manifest com status `unchanged` registra a verificação.
 3. **Given** uma falha de rede no meio do download, **When** a coleta termina, **Then** nenhum arquivo parcial fica em `raw/`, um manifest com status `failed` registra o erro, e o comando sai com código de erro.
 4. **Given** um arquivo baixado que não tem as camadas ou colunas esperadas, **When** a validação do bruto roda, **Then** a coleta falha com uma mensagem que identifica o arquivo e o campo ausente, e nada é marcado como `changed`.
@@ -68,7 +69,7 @@ A partir do bruto mais recente da CAOP, o operador executa a transformação e o
 
 **Acceptance Scenarios**:
 
-1. **Given** o bruto da CAOP vigente, **When** a transformação roda, **Then** `dim_municipality` tem exatamente 308 linhas, com `dico` único de 4 dígitos, e `dim_parish` tem uma linha por `dicofre` distinto da CAOP vigente, com `dicofre` único de 6 dígitos.
+1. **Given** o bruto da CAOP vigente, **When** a transformação roda, **Then** `dim_municipality` tem exatamente 308 linhas, com `dico` único de 4 dígitos, e `dim_parish` tem uma linha por código de freguesia distinto da CAOP vigente, com `dicofre` único de 6 caracteres (`[0-9]{4}[0-9A-Z]{2}`), preservando os códigos oficiais alfanuméricos do campo `dtmnfr`.
 2. **Given** as dimensões geradas, **When** os testes de qualidade rodam, **Then**:
    - toda freguesia referencia um município existente;
    - os 4 primeiros dígitos do `dicofre` são iguais ao `dico` do município;
@@ -116,7 +117,7 @@ O operador escolhe o destino S3 (por configuração ou parâmetro), e a mesma co
 - **FR-004**: O sistema DEVE gravar o bruto em `raw/source=<id>/<partição>/run_id=<id>/` sem nunca sobrescrever um bruto existente.
 - **FR-005**: Toda execução, bem-sucedida, inalterada ou com falha, DEVE gerar um manifest com:
   - `source_id`, `run_id`, `collection_method`, `collected_at_utc`;
-  - `source_release_date` ou versão, `reference_period`, `source_url`, `license_id`;
+  - `source_release_date` ou versão, `reference_period`, `source_url` como mapa de URLs por região na CAOP, `license_id`;
   - por arquivo: chave, `sha256`, bytes e contagem de registros quando aplicável;
   - `schema_version`, `status` (`changed`, `unchanged` ou `failed`) e `error`.
 - **FR-006**: Se o checksum de todos os arquivos for igual ao do último manifest `changed` da mesma fonte, o sistema DEVE registrar `unchanged` e não DEVE gravar bruto novo.
@@ -127,7 +128,7 @@ O operador escolhe o destino S3 (por configuração ou parâmetro), e a mesma co
 - **FR-011**: O operador DEVE poder executar a coleta da CAOP por um comando único, com opções de destino e de "forçar verificação", e DEVE receber ao final um resumo com status, versão, arquivos e caminho do manifest.
 - **FR-012**: O sistema DEVE gerar `dim_municipality` com: `dico`, nome oficial, nome normalizado, distrito ou ilha, região autônoma (quando houver), área em km² e latitude/longitude do ponto representativo dentro do polígono.
 - **FR-013**: O sistema DEVE gerar `dim_parish` com: `dicofre`, `dico`, nome oficial, nome normalizado, tipo (quando informado pela fonte), área em km², latitude/longitude do ponto representativo dentro do polígono e a versão da CAOP de origem.
-- **FR-014**: As dimensões DEVEM ser geradas a partir do bruto `changed` mais recente da CAOP e refletir só a versão vigente.
+- **FR-014**: O staging da CAOP DEVE partir do bruto `changed` mais recente em `raw/` e compor a camada `lake/bronze/`. As dimensões `dim_municipality` e `dim_parish` DEVEM compor a camada comum `lake/silver/` e refletir só a versão vigente da CAOP. A versão da fonte, o período de referência e a data da coleta DEVEM permanecer identificáveis separadamente; a data de processamento não substitui a versão da fonte.
 - **FR-015**: Testes de qualidade DEVEM verificar:
   - unicidade e formato dos códigos;
   - integridade da hierarquia freguesia → município (incluindo o prefixo do `dicofre`);
@@ -176,3 +177,8 @@ O operador escolhe o destino S3 (por configuração ou parâmetro), e a mesma co
 - Q: A fundação deve ser validada com um segundo coletor? → A: Não. Só a CAOP; o Pordata valida o padrão HTTP na spec 2.
 - Q: Qual ponto representa cada território? → A: Um ponto garantidamente dentro do polígono (point-on-surface), não o centroide geométrico.
 - Q: Como as dimensões tratam versões da CAOP? → A: Só a versão vigente; as versões antigas ficam preservadas no bruto.
+
+### Sessão 2026-11-04
+
+- Q: Como `raw`, SOT e base especializada se relacionam com a arquitetura do projeto? → A: São nomes conceituais para a arquitetura medalhão já adotada: `raw/` guarda os arquivos originais, `lake/bronze/` faz o staging, `lake/silver/` é a base comum harmonizada (SOT) e `lake/gold/` contém modelos especializados. Esta spec entrega `raw`, staging `bronze` e dimensões `silver`; modelos `gold` ficam fora do seu escopo.
+- Q: Como preservar os 18 códigos de freguesia alfanuméricos encontrados na CAOP2025? → A: O autor aprovou manter exatamente os códigos oficiais de seis caracteres do campo `dtmnfr`, inclusive os que terminam em letras; `dicofre` é o nome da coluna normalizada nesta feature.

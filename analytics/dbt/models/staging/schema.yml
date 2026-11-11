@@ -1,0 +1,20 @@
+version: 2
+models:
+  - name: stg_caop_municipalities
+    description: Municípios CAOP da coleta changed selecionada, com geometria de verificação.
+    columns:
+      - name: dico
+        data_tests: [not_null, unique]
+      - name: source_run_id
+        data_tests: [not_null]
+      - name: geometry_wkb
+        data_tests: [not_null]
+  - name: stg_caop_parishes
+    description: Freguesias CAOP da coleta changed selecionada, com geometria de verificação.
+    columns:
+      - name: dicofre
+        data_tests: [not_null, unique]
+      - name: dico
+        data_tests: [not_null]
+      - name: geometry_wkb
+        data_tests: [not_null]

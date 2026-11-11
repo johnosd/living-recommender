@@ -1,4 +1,8 @@
 # Byte-compiled / optimized / DLL files
+.data/
+.pytest_tmp/
+analytics/dbt/target/
+analytics/dbt/logs/
 __pycache__/
 *.py[codz]
 *$py.class

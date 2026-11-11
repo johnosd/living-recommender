@@ -1,0 +1,8 @@
+name: caop_territory
+version: '1.0'
+config-version: 2
+profile: caop_territory
+model-paths: ['models']
+test-paths: ['tests']
+target-path: 'target'
+clean-targets: ['target']
