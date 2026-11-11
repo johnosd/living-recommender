@@ -162,9 +162,9 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Fase 3 | Coleta 308 municípios local e S3 simulado; validação e impressão digital implementadas |
-| Evidência | pytest completo: 175 verdes e 2 contratos futuros vermelhos; US1 2/2; ruff limpo; 3 travas íntegras |
-| Pendente | US2 retomada já verde pelo núcleo; faltam HTTP429 e transformação. S3 teve 2 iterações por filtro do snapshot |
+| Fase 4 | Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2 |
+| Evidência | pytest completo: 190 verdes e 1 stub US3 vermelho; focados: 18 verdes; ruff e 3 travas íntegros |
+| Pendente | Transformação e build US3 |
 
 ## Riscos e Decisões
 
@@ -199,9 +199,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 1 | Catálogo climático validado; fontes anteriores preservadas | Implementar núcleo compartilhado; contratos 003 ainda são stubs |
 | 2026-11-11 | Fase 2 | collect_items extraído com pending, limite e parada limpa; invólucro 002 preservado | Implementar US1; baseline antes da refatoração: 146 verdes e 5 stubs |
 | 2026-11-11 | Fase 3 | Coleta 308 municípios local e S3 simulado; validação e impressão digital implementadas | US2 retomada já verde pelo núcleo; faltam HTTP429 e transformação. S3 teve 2 iterações por filtro do snapshot |
+| 2026-11-11 | Fase 4 | Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2 | Transformação e build US3 |
 
 
-**PRÓXIMO**: fase 4; US2 retomada já verde pelo núcleo; faltam HTTP429 e transformação. S3 teve 2 iterações por filtro do snapshot
+**PRÓXIMO**: fase 5; Transformação e build US3
 
 ## Arquivos Principais
 

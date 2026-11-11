@@ -130,13 +130,13 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 ### Implementation
 
-- [ ] T017 [US2] `pipelines/collectors/open_meteo/fetch.py`: classificação do 429 (`classify_limit` por palavra-chave, desconhecido = `hour`), `WAIT_SECONDS`/`MAX_WAITS`, `wait_on_limits`, `QuotaExhausted` sem deixar arquivo (`logic/coleta-clima.md` §5; research R4) (FR-003, FR-012) → contrato: `test_us2_ac3_fr003_fr012_…`
-- [ ] T018 [US2] `pipelines/cli/collect_open_meteo.py`: opções `--max-municipalities`, `--recollect`, `--no-wait`; código de saída `2` só para pendentes sem falhas (`1` vence); mensagem de continuação; resumo com gravados/inalterados/falhas/pendentes/atuais/restantes; Ctrl+C grava o manifest e sai com `2`; "nada a coletar" sem manifest (`contracts/clima-cli.md`) (FR-011, FR-012, FR-014, FR-015) → contrato: `test_us2_ac1_ac2_ac4_…`
+- [X] T017 [US2] `pipelines/collectors/open_meteo/fetch.py`: classificação do 429 (`classify_limit` por palavra-chave, desconhecido = `hour`), `WAIT_SECONDS`/`MAX_WAITS`, `wait_on_limits`, `QuotaExhausted` sem deixar arquivo (`logic/coleta-clima.md` §5; research R4) (FR-003, FR-012) → contrato: `test_us2_ac3_fr003_fr012_…`
+- [X] T018 [US2] `pipelines/cli/collect_open_meteo.py`: opções `--max-municipalities`, `--recollect`, `--no-wait`; código de saída `2` só para pendentes sem falhas (`1` vence); mensagem de continuação; resumo com gravados/inalterados/falhas/pendentes/atuais/restantes; Ctrl+C grava o manifest e sai com `2`; "nada a coletar" sem manifest (`contracts/clima-cli.md`) (FR-011, FR-012, FR-014, FR-015) → contrato: `test_us2_ac1_ac2_ac4_…`
 
 ### Testes da Fase
 
-- [ ] T019 [P] [US2] `tests/unit/test_open_meteo_fetch.py` (`httpx.MockTransport`): 429 horário espera 3.605 s uma vez e, persistindo, vira `QuotaExhausted`; minuto esgotado após 5 esperas vira `QuotaExhausted`; 429 sem palavra reconhecida = hora; 5xx e timeout têm 3 tentativas e depois `DownloadError`; 400 com `reason` vira `DownloadError` com o texto; corpo HTML reprovado; `destination` nunca fica parcial; a taxa mínima é respeitada (relógio e `sleep` injetados)
-- [ ] T020 [US2] `tests/integration/test_open_meteo_cli_quota.py`: cota diária após N → código `2`, N gravados, manifest `partial`; segunda execução só pendentes; `--max-municipalities 2` consulta 2 e não cria `pending`; `--no-wait` com 429 de minuto → `pending` e código `2`; `KeyboardInterrupt` do fetcher → manifest gravado e código `2`; falha **e** pendência juntas → código `1`
+- [X] T019 [P] [US2] `tests/unit/test_open_meteo_fetch.py` (`httpx.MockTransport`): 429 horário espera 3.605 s uma vez e, persistindo, vira `QuotaExhausted`; minuto esgotado após 5 esperas vira `QuotaExhausted`; 429 sem palavra reconhecida = hora; 5xx e timeout têm 3 tentativas e depois `DownloadError`; 400 com `reason` vira `DownloadError` com o texto; corpo HTML reprovado; `destination` nunca fica parcial; a taxa mínima é respeitada (relógio e `sleep` injetados)
+- [X] T020 [US2] `tests/integration/test_open_meteo_cli_quota.py`: cota diária após N → código `2`, N gravados, manifest `partial`; segunda execução só pendentes; `--max-municipalities 2` consulta 2 e não cria `pending`; `--no-wait` com 429 de minuto → `pending` e código `2`; `KeyboardInterrupt` do fetcher → manifest gravado e código `2`; falha **e** pendência juntas → código `1`
 
 **Critério de Conclusão**: `uv run --locked python -m pytest -q tests/contracts/test_climate_collection_contract.py -k "us2" --basetemp .pytest_tmp` → 2/2 verdes e `check-contract-tests.ps1` íntegro; T019 e T020 verdes; suíte completa verde.
 
@@ -144,11 +144,12 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Registro da Fase**:
 
-- Status: (vazio — preenchido pelo sdd-execute ao fechar o checkpoint)
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: concluída
+- Feito: Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2
+- Contrato: três travas íntegras (001, 002, 003); contratos futuros permanecem vermelhos por stubs.
+- Testes executados: pytest completo: 190 verdes e 1 stub US3 vermelho; focados: 18 verdes; ruff e 3 travas íntegros
+- Pendências: Transformação e build US3
+
 
 ---
 
@@ -237,7 +238,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] Fase 1 (Setup) concluída
 - [X] Fase 2 (Foundational) concluída, sem regressão nas specs 001 e 002
 - [X] Fase 3 (User Story 1) concluída
-- [ ] Fase 4 (User Story 2) concluída
+- [X] Fase 4 (User Story 2) concluída
 - [ ] Fase 5 (User Story 3) concluída
 - [ ] Fase 6 (User Story 4) concluída
 - [ ] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro para 001, 002 e 003
