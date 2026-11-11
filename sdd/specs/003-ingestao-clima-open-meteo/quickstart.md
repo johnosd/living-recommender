@@ -27,10 +27,10 @@ Esperado: `ruff` limpo, suíte inteira verde (140 existentes + os novos), 5/5 co
 ```powershell
 uv run --locked python -m tests.fixtures.climate.ci_seed --root .data/ci-climate
 $env:OBS_SILVER_DIR = ".data/ci-climate/lake/silver"
-uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:climate
+uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target climate --select tag:climate
 ```
 
-O seed cria uma Silver sintética com 308 municípios (com latitude e longitude), coleta com um fetcher offline numa janela curta (`2025-01-01` a `2025-01-31`, 31 dias) e prepara o Parquet. O `dbt build` deve passar, com os testes de chave, de dias por município, de faixa física e de `relationships`. Esse é o mesmo passo do CI.
+O seed cria uma Silver sintética com 308 municípios (com latitude e longitude), coleta com um fetcher offline numa janela curta (`2025-01-01` a `2025-01-31`, 31 dias) e prepara o Parquet. O target `climate` usa uma thread e limite de 384 MB no DuckDB, separado do target `local` de CAOP/observations. O `dbt build` deve passar, com os testes de chave, de dias por município, de faixa física e de `relationships`. Esse é o mesmo passo do CI.
 
 Para exercitar o build completo e a promoção:
 

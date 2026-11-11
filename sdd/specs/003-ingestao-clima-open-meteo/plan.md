@@ -33,7 +33,7 @@ Como o plano gratuito comporta ~100 a 140 municípios por dia, a coleta é **ret
 - **D3. `pending` é uma entrada, nunca estado.** Entrada `pending` exige `error`, não tem `key`/`sha256` e é ignorada por `latest_dataset_states`. Status da execução: `failed` se todas falharam; `partial` se houver `failed` ou `pending`; senão `changed`/`unchanged`.
 - **D4. Modelo e requisição fixos.** `models=era5`, `timezone=auto`, 13 variáveis do catálogo, **uma requisição por município com a janela inteira**. Mudar modelo, janela ou variáveis é mudança de catálogo e torna todos os municípios pendentes de novo; os brutos antigos permanecem.
 - **D5. Cota por classificação do 429.** `reason` com `minutely` → espera 61 s (até 5×); `hourly` → espera 3.605 s (1×); `daily` → `QuotaExhausted` sem esperar; 429 sem palavra reconhecida é tratado como `hourly`. `--no-wait` e esperas esgotadas viram `QuotaExhausted`. `QuotaExhausted` e Ctrl+C marcam o item corrente e os seguintes como `pending` e a execução sai com **código 2**; `failed` sai com **1** e vence.
-- **D6. Estado atual.** Um município está atual se o `reference_period` (a janela) o `model` e a assinatura ordenada de variáveis/unidades da sua entrada `changed` mais recente forem iguais aos do catálogo. Entradas sem assinatura exigem recoleta; reordenar a lista não altera a assinatura. Sem `--recollect`, a execução pula os atuais sem chamar a fonte; com ele, consulta e compara a impressão digital. Sem nada a fazer: `up_to_date`, sem manifest e sem consumir `run_id`.
+- **D6. Estado atual.** Um município está atual se o `reference_period` (a janela), o `model` e a assinatura ordenada de variáveis/unidades da sua entrada `changed` mais recente forem iguais aos do catálogo. Entradas sem assinatura exigem recoleta; reordenar a lista não altera a assinatura. Sem `--recollect`, a execução pula os atuais sem chamar a fonte; com ele, consulta e compara a impressão digital. Sem nada a fazer: `up_to_date`, sem manifest e sem consumir `run_id`.
 - **D7. Mudança por impressão digital sem `generationtime_ms`.** O `sha256` do manifest é o dos bytes; o `fingerprint` é o JSON canônico sem `generationtime_ms`, o único campo volátil observado (research R5). O bruto guarda os bytes originais.
 - **D8. O dia é o dia local.** A data de cada observação é o texto de `daily.time` (a fonte agrega no fuso do município com `timezone=auto`), convertido para `date` sem deslocamento de fuso.
 - **D9. Ausente é ausente.** `null` da fonte → valor nulo; `0` legítimo continua `0`; nenhum `fillna`, interpolação, herança entre municípios que dividem a mesma célula da grade, nem conversão de unidade. Nulos esparsos **não** reprovam o bruto; variável inteiramente nula, dias faltantes ou unidade diferente **reprovam**.
@@ -162,9 +162,13 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Fase 6 | Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida |
-| Evidência | uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; contratos 5/5; dbt tag:climate 23/23; ruff limpo; três travas íntegras |
-| Pendente | Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes |
+| Implementação | Fases 1–6 concluídas; Polish local concluído, gate externo pendente |
+| Qualidade local | 210/210 pytest; 5/5 contratos; ruff limpo; três travas íntegras |
+| dbt isolado | CAOP 31/31; observations 17/17; climate 23/23 |
+| Volume sintético | 2.922.920 linhas; 555,90 MiB de pico amostrado da árvore; 117,99 MiB do Python; build 20,38 s |
+| Fonte real | 71/308 atuais; 237 pending por cota horária; 673.790 linhas; 3 recoletas unchanged; zero falhas |
+| Preservação real | 7 arquivos dos outros lakes com SHA-256 inalterado |
+| Pendente | T037 até 308/308 e medição restante; CI remoto/gitleaks. Status segue Em Execução |
 
 ## Riscos e Decisões
 
@@ -176,21 +180,23 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
 | R-001 | O plano gratuito do Open-Meteo é **só para uso não comercial** (CC BY 4.0 vale para os dados, mas a API gratuita não). | Médio: bloqueia uso comercial futuro; nada é publicado nesta spec. | Risco aceito pelo autor (spec, Clarifications). Atribuição no catálogo, no manifest e em cada linha; `usage_restriction` no catálogo; migrar para um plano comercial é gate da Fase B comercial. Complexity Tracking. |
-| R-002 | O texto real do 429 (minuto/hora/dia) **não foi verificado**; a classificação se apoia em palavras-chave de uma forma documentada (research R4). | Médio: um dia classificado como hora faria esperar 1 h antes de parar. | Padrão seguro: 429 desconhecido = hora, que espera e depois pausa com `pending`, nunca falha o município. Conferir o texto real na primeira coleta (T037) e emendar a fixture. |
+| R-002 | O texto real do 429 (minuto/hora/dia) **não foi verificado**; a classificação se apoia em palavras-chave de uma forma documentada (research R4). | Médio: um dia classificado como hora faria esperar 1 h antes de parar. | Padrão seguro: 429 desconhecido = hora, que espera e depois pausa com `pending`, nunca falha o município. Parcialmente verificado em T037: limite horário real igual a `HOUR_LIMIT`; minuto e dia ainda não observados. Nenhuma fixture travada alterada. |
 | R-003 | O peso real das requisições não é exposto pela API; a estimativa é 68 a 100 chamadas por município (21 mil a 31 mil no total). | Médio: pode exigir mais de 3 dias. | `--max-municipalities` para controlar o gasto; medir o peso real em T037 e registrar em `research.md`. A coleta é retomável por construção. |
 | R-004 | Grade de ~25 km do `era5`: municípios vizinhos partilham a célula e recebem séries iguais; relevo (Serra da Estrela, Madeira) suavizado; células de mar (Corvo: 12 km, elevação 0). **Além disso, 24 meses não são uma normal climática.** | Médio para a qualidade do critério "clima". | `rpt_climate_points` mostra distância e elevação; nada é corrigido nem herdado entre vizinhos (D9). A camada Silver deve rotular o indicador "últimos 24 meses" e comparar municípios com cautela. Alternativa futura: ampliar a janela (mudança de catálogo) ou trocar de modelo. |
-| R-005 | A extração de `collect_items` altera código compartilhado com a spec 002. | Alto se regredir. | `collect_datasets` fica como invólucro com as mesmas quatro chaves; o contrato travado da 002, o da 001 e os 140 testes são o gate (T003/T005); `check-contract-tests.ps1` das duas features em cada fase. |
+| R-005 | A extração de `collect_items` altera código compartilhado com a spec 002. | Alto se regredir. | Resolvido: `collect_datasets` fica como invólucro com as mesmas quatro chaves; 210/210 testes e o contrato travado da 002, o da 001 e os 140 testes são o gate (T003/T005); `check-contract-tests.ps1` das duas features em cada fase. |
 | R-006 | Os meses finais da janela podem vir de reanálise preliminar e ser revistos pela fonte. | Baixo: uma recoleta pode virar `changed`. | Comportamento correto pela constitution V (bruto novo, o antigo permanece). Documentar no runbook; `--recollect` explícito. |
 | R-007 | O manifest só é gravado no fim da execução. Um encerramento forçado perde o progresso (brutos órfãos), e a espera de 1 h por limite horário alonga a janela de risco. Lambda (15 min) não comporta a coleta. | Médio. | Ctrl+C é tratado (marca `pending` e grava o manifest); `--max-municipalities` permite lotes curtos; órfãos são ignorados (o estado vem só de manifests) e refeitos. Implantação futura: ECS ou lotes pequenos. |
 | R-008 | A dimensão `dim_municipality` é lida de um diretório local mesmo com `--s3`. | Baixo nesta fase local. | `--silver` explícito e documentado; ler da Silver no S3 fica para a orquestração. |
 | R-009 | O source dbt `caop_silver` lê `OBS_SILVER_DIR`; o build do clima precisa defini-lo. | Baixo: build falha com mensagem clara se faltar. | `build_climate` e o passo do CI definem `OBS_SILVER_DIR`; documentado em `quickstart.md` e no `_run_dbt`. Não duplicar o source (o dbt recusa nomes repetidos). |
-| R-010 | Volume de 2,9 milhões de linhas e a memória do `pandas`/`pyarrow`. | Baixo. | Escrita em fluxo, um município por vez (`ParquetWriter`); verificação do volume cheio em T036. |
+| R-010 | Volume de 2,9 milhões de linhas e a memória do `pandas`/`pyarrow`. | Baixo. | Resolvido: escrita em fluxo, um município por vez (`ParquetWriter`); T036 confirmou 2.922.920 linhas, Python 117,99 MiB de pico e árvore de processos 555,90 MiB amostrados, com limite do DuckDB em R-015. |
 
 | R-011 | Fixtures usam janela curta, diferente do catálogo real de 730 dias. | Baixo: build não deve confundir períodos. | `build_climate` recebe catálogo injetado ou `--catalog` explícito; o seed grava `catalog.yml`. Quickstart usa esse argumento, sem alterar o catálogo de produção. |
 
 | R-012 | D4 e D6 divergiam sobre mudança de variáveis. | Alto: pularia coleta de variável nova. | Resolvido: autor escolheu recoleta automática em 2026-11-11; assinatura das variáveis/unidades persistida e comparada junto com janela/modelo. Deduplicação só entre configurações compatíveis, inclusive na troca de modelo com JSON igual. |
 | R-013 | CSV aberto no Excel pode falhar depois da promoção dos Parquet. | Alto: relatórios e tabelas ficariam divergentes. | Promoção dos dois CSV e três tabelas numa transação com rollback; testes de PermissionError em cada destino; helper compartilhado das specs anteriores preservado. |
 | R-014 | Variável extra malformada é tolerada na coleta mas podia bloquear a transformação. | Baixo: bruto aceito não chegaria ao staging. | Filtrar as variáveis declaradas antes de percorrer as séries; parâmetro opcional mantém a interface dos contratos. |
+
+| R-015 | Volume completo teve pico amostrado de 1.501,91 MB na árvore de processos, embora Python ficasse em 119,18 MB. | Médio: acima do alvo de ~1 GB; DuckDB usava limite padrão da máquina. | Resolvido: target exclusivo `climate`, uma thread e `memory_limit: 384MB`; target `local` de CAOP/observations preservado. Volume repetido: 2.922.920 linhas, 556 MiB de pico amostrado da árvore e 118 MiB do Python; build 20,38 s. Suíte final 210/210 verde, três travas íntegras e lint limpo. |
 
 ## Execution Notes
 
@@ -208,19 +214,54 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 4 | Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2 | Transformação e build US3 |
 | 2026-11-11 | Fase 5 | Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes | Relatórios US4; catálogo explícito das fixtures documentado em R-011 |
 | 2026-11-11 | Fase 6 | Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida | Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes |
+| 2026-11-11 | Fase 7 | Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending | T037: completar 308/308 após cota horária; CI remoto/gitleaks sem evidência. Não marcar Implementada ainda |
 
 
-**PRÓXIMO**: fase 7; Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes
+**PRÓXIMO**: retomar `uv run --locked python -m pipelines.cli.collect_open_meteo --local --no-wait` após a cota ficar disponível; executar `build_climate --local`; confirmar CI remoto e concluir T037 antes de Implementada.
 
 ## Arquivos Principais
 
-- `config/sources.yml`
-- `pipelines/collectors/open_meteo/`
-- `pipelines/collectors/_shared/`
-- `tests/unit/`, `tests/integration/`
+- `sdd/specs/003-ingestao-clima-open-meteo/{tasks,quickstart,research}.md`
+- `pipelines/cli/{collect_open_meteo,build_climate}.py`
+- `analytics/dbt/profiles.yml` e `models/climate/`
+- `docs/runbooks/coletas.md`, `.docs/fontes_de_dados.md`, `README.md`
 
 ## Cuidados para Retomada
 
 <!-- Armadilhas operacionais específicas desta feature, anexadas conforme descobertas. -->
 
-- (nenhum ainda)
+- A branch de execução é `feature/003-ingestao-clima-open-meteo`; commits por fase autorizados pelo autor. Alterações anteriores da spec 002 e sua linha no backlog ficaram fora dos commits desta feature.
+- Estado atual inclui assinatura de variáveis/unidades por decisão do autor. Modelos/janelas/assinaturas incompatíveis não deduplicam entre si, mesmo com JSON igual.
+- O target dbt do clima agora é `climate` (384 MB, uma thread); `local` continua para CAOP e observations. Use `--catalog` explícito nos builds das fixtures curtas.
+- Não editar os contratos travados. A fonte confirmou só o 429 horário, idêntico à fixture; demais limites continuam sintéticos.
+- Não regerar fixtures sobre roots existentes nem apagar os brutos reais. `.data/ci-climate-final` e `.data/ci-full-bounded` contêm as fixtures finais; `.data/lake/bronze/stg_climate_daily` contém a prova real parcial.
+- A primeira tentativa de baseline coincidiu com a alteração de catálogo e foi invalidada; repetição estável antes da extração: 146 verdes e 5 stubs vermelhos, sem regressão anterior.
+- A CLI com --no-wait salva pending e encerra ao encontrar cota. A sessão coletou até a cota horária; não completar T037 nem declarar 308/308 com 71 atuais.
+
+### Medição reproduzível de T036
+
+```powershell
+uv run --locked python -m tests.fixtures.climate.ci_seed --root .data/volume-novo --days 730
+uv run --locked python -m pipelines.cli.build_climate --local --root .data/volume-novo --catalog .data/volume-novo/catalog.yml
+```
+
+Medição em 2026-11-11 no root sintético `.data/ci-full-bounded`: seed 16,28 s; build 20,38 s; Python PeakWorkingSetSize 117,99 MiB; pico amostrado (intervalo 500 ms) da árvore uv/Python/dbt 555,90 MiB. Resultado: 2.922.920 linhas e 308 municípios. Antes do target limitado, o pico amostrado foi 1.501,91 MiB; não se confundem pico do Python e de todos os processos. A primeira tentativa do monitor lançou Python fora do PATH do uv e foi invalidada por dbt não encontrado; a repetição usou `uv run --locked`.
+
+## Comandos do gate final executado
+
+```powershell
+uv sync --locked
+uv run --locked ruff check pipelines tests
+uv run --locked python -m pytest -q --basetemp .pytest_tmp
+.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 001-ingestao-caop
+.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 002-ingestao-pordata-ine
+.\.planning\scripts\powershell\check-contract-tests.ps1 -Slug 003-ingestao-clima-open-meteo
+uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:caop
+uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:observations
+# Climate: fixture em .data/ci-climate-final e CLIMATE_BUILD_DIR/CLIMATE_PREPARED_DIR/OBS_SILVER_DIR/CAOP_DUCKDB_PATH apontados para esse root.
+uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target climate --select tag:climate
+uv run --locked python -m pipelines.cli.build_climate --local --root .data/ci-climate-final --catalog .data/ci-climate-final/catalog.yml
+uv run --locked python -m pipelines.cli.build_climate --local
+```
+
+A suíte final foi executada após o target de memória; os três builds dbt foram isolados, sem serviços externos. O build real foi chamado pela função pública `build_climate(.data)` com verificação de SHA-256 dos outros 7 arquivos antes/depois; a CLI `build_climate --local` também passou, com as mesmas 673.790 linhas. Não houve execução de UI/browser (não aplicável a pipeline sem interface), S3 real, AWS, publicação ou CI remoto.

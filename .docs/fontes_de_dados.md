@@ -110,23 +110,10 @@ sources:
       madeira: https://geo2.dgterritorio.gov.pt/caop/CAOP_RAM_2025-gpkg.zip
 ```
 
-A validação do catálogo (`pipelines/collectors/_shared/catalog.py`) tem dois caminhos: `get_source` (CAOP, com as três regiões em `urls`) e `get_dataset_source` (fontes com `datasets` independentes, como `pordata` e `ine`, da spec 002), que valida fonte e datasets antes de qualquer rede e deixa cada dataset herdar `expected_labels`, `name_column` e `api_url` da fonte. As entradas `pordata` e `ine` reais estão em `config/sources.yml`: 16 CSV por HTTP e a planilha de poder de compra por carga manual (`manual_upload`) no Pordata, e 3 indicadores (`api_json`) no INE. O Pordata usa `license_id: not_granted_by_source` (risco aceito, R-001); o INE, `CC-BY-4.0`. A entrada `open_meteo` abaixo continua sendo uma proposta.
+A validação do catálogo (`pipelines/collectors/_shared/catalog.py`) tem três caminhos: `get_source` (CAOP, com as três regiões em `urls`) e `get_dataset_source` (fontes com `datasets` independentes, como `pordata` e `ine`, da spec 002), que valida fonte e datasets antes de qualquer rede e deixa cada dataset herdar `expected_labels`, `name_column` e `api_url` da fonte. As entradas `pordata` e `ine` reais estão em `config/sources.yml`: 16 CSV por HTTP e a planilha de poder de compra por carga manual (`manual_upload`) no Pordata, e 3 indicadores (`api_json`) no INE. O Pordata usa `license_id: not_granted_by_source` (risco aceito, R-001); o INE, `CC-BY-4.0`. A spec 003 acrescenta `get_climate_source`, com janela, modelo, variáveis e unidades declarados e validação antes da rede. `open_meteo` está implementada localmente: `era5`, 13 variáveis diárias e janela fixa de 24 meses (2024-11-01 a 2026-10-31). O catálogo real inclui atribuição Open-Meteo/ERA5, restrição não comercial e os limites de taxa.
 
-```yaml
-sources:
-  # pordata e ine: já implementados (spec 002); ver o catálogo real em config/sources.yml.
+O schema completo e versionado das quatro fontes está em `config/sources.yml`; não há cópia parcial de uma proposta neste documento.
 
-  open_meteo:
-    id: open_meteo
-    license_id: CC-BY-4.0
-    collection_method: api
-    runtime: lambda
-    schedule: quarterly          # ingest_climate
-    territorial_level: centroide_municipio
-    params: { daily: [temperature_2m_mean, temperature_2m_max, temperature_2m_min,
-                      apparent_temperature_mean, precipitation_sum, windspeed_10m_max,
-                      sunshine_duration], years: 1995-2024 }
-```
 
 ### 3.3 Desenho por fonte
 
@@ -138,7 +125,7 @@ sources:
 | `aima` | — (novo) | Download do **Relatório de Migrações e Asilo** (PDF anual da AIMA) e extração das tabelas de estrangeiros residentes por nacionalidade | Anual | ECS ou CLI local (extração de PDF) | `source=aima/rma=<ano>/relatorio.pdf` + `tabelas.csv` extraídas | Nome do município (ou distrito) → `dico` por seed | **Condicional:** só entra se houver dado **por município**. Indicadores: % de brasileiros, % de lusófonos (CPLP), % do total de estrangeiros. Se o relatório só trouxer distritos, a fonte é descartada (§5) |
 | `sns` | — (novo) | Portal **SNS Transparência**: download do indicador de utentes inscritos sem médico de família, por ACES | Mensal | Lambda | `source=sns/release=<data>/…/utentes_sem_mf.csv` | ACES → `dico` por seed `aces_municipios` (um ACES cobre vários municípios) | **Condicional:** só entra se a extração for estável (download ou API, não scraping de painel). Indicador: % de utentes sem médico de família no ACES, herdado pelos municípios do ACES e sinalizado como tal (§5) |
 | `censos` | — (novo) | Download dos quadros por freguesia do **censo mais recente** (hoje o de 2021; o próximo é o de 2031) | A cada novo censo | Lambda | `source=censos/edicao=<ano>/…` | `dicofre` (divisão de 2013) → correspondência | Base dos indicadores próprios das freguesias. Entre censos, só há estimativas anuais por município (INE) |
-| `open_meteo` | L6, parte do L5 | API `archive` por **centroide CAOP**, séries diárias de 30 anos agregadas em normais mensais | Trimestral (na prática, muda pouco) | Lambda (308 chamadas com pausa) | `source=open_meteo/period=<ini>_<fim>/…/<dico>.parquet` | `dico` direto (lat/lon da CAOP) | Atribuição CC BY 4.0. Fonte principal do clima |
+| `open_meteo` | L6, parte do L5 | API `archive`, `era5`, 13 variáveis diárias, 24 meses, ponto representativo CAOP (não centroide) | CLI local; trimestral previsto | Local nesta spec; ECS/lotes em implantação futura (a cota não cabe no Lambda) | `source=open_meteo/dataset=<dico>/run_id=<run>/<dico>.json` | `dico` direto | **Implementada pela spec 003:** coleta retomável por cota, manifest por município, `--recollect`, `--max-municipalities`, staging diário e cobertura/pontos Bronze. Janela/modelo/variáveis/unidades novos provocam nova coleta; ausência é preservada. Grade ~25 km; 24 meses não são normais climáticas. Plano gratuito não comercial: risco aceito R-001, sem publicação. Coleta real completa e CI remoto têm evidência separada no runbook |
 | `wwo` | L5 | API `past-weather` com **uma chave** (de teste) em SSM, por **lat/lon do centroide** (não por nome) | Sob demanda | Lambda | `source=wwo/period=<ini>_<fim>/…/<dico>.csv` | `dico` direto | **Fallback** do Open-Meteo, mantido enquanto a chave de teste valer. Coletor e dados históricos preservados. Nada de rodízio de chaves |
 | `google_distances` | L7 | **Cálculo único** com a CLI `compute-distances`, rodada localmente: Google Distance Matrix nos modos `driving` e `transit` (com `departure_time` fixo num dia útil às 08:00), do centroide CAOP de cada município até os polos relevantes. A linha reta é calculada sem API (haversine) | **Uma vez.** Só roda de novo se a lista de polos ou a CAOP mudar | CLI local; chave em `.env`/SSM | `source=google_distances/run=<data>/distances.csv` + manifest | `dico` | **Entra na v1.** O usuário escolhe o modo na interface. Saída: `dico, polo, modo, km, minutos, calculado_em`. Polos por município: os nacionais mais a sede do próprio distrito (cerca de 8), o que dá ~2.500 pares × 2 modos ≈ 5 mil elementos (confirmar a cota gratuita vigente). Sem rota possível (ilhas, sem transporte): `null` com bandeira. As freguesias herdam a distância do município. **Risco aceito:** ver nota abaixo |
 | `wikipedia` | L10 | **Igual ao legado por enquanto**: API `query` + `parse` por nome do município, empacotada como coletor (User-Agent identificado, gravação em `raw/` com manifest) | Mensal | Lambda | `source=wikipedia/rev=<data>/…/<municipio>.txt` | Nome → `dico` por seed | Atribuição CC BY-SA. Homônimos (Lagoa, Calheta) ficam como problema conhecido, tratados na seed |
@@ -186,10 +173,13 @@ pipelines/
     collect_ine.py           # 3 indicadores da API JSON
     load_pordata_manual.py   # planilha de poder de compra exportada à mão
     build_observations.py    # estado vigente → stg_observation + cobertura (coverage.csv)
+    collect_open_meteo.py    # município, janela/modelo/variáveis, cota e retomada
+    build_climate.py         # staging diário, cobertura e pontos; promoção com rollback
 analytics/dbt/
   models/staging/stg_caop_{municipalities,parishes}.sql
   models/marts/dim_{municipality,parish}.sql
   models/bronze/stg_observation.sql, rpt_observation_coverage.sql   # tag `observations`
+  models/climate/{stg_climate_daily,rpt_climate_coverage,rpt_climate_points}.sql  # tag climate
   seeds/municipality_synonyms.csv                                  # 5 grafias que exigem sinônimo
 tests/{contracts,unit,integration,fixtures}/   # sem rede; S3 simulado com moto
 ```
@@ -197,7 +187,7 @@ tests/{contracts,unit,integration,fixtures}/   # sem rede; S3 simulado com moto
 **Previsto** para as próximas fontes:
 
 ```text
-pipelines/collectors/censos2021/  open_meteo/  wwo/  wikipedia/
+pipelines/collectors/censos2021/  wwo/  wikipedia/
 pipelines/cli/upload_snapshot.py   # Idealista manual
 config/poles.yml                   # Lisboa, Porto, Faro, aeroportos, sedes de distrito
 analytics/dbt/seeds/{parish_synonyms,parish_crosswalk_2013_2025}.csv
@@ -247,7 +237,7 @@ A função baixa e valida tudo antes de gravar o `raw/`, compara os checksums co
 
 | Tema | Decisão |
 |---|---|
-| Clima | Open-Meteo como fonte principal |
+| Clima | Open-Meteo como fonte principal; spec 003 implementa `era5`, 13 variáveis diárias de 24 meses por município. Sem WWO, normais de 30 anos, score ou Silver/Gold nesta entrega |
 | WWO | Chave de teste; mantido como **fallback**, sem remover coletor nem histórico |
 | Distâncias | Três modos (linha reta, carro e transporte público), **na v1**. Carro e transporte vêm do Google Distance Matrix, **calculados uma vez e guardados** (risco aceito). A linha reta é calculada por haversine. A alternativa com `r5py` + GTFS foi rejeitada por complexidade |
 | Wikipedia | Mantém o processo do legado por enquanto |

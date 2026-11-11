@@ -42,7 +42,7 @@ jobs:
         env:
           OBS_SILVER_DIR: .data/ci-climate/lake/silver
           CAOP_DUCKDB_PATH: .data/ci-climate/climate.duckdb
-        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:climate
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target climate --select tag:climate
 
   secrets:
     if: github.event_name == 'pull_request'

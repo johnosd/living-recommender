@@ -126,7 +126,7 @@ def _run_dbt(candidate: Path, silver: Path):
                 "OBS_SILVER_DIR": silver.as_posix(),
                 "CAOP_DUCKDB_PATH": (candidate / "climate.duckdb").as_posix()})
     command = [executable, "build", "--project-dir", "analytics/dbt", "--profiles-dir", "analytics/dbt",
-               "--target", "local", "--select", "tag:climate"]
+               "--target", "climate", "--select", "tag:climate"]
     result = subprocess.run(command, cwd=Path(__file__).resolve().parents[2], env=env,
                             text=True, capture_output=True, check=False)
     if result.returncode:

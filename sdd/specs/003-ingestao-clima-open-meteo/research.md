@@ -75,3 +75,15 @@ Estimativa para 1 município, 24 meses, 13 variáveis: a regra publicada (dias �
 **Justificativa:** o estado por unidade, o manifest v2, a impressão digital e a tolerância a falha são exatamente o que a coleta por município precisa. O contrato travado da spec 002 (5 testes) e os 140 testes existentes protegem a refatoração. A alternativa, copiar a lógica, duplicaria ~100 linhas e duas versões do estado vigente.
 
 **Alternativas consideradas:** um coletor independente (descartado: duplicação); inflar o catálogo com 308 "datasets" (descartado: o catálogo declara fontes e variáveis, não unidades territoriais, e `get_dataset_source` exigiria `origin` por município).
+
+## Verificação real durante a execução — 2026-11-11
+
+- Smoke: `collect_open_meteo --local --max-municipalities 5 --no-wait`, 5 municípios `changed`, sem falhas, manifest `20261111T211829262830Z-36cc8a22.json`.
+- Recoleta de três: `--recollect --max-municipalities 3 --no-wait`, 3 `unchanged`, sem bruto novo, manifest `20261111T212008362763Z-905bcdf9.json`.
+- Continuação: `collect_open_meteo --local --no-wait`, 66 novos `changed`, 237 `pending`, os 5 atuais pulados, zero `failed`; manifest `20261111T212026185704Z-07fed17b.json`. Estado acumulado: **71/308** atuais, 237 faltantes, 4.094.681 bytes de bruto vigente.
+- R4 parcialmente confirmado: o HTTP 429 horário trouxe exatamente `Hourly API request limit exceeded. Please try again in the next hour.`, igual à fixture sintética travada `HOUR_LIMIT`. A coleta parou e gravou as pendências. Minuto e dia ainda não foram observados na fonte real; nenhuma fixture travada foi alterada.
+- R3: 74 consultas concluídas (71 iniciais + 3 recoletas) antes dessa pausa horária. O peso faturável não é exposto pela API e tentativas de transporte não foram instrumentadas; não tratar essa contagem como medição direta da cota ponderada. Ainda faltam os demais municípios e os limites de outro dia para concluir SC-008/T037.
+- Build real parcial: **673.790 observações**, 71 municípios completos nas 13 variáveis, sem lacunas, 237 não coletados; nenhum ponto >25 km e nenhum com elevação 0 m nesse subconjunto. Os 7 arquivos das outras tabelas CAOP/observações permaneceram byte a byte iguais (SHA-256 antes/depois).
+- Atribuição Open-Meteo/ERA5, restrição de uso não comercial e CC-BY-4.0 conferidas nos manifests e nas 673.790 linhas reais. Brutos e relatórios reais estão só em `.data/`, ignorada pelo Git.
+
+Esses resultados são prova local parcial da fonte. Não demonstram 308/308, S3 real, CI remoto, deploy ou publicação.

@@ -86,3 +86,11 @@
 - CI verde (passo novo do dbt do clima).
 - Docs a atualizar no Polish: `config/sources.yml`, `.docs/fontes_de_dados.md` (§3.3, §3.4, §4), `docs/runbooks/coletas.md`, `README.md`.
 - **Passada real é recomendação forte, não gate de merge:** T037 (coleta de ~3 dias, SC-008) mede o peso real da cota e confere o texto do 429. Registre o resultado em `research.md` (R3, R4) e em Execution Notes.
+
+## Checkpoint após execução — 2026-11-11 (prevalece sobre o retrato de planejamento acima)
+
+Fases 1–6 implementadas e commitadas por fase na branch `feature/003-ingestao-clima-open-meteo`. Gate final local: 210/210 testes, 5/5 contratos, três travas íntegras e ruff limpo; dbt CAOP 31/31, observações 17/17 e clima 23/23. Use **target `climate`** para o clima, com 384 MB e uma thread; `local` continua para as outras fontes. Volume: 2.922.920 linhas e pico amostrado de 555,90 MiB da árvore de processos.
+
+D6/FR-013 foram emendados por decisão explícita do autor: mudanças nas variáveis/unidades também provocam recoleta, com assinatura persistida. JSON idêntico de outro modelo deve gerar novo estado. A promoção agora inclui rollback dos CSV e das três tabelas. Variáveis extras são filtradas antes da transformação.
+
+Fonte real: 71/308 municípios atuais, 237 pendentes por limite horário, 3 recoletas unchanged e 673.790 linhas reais no Bronze; 7 arquivos dos outros lakes preservados byte a byte. O texto horário real coincide com a fixture; minuto/dia não foram observados. **Não alterar fixtures travadas.** T037 e CI remoto continuam pendentes; o status permanece Em Execução. Retomar pelo PRÓXIMO e Estado Atual de plan.md; tasks.md é a fonte de verdade. Não incluir alterações anteriores da spec 002 nos commits da 003.

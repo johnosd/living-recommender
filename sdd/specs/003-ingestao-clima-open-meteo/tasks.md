@@ -234,10 +234,11 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Purpose**: documentação, volume e verificação real.
 
-- [ ] T035 [P] Atualizar `.docs/fontes_de_dados.md` (§3.3 `open_meteo`: implementada pela spec 003, `era5`, janela de 24 meses, layout `dataset=<dico>`, cota e retomada, estado "implementada"; §3.4 estrutura; §4 a decisão do modelo; corrigir a linha que dizia "30 anos" e "Lambda"), `docs/runbooks/coletas.md` (coleta em 3 dias, códigos de saída, `--max-municipalities`, `--recollect`, órfãos, dados preliminares) e `README.md` (Quality Gate 6)
-- [ ] T036 Teste de volume: `python -m tests.fixtures.climate.ci_seed --root .data/ci-full --days 730` e `build_climate --root .data/ci-full`; conferir 2.922.920 linhas, tempo e memória (alvo: sem passar de ~1 GB) e registrar em Execution Notes (R-010)
+- [X] T035 [P] Atualizar `.docs/fontes_de_dados.md` (§3.3 `open_meteo`: implementada pela spec 003, `era5`, janela de 24 meses, layout `dataset=<dico>`, cota e retomada, estado "implementada"; §3.4 estrutura; §4 a decisão do modelo; corrigir a linha que dizia "30 anos" e "Lambda"), `docs/runbooks/coletas.md` (coleta em 3 dias, códigos de saída, `--max-municipalities`, `--recollect`, órfãos, dados preliminares) e `README.md` (Quality Gate 6)
+- [X] T036 Teste de volume: `python -m tests.fixtures.climate.ci_seed --root .data/ci-full --days 730` e `build_climate --root .data/ci-full`; conferir 2.922.920 linhas, tempo e memória (alvo: sem passar de ~1 GB) e registrar em Execution Notes (R-010)
+- [X] T036+1 Descoberta em T036: limitar memória do DuckDB no target exclusivo `climate`, mantendo o target `local` anterior intacto; repetir volume e medir árvore de processos (R-015).
 - [ ] T037 **Coleta real e medição (manual, SC-008):** seguir `quickstart.md` §4: smoke de 5 municípios, repetir por dia até 308/308, `build_climate`; registrar execuções, chamadas por município, texto real do 429 (emendar a fixture se diferir, R-002), lacunas, pontos divergentes, elevação 0 m e o tamanho do bruto; atualizar `research.md` (R3, R4)
-- [ ] T038 Rodar a validação de `quickstart.md` (§2 e §3)
+- [X] T038 Rodar a validação de `quickstart.md` (§2 e §3)
 
 ### Checklist de Release
 
@@ -247,18 +248,26 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] Fase 4 (User Story 2) concluída
 - [X] Fase 5 (User Story 3) concluída
 - [X] Fase 6 (User Story 4) concluída
-- [ ] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro para 001, 002 e 003
-- [ ] `uv run --locked ruff check pipelines tests` limpo
-- [ ] `uv run --locked python -m pytest -q --basetemp .pytest_tmp` verde, sem rede
-- [ ] `dbt build --select tag:caop`, `tag:observations` e `tag:climate` verdes isoladamente
+- [X] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro para 001, 002 e 003
+- [X] `uv run --locked ruff check pipelines tests` limpo
+- [X] `uv run --locked python -m pytest -q --basetemp .pytest_tmp` verde, sem rede
+- [X] `dbt build --select tag:caop`, `tag:observations` e `tag:climate` verdes isoladamente
 - [ ] CI verde, incluindo o passo do dbt do clima e o `gitleaks`
-- [ ] `config/sources.yml`, `.docs/fontes_de_dados.md`, `docs/runbooks/coletas.md` e `README.md` atualizados (Quality Gate 6)
-- [ ] Atribuição Open-Meteo/ERA5 e restrição de uso não comercial presentes no catálogo, no manifest e no staging (R-001)
-- [ ] Nenhum segredo, bruto real ou resposta real no Git; nenhum recurso AWS criado
-- [ ] Coleta real registrada (T037) ou a pendência declarada
-- [ ] `quickstart.md` executado com sucesso
-
+- [X] `config/sources.yml`, `.docs/fontes_de_dados.md`, `docs/runbooks/coletas.md` e `README.md` atualizados (Quality Gate 6)
+- [X] Atribuição Open-Meteo/ERA5 e restrição de uso não comercial presentes no catálogo, no manifest e no staging (R-001)
+- [X] Nenhum segredo, bruto real ou resposta real no Git; nenhum recurso AWS criado
+- [X] Coleta real registrada (T037) ou a pendência declarada
+- [X] `quickstart.md` executado com sucesso
 ---
+
+**Registro da Fase**:
+
+- Status: parcial — implementação e validação local prontas; coleta completa e CI remoto pendentes
+- Feito: Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending
+- Contrato: três travas íntegras (001, 002, 003); 5/5 contratos verdes na suíte completa
+- Testes executados: uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; ruff limpo; 3 travas íntegras; dbt 31/31 CAOP, 17/17 observations, 23/23 climate; volume 555,90 MiB
+- Pendências: T037: completar 308/308 após cota horária; CI remoto/gitleaks sem evidência. Não marcar Implementada ainda
+
 
 ## Dependencies & Execution Order
 
