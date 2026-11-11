@@ -35,7 +35,7 @@ O seed cria uma Silver sintética com 308 municípios (com latitude e longitude)
 Para exercitar o build completo e a promoção:
 
 ```powershell
-uv run --locked python -m pipelines.cli.build_climate --local --root .data/ci-climate
+uv run --locked python -m pipelines.cli.build_climate --local --root .data/ci-climate --catalog .data/ci-climate/catalog.yml
 ```
 
 Esperado: `Clima: <308 × 13 × 31> linhas de 308 municípios`, a tabela de cobertura com `308/308` e `climate_coverage.csv` e `climate_points.csv` em `.data/ci-climate/lake/bronze/`.

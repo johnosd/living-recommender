@@ -166,17 +166,17 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 ### Implementation
 
-- [ ] T021 [US3] ~ `analytics/dbt/dbt_project.yml` (tag `climate` em `models.caop_territory.climate`) e `+ analytics/dbt/models/climate/schema.yml` com os testes de coluna de `data-model.md` §5, reusando `source('caop_silver','dim_municipality')` já declarado em `models/bronze/schema.yml` (não redeclarar) (FR-019)
-- [ ] T022 [US3] `+ analytics/dbt/models/climate/stg_climate_daily.sql`: lê `climate_daily.parquet` de `CLIMATE_PREPARED_DIR` e materializa em `CLIMATE_BUILD_DIR/lake/bronze/stg_climate_daily/data.parquet` com os tipos fixados (`date`, `double`, `varchar`), no estilo de `stg_observation.sql` (FR-016, FR-021)
-- [ ] T023 [P] [US3] `+ analytics/dbt/tests/climate_key_unique.sql`, `climate_days_per_municipality.sql`, `climate_value_ranges.sql`, `climate_tmin_le_tmax.sql` (cada um devolve as linhas que violam, como `observations_key_unique.sql`), com as faixas de `data-model.md` §5 (FR-018, FR-019)
-- [ ] T024 [US3] `pipelines/collectors/open_meteo/transform.py`: `read_climate_response(path)` conforme `logic/coleta-clima.md` §7 (`date.fromisoformat` sem fuso, `NaN` sem `fillna`, unidade literal) (FR-016, FR-017) → contrato: `test_us3_ac2_ac4_ac5_…`
-- [ ] T025 [US3] `+ pipelines/cli/build_climate.py`: `prepare_climate` (estado atual por município, conferência de `sha256`/tamanho, `ParquetWriter` em fluxo, `climate_meta.parquet`, `not_collected`), `_run_dbt` (`--select tag:climate`; define `CLIMATE_BUILD_DIR`, `CLIMATE_PREPARED_DIR`, `OBS_SILVER_DIR`, `CAOP_DUCKDB_PATH` em área isolada), `promote_paths` dos três caminhos Bronze e `main`; erros e códigos de `contracts/clima-cli.md` (FR-012…FR-017, FR-021). Os relatórios `rpt_*` e `climate_points.parquet` entram na Fase 6.
-- [ ] T026 [P] [US3] `+ tests/fixtures/climate/__init__.py` e `ci_seed.py`: Silver sintética de 308 municípios com `representative_lat/lon`, coleta dos brutos pelo próprio `collect_open_meteo` com fetcher offline (janela curta 2025-01-01 a 2025-01-31 no catálogo da fixture, opção `--days` para o volume cheio) e `prepare_climate`; `python -m tests.fixtures.climate.ci_seed --root .data/ci-climate`, no padrão de `tests/fixtures/observations/ci_seed.py`
+- [X] T021 [US3] ~ `analytics/dbt/dbt_project.yml` (tag `climate` em `models.caop_territory.climate`) e `+ analytics/dbt/models/climate/schema.yml` com os testes de coluna de `data-model.md` §5, reusando `source('caop_silver','dim_municipality')` já declarado em `models/bronze/schema.yml` (não redeclarar) (FR-019)
+- [X] T022 [US3] `+ analytics/dbt/models/climate/stg_climate_daily.sql`: lê `climate_daily.parquet` de `CLIMATE_PREPARED_DIR` e materializa em `CLIMATE_BUILD_DIR/lake/bronze/stg_climate_daily/data.parquet` com os tipos fixados (`date`, `double`, `varchar`), no estilo de `stg_observation.sql` (FR-016, FR-021)
+- [X] T023 [P] [US3] `+ analytics/dbt/tests/climate_key_unique.sql`, `climate_days_per_municipality.sql`, `climate_value_ranges.sql`, `climate_tmin_le_tmax.sql` (cada um devolve as linhas que violam, como `observations_key_unique.sql`), com as faixas de `data-model.md` §5 (FR-018, FR-019)
+- [X] T024 [US3] `pipelines/collectors/open_meteo/transform.py`: `read_climate_response(path)` conforme `logic/coleta-clima.md` §7 (`date.fromisoformat` sem fuso, `NaN` sem `fillna`, unidade literal) (FR-016, FR-017) → contrato: `test_us3_ac2_ac4_ac5_…`
+- [X] T025 [US3] `+ pipelines/cli/build_climate.py`: `prepare_climate` (estado atual por município, conferência de `sha256`/tamanho, `ParquetWriter` em fluxo, `climate_meta.parquet`, `not_collected`), `_run_dbt` (`--select tag:climate`; define `CLIMATE_BUILD_DIR`, `CLIMATE_PREPARED_DIR`, `OBS_SILVER_DIR`, `CAOP_DUCKDB_PATH` em área isolada), `promote_paths` dos três caminhos Bronze e `main`; erros e códigos de `contracts/clima-cli.md` (FR-012…FR-017, FR-021). Os relatórios `rpt_*` e `climate_points.parquet` entram na Fase 6.
+- [X] T026 [P] [US3] `+ tests/fixtures/climate/__init__.py` e `ci_seed.py`: Silver sintética de 308 municípios com `representative_lat/lon`, coleta dos brutos pelo próprio `collect_open_meteo` com fetcher offline (janela curta 2025-01-01 a 2025-01-31 no catálogo da fixture, opção `--days` para o volume cheio) e `prepare_climate`; `python -m tests.fixtures.climate.ci_seed --root .data/ci-climate`, no padrão de `tests/fixtures/observations/ci_seed.py`
 
 ### Testes da Fase
 
-- [ ] T027 [P] [US3] `tests/unit/test_open_meteo_transform.py`: série completa → 13 × dias linhas; zero legítimo continua `0` e `null` continua nulo; todas as variáveis nulas num dia; dia 29 de fevereiro e virada de ano; `unit` por `daily_units`
-- [ ] T028 [US3] `tests/integration/test_climate_build.py`: `build_climate` sobre a fixture (dbt real, janela curta): linhas = 308 × 13 × dias; `dico` na dimensão; staging **parcial** (municípios sem estado atual) é válido; bruto adulterado → falha `checksum ou tamanho alterado` e o staging anterior fica intacto; teste dbt forçado a falhar (umidade 120) → nada promovido; estado de janela antiga não entra; a CAOP e `stg_observation` ficam intactos byte a byte (SC-004, SC-005)
+- [X] T027 [P] [US3] `tests/unit/test_open_meteo_transform.py`: série completa → 13 × dias linhas; zero legítimo continua `0` e `null` continua nulo; todas as variáveis nulas num dia; dia 29 de fevereiro e virada de ano; `unit` por `daily_units`
+- [X] T028 [US3] `tests/integration/test_climate_build.py`: `build_climate` sobre a fixture (dbt real, janela curta): linhas = 308 × 13 × dias; `dico` na dimensão; staging **parcial** (municípios sem estado atual) é válido; bruto adulterado → falha `checksum ou tamanho alterado` e o staging anterior fica intacto; teste dbt forçado a falhar (umidade 120) → nada promovido; estado de janela antiga não entra; a CAOP e `stg_observation` ficam intactos byte a byte (SC-004, SC-005)
 
 **Critério de Conclusão**: `uv run --locked python -m pytest -q tests/contracts/test_climate_collection_contract.py --basetemp .pytest_tmp` → 5/5 verdes e `check-contract-tests.ps1` íntegro (003, 002, 001); T027 e T028 verdes; `dbt build --select tag:climate` verde sobre a fixture; `dbt build --select tag:caop` e `--select tag:observations` seguem verdes.
 
@@ -184,11 +184,12 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Registro da Fase**:
 
-- Status: (vazio — preenchido pelo sdd-execute ao fechar o checkpoint)
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: concluída
+- Feito: Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes
+- Contrato: três travas íntegras (001, 002, 003); 5/5 contratos verdes na suíte completa
+- Testes executados: pytest completo 197/197; contratos 5/5; integração build 4/4; dbt climate 14/14; ruff e 3 travas íntegros
+- Pendências: Relatórios US4; catálogo explícito das fixtures documentado em R-011
+
 
 ---
 
@@ -239,7 +240,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] Fase 2 (Foundational) concluída, sem regressão nas specs 001 e 002
 - [X] Fase 3 (User Story 1) concluída
 - [X] Fase 4 (User Story 2) concluída
-- [ ] Fase 5 (User Story 3) concluída
+- [X] Fase 5 (User Story 3) concluída
 - [ ] Fase 6 (User Story 4) concluída
 - [ ] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro para 001, 002 e 003
 - [ ] `uv run --locked ruff check pipelines tests` limpo

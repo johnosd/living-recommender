@@ -17,3 +17,5 @@ models:
       +tags: ['caop']
     bronze:
       +tags: ['observations']
+    climate:
+      +tags: ['climate']

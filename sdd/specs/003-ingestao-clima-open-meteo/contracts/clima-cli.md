@@ -48,8 +48,10 @@ Ctrl+C: a coleta termina o município corrente, marca o restante como `pending` 
 ## `build_climate` (T025, T030)
 
 ```powershell
-uv run --locked python -m pipelines.cli.build_climate --local [--root .data]
+uv run --locked python -m pipelines.cli.build_climate --local [--root .data] [--catalog <yml>]
 ```
+
+`--catalog` seleciona um catálogo alternativo explicitamente (por exemplo, o catálogo curto das fixtures); sem ele usa `config/sources.yml`.
 
 Lê o estado vigente de cada município, confere `sha256` e tamanho do bruto, prepara `prepared/climate_daily.parquet`, `climate_points.parquet` e `climate_meta.parquet`, roda `dbt build --select tag:climate` em área isolada e **só então** promove os três modelos (`promote_paths`). Qualquer falha preserva o staging anterior.
 

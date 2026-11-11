@@ -162,9 +162,9 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Fase 4 | Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2 |
-| Evidência | pytest completo: 190 verdes e 1 stub US3 vermelho; focados: 18 verdes; ruff e 3 travas íntegros |
-| Pendente | Transformação e build US3 |
+| Fase 5 | Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes |
+| Evidência | pytest completo 197/197; contratos 5/5; integração build 4/4; dbt climate 14/14; ruff e 3 travas íntegros |
+| Pendente | Relatórios US4; catálogo explícito das fixtures documentado em R-011 |
 
 ## Riscos e Decisões
 
@@ -186,6 +186,8 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | R-009 | O source dbt `caop_silver` lê `OBS_SILVER_DIR`; o build do clima precisa defini-lo. | Baixo: build falha com mensagem clara se faltar. | `build_climate` e o passo do CI definem `OBS_SILVER_DIR`; documentado em `quickstart.md` e no `_run_dbt`. Não duplicar o source (o dbt recusa nomes repetidos). |
 | R-010 | Volume de 2,9 milhões de linhas e a memória do `pandas`/`pyarrow`. | Baixo. | Escrita em fluxo, um município por vez (`ParquetWriter`); verificação do volume cheio em T036. |
 
+| R-011 | Fixtures usam janela curta, diferente do catálogo real de 730 dias. | Baixo: build não deve confundir períodos. | `build_climate` recebe catálogo injetado ou `--catalog` explícito; o seed grava `catalog.yml`. Quickstart usa esse argumento, sem alterar o catálogo de produção. |
+
 ## Execution Notes
 
 <!--
@@ -200,9 +202,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 2 | collect_items extraído com pending, limite e parada limpa; invólucro 002 preservado | Implementar US1; baseline antes da refatoração: 146 verdes e 5 stubs |
 | 2026-11-11 | Fase 3 | Coleta 308 municípios local e S3 simulado; validação e impressão digital implementadas | US2 retomada já verde pelo núcleo; faltam HTTP429 e transformação. S3 teve 2 iterações por filtro do snapshot |
 | 2026-11-11 | Fase 4 | Coleta retomável com limites minuto/hora/dia, Ctrl+C, lotes e códigos 0/1/2 | Transformação e build US3 |
+| 2026-11-11 | Fase 5 | Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes | Relatórios US4; catálogo explícito das fixtures documentado em R-011 |
 
 
-**PRÓXIMO**: fase 5; Transformação e build US3
+**PRÓXIMO**: fase 6; Relatórios US4; catálogo explícito das fixtures documentado em R-011
 
 ## Arquivos Principais
 
