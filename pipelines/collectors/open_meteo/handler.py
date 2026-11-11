@@ -1,32 +1,45 @@
-"""Coleta do clima diário do Open-Meteo, uma unidade por município (spec 003).
+"""Coleta o clima diário com estado independente por município."""
+import json
 
-STUB do sdd-plan: o corpo é implementado na Fase 3 (T010). Ver
-`sdd/specs/003-ingestao-clima-open-meteo/logic/coleta-clima.md`.
-"""
-
-from collections.abc import Callable, Sequence
-from pathlib import Path
-from typing import Any
+from pipelines.collectors._shared.catalog import get_climate_source
+from pipelines.collectors._shared.datasets import collect_items
+from pipelines.collectors.open_meteo.fingerprint import fingerprint_open_meteo_response
+from pipelines.collectors.open_meteo.municipalities import check_municipalities
+from pipelines.collectors.open_meteo.validate import validate_open_meteo_response
 
 
-def collect_open_meteo(
-    catalog: dict[str, Any],
-    *,
-    municipalities: Sequence[dict[str, Any]],
-    storage: Any,
-    fetcher: Callable[[dict[str, Any], Path], Any],
-    run_id: str,
-    collected_at_utc: str,
-    work_dir: Path,
-    validator: Callable[[dict[str, Any], Path], None] | None = None,
-    max_municipalities: int | None = None,
-    recollect: bool = False,
-) -> dict[str, Any]:
-    """Coleta o clima de cada município pendente e grava o manifest v2.
+def is_current_state(state: dict, source: dict) -> bool:
+    period = f"{source['window']['start']}/{source['window']['end']}"
+    return state.get("reference_period") == period and state.get("model") == source["model"]
 
-    ``municipalities``: ``[{"dico", "name", "latitude", "longitude"}]`` (a dimensão da spec 001).
-    ``fetcher(item, destino)``: baixa a resposta do município para ``destino``.
-    Retorna ``{"status", "run_id", "manifest_key", "datasets", "skipped_current", "remaining",
-    "quota_exhausted", "up_to_date"}``.
-    """
-    raise NotImplementedError("not implemented: collect_open_meteo (T010)")
+
+def collect_open_meteo(catalog, *, municipalities, storage, fetcher, run_id, collected_at_utc,
+                       work_dir, validator=None, max_municipalities=None, recollect=False):
+    source = get_climate_source(catalog)
+    check_municipalities(municipalities, source["expected_municipalities"])
+    items = [{**town, "id": town["dico"], "collection_method": "api_json", "origin": source["api_url"],
+              "window": source["window"], "variables": source["variables"], "model": source["model"]}
+             for town in sorted(municipalities, key=lambda town: town["dico"])]
+
+    def fetch(item, destination):
+        meta = dict(fetcher(item, destination) or {})
+        meta["reference_period"] = f"{source['window']['start']}/{source['window']['end']}"
+        try:
+            doc = json.loads(destination.read_text(encoding="utf-8"))
+            if not isinstance(doc, dict):
+                doc = {}
+        except (ValueError, OSError):
+            doc = {}
+        meta["entry_extra"] = {
+            "model": source["model"], "requested_lat": item["latitude"], "requested_lon": item["longitude"],
+            "returned_lat": doc.get("latitude"), "returned_lon": doc.get("longitude"),
+            "elevation_m": doc.get("elevation"), "timezone": doc.get("timezone"),
+        }
+        return meta
+
+    return collect_items(source, items, source_id="open_meteo", storage=storage, fetcher=fetch,
+                         validator=validator or validate_open_meteo_response, run_id=run_id,
+                         collected_at_utc=collected_at_utc, work_dir=work_dir,
+                         fingerprint=lambda _, path: fingerprint_open_meteo_response(path),
+                         state_is_current=lambda _, state: is_current_state(state, source),
+                         skip_current=not recollect, max_items=max_municipalities)

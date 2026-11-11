@@ -87,19 +87,19 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 ### Implementation
 
-- [ ] T007 [P] [US1] `+ pipelines/collectors/open_meteo/municipalities.py`: `load_climate_municipalities(silver_dir)` lê `dim_municipality/data.parquet` (`dico`, `official_name`, `representative_lat`, `representative_lon`) e devolve `[{"dico","name","latitude","longitude"}]`; `check_municipalities(towns, expected)` recusa total diferente, `dico` repetido e coordenada ausente ou fora de Portugal (lat 29–43, lon −32 a −6) com mensagem que diz qual (FR-004; `data-model.md` §2)
-- [ ] T008 [P] [US1] `pipelines/collectors/open_meteo/validate.py`: `validate_open_meteo_response(item, path)` com as 9 verificações e mensagens de `logic/coleta-clima.md` §4 (FR-008, FR-009) → contrato: `test_us1_ac4_ac5_…`
-- [ ] T009 [P] [US1] `pipelines/collectors/open_meteo/fingerprint.py`: `fingerprint_open_meteo_response(path)` conforme `logic/coleta-clima.md` §3 (FR-006) → contrato: `test_us1_ac1_ac2_…`
-- [ ] T010 [US1] `pipelines/collectors/open_meteo/handler.py`: `collect_open_meteo` conforme `logic/coleta-clima.md` §6 (itens ordenados por `dico`, `is_current`, `entry_extra` com `model`, `requested_*`, `returned_*`, `elevation_m`, `timezone`, `reference_period`, `skip_current=not recollect`, `max_items`) (FR-002, FR-004, FR-005, FR-006, FR-013, FR-022) → contratos: `test_us1_ac1_ac2_…`, `test_us1_ac4_ac5_…`
-- [ ] T011 [P] [US1] `pipelines/collectors/open_meteo/fetch.py`: `make_open_meteo_fetcher` sem a classificação de cota: monta a requisição (`logic/coleta-clima.md` §5), `User-Agent` e `RateLimiter(limits.min_interval_seconds)` do projeto, timeout 60 s, 3 tentativas com espera crescente em erro de rede e 5xx/408, `DownloadError` em 4xx, `json_content_check` e gravação atômica em `destination` (FR-003)
-- [ ] T012 [US1] `+ pipelines/cli/collect_open_meteo.py`: `--local`/`--s3`/`--bucket`/`--prefix`/`--root`/`--catalog`/`--silver`, usando `pipelines/cli/_common.py`; carrega a dimensão (T007), monta o fetcher (T011) e chama `collect_open_meteo`; saída e códigos `0`/`1` conforme `contracts/clima-cli.md` (a parte do código `2` e das opções de cota é T018) (FR-010, FR-011)
+- [X] T007 [P] [US1] `+ pipelines/collectors/open_meteo/municipalities.py`: `load_climate_municipalities(silver_dir)` lê `dim_municipality/data.parquet` (`dico`, `official_name`, `representative_lat`, `representative_lon`) e devolve `[{"dico","name","latitude","longitude"}]`; `check_municipalities(towns, expected)` recusa total diferente, `dico` repetido e coordenada ausente ou fora de Portugal (lat 29–43, lon −32 a −6) com mensagem que diz qual (FR-004; `data-model.md` §2)
+- [X] T008 [P] [US1] `pipelines/collectors/open_meteo/validate.py`: `validate_open_meteo_response(item, path)` com as 9 verificações e mensagens de `logic/coleta-clima.md` §4 (FR-008, FR-009) → contrato: `test_us1_ac4_ac5_…`
+- [X] T009 [P] [US1] `pipelines/collectors/open_meteo/fingerprint.py`: `fingerprint_open_meteo_response(path)` conforme `logic/coleta-clima.md` §3 (FR-006) → contrato: `test_us1_ac1_ac2_…`
+- [X] T010 [US1] `pipelines/collectors/open_meteo/handler.py`: `collect_open_meteo` conforme `logic/coleta-clima.md` §6 (itens ordenados por `dico`, `is_current`, `entry_extra` com `model`, `requested_*`, `returned_*`, `elevation_m`, `timezone`, `reference_period`, `skip_current=not recollect`, `max_items`) (FR-002, FR-004, FR-005, FR-006, FR-013, FR-022) → contratos: `test_us1_ac1_ac2_…`, `test_us1_ac4_ac5_…`
+- [X] T011 [P] [US1] `pipelines/collectors/open_meteo/fetch.py`: `make_open_meteo_fetcher` sem a classificação de cota: monta a requisição (`logic/coleta-clima.md` §5), `User-Agent` e `RateLimiter(limits.min_interval_seconds)` do projeto, timeout 60 s, 3 tentativas com espera crescente em erro de rede e 5xx/408, `DownloadError` em 4xx, `json_content_check` e gravação atômica em `destination` (FR-003)
+- [X] T012 [US1] `+ pipelines/cli/collect_open_meteo.py`: `--local`/`--s3`/`--bucket`/`--prefix`/`--root`/`--catalog`/`--silver`, usando `pipelines/cli/_common.py`; carrega a dimensão (T007), monta o fetcher (T011) e chama `collect_open_meteo`; saída e códigos `0`/`1` conforme `contracts/clima-cli.md` (a parte do código `2` e das opções de cota é T018) (FR-010, FR-011)
 
 ### Testes da Fase
 
-- [ ] T013 [P] [US1] `tests/unit/test_open_meteo_validate.py`: cada uma das 9 verificações com a fixture `open_meteo_response` (dias a menos e a mais, variável ausente, unidade trocada, texto no lugar de número, variável toda nula reprova, nulos esparsos **não** reprovam, `error: true`, JSON de lista, arquivo vazio)
-- [ ] T014 [P] [US1] `tests/unit/test_open_meteo_fingerprint.py`: `generationtime_ms` diferente → igual; valor ou `elevation` diferente → diferente; ordem das chaves irrelevante
-- [ ] T015 [US1] `tests/integration/test_open_meteo_cli_local.py`: `collect_open_meteo.main` com fetcher offline, dimensão sintética de 308 municípios e catálogo de janela curta; 308 brutos, manifest, `--recollect` → todos `unchanged`, falha de 1 município → código `1` e 307 gravados, dimensão com 307 municípios → recusa antes de qualquer chamada
-- [ ] T016 [P] [US1] `tests/integration/test_open_meteo_s3.py` (moto): mesmo cenário no S3 simulado; mesmo conjunto de chaves e manifest equivalente ao local (SC-006)
+- [X] T013 [P] [US1] `tests/unit/test_open_meteo_validate.py`: cada uma das 9 verificações com a fixture `open_meteo_response` (dias a menos e a mais, variável ausente, unidade trocada, texto no lugar de número, variável toda nula reprova, nulos esparsos **não** reprovam, `error: true`, JSON de lista, arquivo vazio)
+- [X] T014 [P] [US1] `tests/unit/test_open_meteo_fingerprint.py`: `generationtime_ms` diferente → igual; valor ou `elevation` diferente → diferente; ordem das chaves irrelevante
+- [X] T015 [US1] `tests/integration/test_open_meteo_cli_local.py`: `collect_open_meteo.main` com fetcher offline, dimensão sintética de 308 municípios e catálogo de janela curta; 308 brutos, manifest, `--recollect` → todos `unchanged`, falha de 1 município → código `1` e 307 gravados, dimensão com 307 municípios → recusa antes de qualquer chamada
+- [X] T016 [P] [US1] `tests/integration/test_open_meteo_s3.py` (moto): mesmo cenário no S3 simulado; mesmo conjunto de chaves e manifest equivalente ao local (SC-006)
 
 **Critério de Conclusão**: `uv run --locked python -m pytest -q tests/contracts/test_climate_collection_contract.py -k "us1" --basetemp .pytest_tmp` → 2/2 verdes e `check-contract-tests.ps1` íntegro (003, 002 e 001); T013 a T016 verdes; `ruff` limpo; a CLI coleta, repete como `unchanged` com `--recollect` e isola a falha de um município.
 
@@ -107,11 +107,12 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Registro da Fase**:
 
-- Status: (vazio — preenchido pelo sdd-execute ao fechar o checkpoint)
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: concluída
+- Feito: Coleta 308 municípios local e S3 simulado; validação e impressão digital implementadas
+- Contrato: três travas íntegras (001, 002, 003); contratos futuros permanecem vermelhos por stubs.
+- Testes executados: pytest completo: 175 verdes e 2 contratos futuros vermelhos; US1 2/2; ruff limpo; 3 travas íntegras
+- Pendências: US2 retomada já verde pelo núcleo; faltam HTTP429 e transformação. S3 teve 2 iterações por filtro do snapshot
+
 
 ---
 
@@ -235,7 +236,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 - [X] Fase 1 (Setup) concluída
 - [X] Fase 2 (Foundational) concluída, sem regressão nas specs 001 e 002
-- [ ] Fase 3 (User Story 1) concluída
+- [X] Fase 3 (User Story 1) concluída
 - [ ] Fase 4 (User Story 2) concluída
 - [ ] Fase 5 (User Story 3) concluída
 - [ ] Fase 6 (User Story 4) concluída
