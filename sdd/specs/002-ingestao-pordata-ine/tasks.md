@@ -329,3 +329,39 @@
 - Contrato: `uv run --locked python -m pytest -q tests/contracts --basetemp .pytest_tmp` → 10/10 verdes (5 da 002 e 5 da CAOP); `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra. O contrato travado não afirma `collection_method` e não foi editado.
 - Testes executados: `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 140 passed; `dbt build --select tag:caop` → PASS=31 e `--select tag:observations` → PASS=17 (fixtures novas). **Verificação no dado real:** `load_pordata_manual` com a planilha do autor → `unchanged`, nenhum raw novo (continua 1 arquivo), `sha256` do arquivo do autor idêntico, e o manifest novo traz `collection_method: manual_upload` (os manifests antigos, gravados antes da correção, seguem válidos e legíveis); `build_observations` real depois da mudança → 1.168.860 observações de 20 datasets, igual ao build anterior.
 - Pendências: Nenhuma. O manifest da primeira carga manual (anterior à correção) segue registrando `http_download` na execução; é histórico imutável e não é lido para decidir estado, então foi mantido.
+
+---
+
+## Phase 10: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-11 (terceira passada). As Phases 9 resolveram F-001 e F-002; a comparação sistemática das colunas e campos reais (staging, cobertura, manifest e seed) com o `data-model.md` achou mais um ponto. IDs continuam a numeração (`T039`+).
+
+- [X] T039 [LOW, F-003, FR-019 / US4-AC2] Acrescentar `latest_period_with_data` ao parágrafo "Cobertura" de `data-model.md`: é o último período com pelo menos um valor não nulo no dataset e difere de `latest_period` quando o período mais recente está vazio (na coleta real, `ensino_nao_superior` tem `latest_period` 2024 e `latest_period_with_data` 2023). Só documentação; o código e os testes já cobrem a coluna (`test_a_dataset_with_nothing_in_the_latest_period_reports_zero_and_the_last_period_with_data`).
+
+**Critério de Conclusão**: `data-model.md` descreve as 9 colunas reais de `rpt_observation_coverage`; nenhum código alterado; `check-contract-tests.ps1` íntegro para 001 e 002.
+
+**Registro da Fase**:
+
+- Status: concluída em 2026-11-11 (T039).
+- Feito: T039 (F-003): o parágrafo "Cobertura" de `data-model.md` passou a descrever as 9 colunas reais de `rpt_observation_coverage`, incluindo `latest_period_with_data` (último período com algum valor não nulo; difere de `latest_period` quando o período mais recente está vazio; nulo se o dataset não tiver nenhum valor), com o exemplo real de `ensino_nao_superior`. Só documentação.
+- Contrato: `uv run --locked python -m pytest -q tests/contracts --basetemp .pytest_tmp` → 10/10 verdes (5 da 002 e 5 da CAOP); `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra.
+- Testes executados: Nenhum código foi alterado (`git diff --stat -- pipelines tests analytics` vazio), então a suíte completa da Phase 9 (140 passed) segue válida. Conferência de documentação: o script que compara as colunas reais (staging, cobertura, manifest e seed) com o `data-model.md` agora não aponta nenhuma coluna ausente em staging e cobertura (os campos do manifest aparecem no JSON de exemplo); `uv run --locked ruff check pipelines tests` → All checks passed. A afirmação do documento foi verificada no Parquet real: `ensino_nao_superior` tem `latest_period` 2024, `latest_period_with_data` 2023 e 0 municípios com valor.
+- Pendências: Nenhuma.
+
+---
+
+## Phase 11: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-11 (quarta passada). Esta passada estendeu a comparação de deriva ao contrato das CLIs e ao documento de lógica; o `data-model.md` já havia sido conferido na passada anterior. IDs continuam a numeração (`T040`+).
+
+- [X] T040 [LOW, F-004, Constitution Quality Gate 6] Alinhar dois documentos da feature ao código, sem alterar código nem testes: em `contracts/ingestao-cli.md`, (a) acrescentar `--catalog <arquivo>` (catálogo YAML alternativo; padrão `config/sources.yml`) às três CLIs de coleta, e (b) corrigir a saída de `build_observations`, que imprime o total de linhas e de datasets, a tabela de cobertura (com a linha de datasets "não coletados", como a planilha manual antes da carga) e o caminho do `coverage.csv`, e não uma contagem "por fonte"; em `logic/ingestao-datasets.md` §1, acrescentar o parâmetro `dataset_ids=None` à assinatura de `collect_datasets` e uma linha dizendo que restringe a coleta a esses datasets (usado por `collect_pordata`, só `http_download`, e por `load_pordata_manual`, só o dataset manual) e recusa um id fora do catálogo.
+
+**Critério de Conclusão**: `contracts/ingestao-cli.md` e `logic/ingestao-datasets.md` descrevem as opções e a assinatura reais (conferir contra `--help` das CLIs e `inspect.signature(collect_datasets)`); nenhum código alterado; `check-contract-tests.ps1` íntegro para 001 e 002.
+
+**Registro da Fase**:
+
+- Status: concluída em 2026-11-11 (T040).
+- Feito: T040 (F-004): `contracts/ingestao-cli.md` passou a citar `--catalog <arquivo>` (catálogo YAML alternativo; padrão `config/sources.yml`; aceito pelas três CLIs de coleta, incluindo `load_pordata_manual`) e a descrever a saída real de `build_observations` (total de linhas e de datasets, caminho do staging, tabela de cobertura com a linha dos datasets ainda não coletados e o caminho do `coverage.csv` com os ausentes por código e nome), em vez de uma contagem "por fonte". `logic/ingestao-datasets.md` §1 passou a mostrar `dataset_ids=None` na assinatura de `collect_datasets` e a explicar que ele restringe a coleta (usado por `collect_pordata`, só `http_download`, e por `load_pordata_manual`, só o dataset manual) e recusa um id fora do catálogo. Só documentação.
+- Contrato: `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra; os 10 contratos (5 da 002 e 5 da CAOP) seguem verdes, pois nenhum código ou teste foi tocado.
+- Testes executados: Nenhum código foi alterado (`git diff --stat -- pipelines tests analytics config` vazio), então a suíte completa da Phase 9 (140 passed) e o CI do commit `74a64cd` continuam válidos. Conferência da documentação contra o código real: o `--help` de `collect_pordata`, `collect_ine` e `load_pordata_manual` mostra `--catalog` (e o contrato agora o cita); `inspect.signature(collect_datasets)` termina em `fingerprint=None, dataset_ids=None` (e a lógica agora mostra os dois); as quatro linhas que `build_observations` imprime batem com o contrato.
+- Pendências: Nenhuma.

@@ -106,7 +106,7 @@ Uma linha por observação municipal. Chave: `(dataset_id, dico, period, filter_
 
 ## Cobertura — `lake/bronze/rpt_observation_coverage/`
 
-Uma linha por dataset: `source_id`, `dataset_id`, `latest_period`, `municipalities_expected` (308), `municipalities_with_value`, `municipalities_without_value`, `missing_dico` (lista), `aggregate_rows_excluded`. Definição: um município **tem valor** no período mais recente se tiver pelo menos uma observação com `value` não nulo naquele período. A cobertura por combinação de filtros fica para a camada Gold.
+Uma linha por dataset: `source_id`, `dataset_id`, `latest_period`, `latest_period_with_data`, `municipalities_expected` (308), `municipalities_with_value`, `municipalities_without_value`, `missing_dico` (lista), `aggregate_rows_excluded`. Definição: um município **tem valor** no período mais recente (`latest_period`, o maior `period` do dataset) se tiver pelo menos uma observação com `value` não nulo naquele período. `latest_period_with_data` é o último período com pelo menos um valor não nulo em qualquer município; difere de `latest_period` quando o período mais recente está vazio (na coleta real de 2026-11-11, `ensino_nao_superior` tem `latest_period` 2024, com 0 de 308 municípios, e `latest_period_with_data` 2023) e é nulo se o dataset não tiver nenhum valor. A cobertura por combinação de filtros fica para a camada Gold.
 
 ## Seed — `analytics/dbt/seeds/municipality_synonyms.csv`
 

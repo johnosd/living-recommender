@@ -151,12 +151,11 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 
 | Área | Estado |
 | --- | --- |
-| Fase | Todas as fases e o Checklist de Release concluídos (T001–T038), incluindo a Phase 9 de convergência. Resta rodar o `sdd-converge` outra vez. |
-| Coleta | `collect_pordata`, `collect_ine` e `load_pordata_manual` verificados contra as fontes reais; o manifest v2 registra o método de coleta por dataset (`http_download`, `api_json`, `manual_upload`) e, na execução, o método comum ou `mixed`. |
-| Staging | `build_observations` verificado contra a Silver real: 1.168.860 observações de 20 datasets, 308 municípios resolvidos, ausência nula com símbolo, cobertura por dataset; CAOP e seu lake intactos. |
+| Fase | Todas as fases concluídas (T001–T040), incluindo as Phases 9 a 11 de convergência. Resta rodar o `sdd-converge` outra vez. |
+| Documentação | `data-model.md`, `quickstart.md`, `contracts/ingestao-cli.md`, `logic/ingestao-datasets.md`, runbook, README e `.docs/fontes_de_dados.md` conferidos contra o código e a coleta real. |
 | Contratos | 5 de 5 da 002 verdes (e 5 de 5 da CAOP); trava da 002 e da 001 íntegras. |
 | Testes | 140 testes verdes; `dbt build` com 31 passos (tag `caop`) e 17 passos (tag `observations`); ruff limpo. |
-| CI | Verde no GitHub em `d511ec5` (PR #2, mergeado). A Phase 9 ainda não foi enviada ao GitHub. |
+| CI | Verde no GitHub: PR #2 (mergeado) e o commit da Phase 9 (`74a64cd`). As Phases 10 e 11 só mudam documentação. |
 
 ## Riscos e Decisões
 
@@ -168,15 +167,15 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
 | R-001 | **Risco aceito pelo autor (2026-11-11):** os Termos Legais do Pordata não concedem licença de reutilização e a cláusula 5.4 pede que se evite reproduzir e colocar o conteúdo à disposição do público. O `.docs` assumia "uso livre com citação" sem fonte. | Alto para a publicação; baixo para a coleta interna. A constitution III exige licença por indicador publicado. | Atribuição "Fonte: PORDATA" (e do INE onde a série for dele); bruto fora do Git e nunca redistribuído; `license_id: not_granted_by_source` no catálogo e em cada linha; a spec de publicação (Gold/`published/`) reavalia a licença antes de expor derivados. Alternativa documentada: séries equivalentes do INE (CC BY 4.0). Contato público dos termos: `pordata@ffms.pt`. |
-| R-002 | A API do INE é instável: 2 de 6 pedidos de metadados deram timeout de 60 s; a de dados leva 3 a 6 s; não envia `ETag`. | Médio: falhas intermitentes de coleta. | Timeout de 90 s, até 3 tentativas com espera crescente, limite de taxa; falha por dataset (D2); impressão digital sem `DataExtracao` (D3). |
-| R-003 | As URLs do blob do Pordata são internas e mudam sem aviso (o `Modelo_N` varia por tabela e a planilha antiga morreu). | Médio: dataset `failed` até corrigir o catálogo. | Falha explícita por dataset; catálogo versionado e revisado; validação por rótulos detecta mudança de estrutura; cada dataset é independente. |
+| R-002 | A API do INE é instável: 2 de 6 pedidos de metadados deram timeout de 60 s; a de dados leva 3 a 6 s; não envia `ETag`. | Médio: falhas intermitentes de coleta. | Resolvido: confirmado na convergência de 2026-11-11: o timeout de 90 s com 3 tentativas e espera crescente está provado em `test_timeout_is_retried_with_backoff_and_the_fetcher_reports_period_and_release_date`, a falha por dataset em `test_a_failing_indicator_gives_partial_and_exit_code_1_without_blocking_the_others`, e a coleta real absorveu uma lentidão de 204 s do INE (a repetição levou 8 s). Timeout de 90 s, até 3 tentativas com espera crescente, limite de taxa; falha por dataset (D2); impressão digital sem `DataExtracao` (D3). |
+| R-003 | As URLs do blob do Pordata são internas e mudam sem aviso (o `Modelo_N` varia por tabela e a planilha antiga morreu). | Médio: dataset `failed` até corrigir o catálogo. | Resolvido: confirmado na convergência de 2026-11-11: HTML, arquivo vazio, rótulo ausente e sem linha de município estão cobertos em `tests/unit/test_pordata_validate.py`, o `partial` com código 1 em `test_collect_pordata_local.py`, e os 16 URLs do blob estavam vivos na coleta real. Falha explícita por dataset; catálogo versionado e revisado; validação por rótulos detecta mudança de estrutura; cada dataset é independente. |
 | R-004 | As rendas do INE cobrem só 222 a 247 dos 308 municípios (mínimo de contratos por unidade). O `.docs` dizia "todos". | Médio: critério de custo sem dado em ~20% dos municípios. | Ausência explícita (`symbol`), relatório de cobertura (US4), correção do `.docs` no Polish; o fallback de aluguel (Idealista) é de outra spec. |
 | R-005 | `openpyxl` é dependência nova, e o layout hierárquico da planilha do Pordata pode mudar. | Baixo: só a carga manual. | Resolvido: validação estrita (abas, cabeçalho de anos, 308 municípios) provada com fixtures inválidas e com a planilha real do autor (3.388 observações, `sha256` do arquivo intacto); falha explícita. |
 | R-006 | `build_caop._promote` troca `lake/bronze` e `lake/silver` **inteiros**; reutilizá-lo apagaria a CAOP. | Alto se ocorrer. | Resolvido: D7 implementado em `pipelines/cli/_promote.py` e usado pelos dois builds; `test_the_caop_lake_is_left_byte_for_byte_untouched` e `test_rebuilding_the_caop_does_not_erase_the_observation_staging` provam a convivência. |
 | R-007 | `dbt build` sem seleção, usado hoje por `build_caop` e pelo CI, passaria a executar os modelos novos sem entradas. | Alto: quebra o build da CAOP e o CI. | Resolvido: tags `caop`/`observations` e `--select tag:<...>` no `build_caop`, no `build_observations` e no workflow; os dois `dbt build` (31 e 11 passos) passam isolados. |
 | R-008 | Se o INE passar a incluir outro campo volátil além de `DataExtracao`, a impressão digital mudaria sempre. | Médio: falsos `changed`. | Resolvido: a coleta real de 2026-11-11 expôs um segundo elemento variável, a **ordem das linhas** da criminalidade (2 de 12 períodos, sem diferença de conteúdo). A impressão digital passou a ordenar os registros, com teste de regressão e confirmação nas duas respostas reais; depois, duas coletas seguidas deram `unchanged` nos 3 indicadores. Estados gravados com o algoritmo anterior apareceriam como `changed` uma vez. |
-| R-009 | Um município renomeado na fonte reprova o staging. | Baixo: é o comportamento desejado. | Falha lista os nomes; a seed (5 linhas) é mantida à mão, em PR. |
-| R-010 | **Decisão de execução:** a resolução do município ficou **em Python** (a função do contrato, reutilizada), e o dbt testa o resultado (`not_null`, `relationships`); o plano previa a resolução em SQL pelo seed. O `stg_observation` ficou **sem particionamento físico**: um `data.parquet` único com `source_id`/`dataset_id`, como na CAOP. | Baixo: evita duas implementações da mesma regra e simplifica a promoção; a leitura por dataset continua por filtro. | Uma só regra testada pelo contrato 5; o particionamento por dataset pode ser reavaliado se o volume crescer (hoje ~1,2 milhão de linhas). |
+| R-009 | Um município renomeado na fonte reprova o staging. | Baixo: é o comportamento desejado. | Resolvido: confirmado na convergência de 2026-11-11: `test_unresolved_names_fail_listing_dataset_and_names_and_keep_the_previous_staging` prova a falha com a lista de nomes e o staging anterior preservado. Falha lista os nomes; a seed (5 linhas) é mantida à mão, em PR. |
+| R-010 | **Decisão de execução:** a resolução do município ficou **em Python** (a função do contrato, reutilizada), e o dbt testa o resultado (`not_null`, `relationships`); o plano previa a resolução em SQL pelo seed. O `stg_observation` ficou **sem particionamento físico**: um `data.parquet` único com `source_id`/`dataset_id`, como na CAOP. | Baixo: evita duas implementações da mesma regra e simplifica a promoção; a leitura por dataset continua por filtro. | Resolvido: confirmado na convergência de 2026-11-11: o contrato 5 está verde e o build real resolveu 1.168.860 observações de 20 datasets em 15 s com um único `data.parquet`, sem precisar de particionamento. Uma só regra testada pelo contrato 5; o particionamento por dataset pode ser reavaliado se o volume crescer (hoje ~1,2 milhão de linhas). |
 | R-011 | **Decisão de execução:** o `build_caop` passou a promover **por tabela** (`promote_paths`), em vez de trocar `lake/bronze` e `lake/silver` inteiros. | Médio se não feito: reconstruir a CAOP apagaria o staging de observações. | Resolvido: testes do `build_caop` (5 testes de build) seguem verdes e `test_rebuilding_the_caop_does_not_erase_the_observation_staging` prova a convivência. |
 | R-012 | **Decisão de convergência (F-001):** o manifest v2 registra o método de coleta **por dataset**, e o da execução é o comum ou `mixed`. Antes, a carga manual do Pordata gravava `http_download` (o método da fonte). | Baixo: trilha de auditoria imprecisa, sem efeito sobre o estado dos datasets nem sobre o staging. | Resolvido: corrigido em `datasets.py`/`dataset_manifest.py`, com testes nas três CLIs e verificação no manifest real; manifests antigos continuam legíveis. |
 
@@ -200,16 +199,17 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 | 2026-11-11 | Phase 8 (Polish) | T034–T036 concluídas: documentação alinhada; coleta real das três fontes e build contra a Silver real (1.168.860 observações, 308 municípios, CAOP intacta); achado e correção da ordem variável das linhas do INE (R-008); gate local e `gitleaks` (dir e git) limpos; reprodução do CI em Linux verde (138 + 1 pulado). | CI no GitHub (exige enviar a branch); depois `sdd-converge`. |
 | 2026-11-11 | CI | Branch enviada (commit `d511ec5`) e PR #2 mergeado: `Python quality` verde no GitHub em push e em pull_request, com os passos novos do dbt de observações e o job `secrets`. Último item do Checklist de Release marcado; status Implementada. | `sdd-converge`. |
 | 2026-11-11 | Phase 9 (Convergence) | T037–T038 concluídas: método de coleta registrado por dataset no manifest v2 (a carga manual deixou de gravar `http_download`), com testes e verificação no dado real; `quickstart.md` corrigido; 140 testes e dbt 31 + 17 passos verdes. | `sdd-converge` outra vez; enviar a Phase 9 ao GitHub. |
+| 2026-11-11 | Phase 10 (Convergence) | T039 concluída: `latest_period_with_data` documentado no `data-model.md`; nenhum código alterado; contratos 10/10 verdes. | `sdd-converge` outra vez. |
+| 2026-11-11 | Phase 11 (Convergence) | T040 concluída: contrato das CLIs e documento de lógica alinhados ao código (`--catalog`, saída do `build_observations`, `dataset_ids`); nenhum código alterado; contratos íntegros. | `sdd-converge` outra vez. |
 
-**PRÓXIMO**: Rodar o `sdd-converge` outra vez para confirmar que não restam achados e sincronizar o status final; a Phase 9 ainda precisa ser enviada ao GitHub para o CI rodar sobre ela.
+**PRÓXIMO**: Rodar o `sdd-converge` outra vez para confirmar que não restam achados e sincronizar o status final.
 
 ## Arquivos Principais
 
 <!-- Sobrescrita a cada checkpoint — foco da etapa atual, não a árvore inteira. -->
 
-- `pipelines/collectors/_shared/datasets.py` e `dataset_manifest.py` — `collection_method` por dataset e método da execução.
-- `sdd/specs/002-ingestao-pordata-ine/data-model.md` e `quickstart.md` — regra do método e correções de documentação.
-- `tests/unit/test_dataset_catalog_and_manifest.py` e os testes de integração das três CLIs — prova do método por dataset.
+- `sdd/specs/002-ingestao-pordata-ine/contracts/ingestao-cli.md` e `logic/ingestao-datasets.md` — alinhados ao código.
+- `sdd/specs/002-ingestao-pordata-ine/tasks.md` e `plan.md` — registro da Phase 11.
 
 ## Cuidados para Retomada
 
@@ -232,3 +232,28 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 - Ao chamar `docker run -w /repo` use o PowerShell: o Git Bash converte `/repo` num caminho do Windows e o Docker recusa (`working directory ... is invalid`). Para o `gitleaks` no modo `dir`, varra uma cópia limpa dos arquivos (`git ls-files -co --exclude-standard`), nunca a raiz com `.data` e `.venv`.
 - A cobertura que importa para o Gold está em `.data/lake/bronze/coverage.csv`: `ensino_nao_superior` tem o último ano (2024) vazio, então use `latest_period_with_data` (2023) e não `latest_period`.
 - Leia o método de coleta sempre da **entrada do dataset**; o do nível da execução é um resumo (`mixed` quando há mais de um). Manifests anteriores a 2026-11-11 não têm o campo na entrada e valem o método da execução.
+
+## Resultado Final
+
+**Convergida em 2026-11-11** (`sdd-converge`, quinta passada: nenhum achado). 54/54 itens (T001–T040), 5/5 contratos da 002 e 5/5 da CAOP verdes, as duas travas íntegras, 140 testes e `dbt build` com 31 passos (tag `caop`) e 17 (tag `observations`); `Python quality` verde no GitHub em push e em pull_request (PR #2, mergeado) e no commit da Phase 9 (`74a64cd`). As Phases 10 e 11 só alteraram documentação.
+
+**O que foi construído.** Três CLIs de coleta e uma de staging, sobre um coletor genérico por dataset:
+
+- `collect_pordata` baixa os 16 CSV do Pordata; `collect_ine` coleta 3 indicadores da API JSON do INE (rendas, criminalidade com as 7 categorias e poder de compra); `load_pordata_manual` guarda a planilha de poder de compra que o site só entrega por botão. Cada dataset tem estado vigente próprio, manifest v2 por dataset (com o método de coleta de cada um), falha tolerada (`partial`, código 1) e `unchanged` por impressão digital (no INE, ignorando o horário de extração e a ordem das linhas), em destino local ou S3 com paridade provada.
+- `build_observations` lê o estado vigente de cada dataset, resolve o município (nome + seed de 5 grafias no Pordata; código no INE), roda o dbt e promove `stg_observation` (um Parquet longo com a proveniência) e `rpt_observation_coverage` (mais `coverage.csv` com os ausentes por código e nome). A ausência fica nula com o símbolo da fonte, nunca zero.
+- Verificação real em 2026-11-11: 16 CSV em 43 s; INE `unchanged` em coletas repetidas; planilha do autor com 308 municípios × 11 anos; **1.168.860 observações de 20 datasets** contra a Silver real, com o lake da CAOP byte a byte intacto. Cobertura real: rendas do INE em 247 de 308 municípios (2025); `ensino_nao_superior` sem valor em 2024 (último período com dados: 2023).
+
+**Desvios em relação ao plano original** (detalhe nas Execution Notes):
+
+- O poder de compra deixou de ser só o `.xlsx` do Pordata (a URL morreu e o site só exporta por botão): entra pela API do INE e pela carga manual, como datasets distintos. A spec foi emendada (US5, FR-023, FR-013 e FR-022) por decisão do autor.
+- A resolução do município ficou em Python (a função do contrato), e o dbt testa o resultado; o `stg_observation` ficou sem particionamento físico (R-010).
+- O `build_caop` passou a promover por tabela, e não `lake/bronze` e `lake/silver` inteiros, para que os dois builds convivam (R-011). Os modelos dbt ganharam as tags `caop` e `observations`.
+- A impressão digital do INE precisou ignorar também a **ordem das linhas**, achado só possível com a API real (R-008).
+- Convergência: o método de coleta passou a ser registrado por dataset (R-012); `data-model.md`, `quickstart.md`, o contrato das CLIs e o documento de lógica foram alinhados ao código.
+
+**Limitações conhecidas e aceitas** (não bloqueiam a convergência):
+
+- **R-001:** os Termos Legais do Pordata não concedem licença de reutilização; o autor decidiu coletar mesmo assim (`license_id: not_granted_by_source`). A publicação de qualquer indicador derivado do Pordata deve reavaliar a licença (alternativa: séries equivalentes do INE).
+- **R-004:** as rendas do INE cobrem 222 a 247 dos 308 municípios, por regra de publicação do INE; a ausência é explícita e medida pelo relatório de cobertura.
+- Fora de escopo, para outras specs: freguesia (e a tabela de correspondência 2013→2025), Silver de indicadores, Gold e `published/`, deploy e agendamento, conditional GET (a API do INE nem envia validadores) e os datasets Pordata 845, 294, 445, 447 e 582 (o 845 segue sem URL).
+- Registros históricos que se mantêm como estavam: o `handoff.md` (retrato do fim do planejamento) e o primeiro manifest da carga manual (gravado antes da correção do método, imutável e não usado para decidir estado).
