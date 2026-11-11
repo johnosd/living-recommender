@@ -1,9 +1,13 @@
 """Cliente HTTP responsável do arquivo histórico."""
 import contextlib
 import json
+import logging
+import math
 import os
+import random
 import tempfile
 import time
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import httpx
@@ -16,8 +20,9 @@ from pipelines.collectors._shared.http import (
     json_content_check,
 )
 
-WAIT_SECONDS = {'minute': 61, 'hour': 3605}
+WAIT_SECONDS = {'minute': 61, 'hour': 3605, 'day': 86405}
 MAX_WAITS = {'minute': 5, 'hour': 1}
+logger = logging.getLogger(__name__)
 
 
 def classify_limit(reason: str) -> str:
@@ -28,7 +33,31 @@ def classify_limit(reason: str) -> str:
     return 'hour'
 
 
-def make_open_meteo_fetcher(source, *, client=None, sleep=time.sleep, wait_on_limits=True):
+def provider_delay(headers, *, clock=time.time):
+    """Prefere a espera do servidor; usa seu relógio para timestamps absolutos."""
+    now = clock()
+    with contextlib.suppress(ValueError, TypeError, OverflowError, KeyError):
+        now = parsedate_to_datetime(headers['date']).timestamp()
+    for name in ('retry-after', 'x-ratelimit-reset'):
+        value = headers.get(name)
+        if value is None:
+            continue
+        try:
+            seconds = float(value)
+            if name == 'x-ratelimit-reset':
+                seconds -= now
+        except (ValueError, TypeError, OverflowError):
+            try:
+                seconds = parsedate_to_datetime(value).timestamp() - now
+            except (ValueError, TypeError, OverflowError):
+                continue
+        if math.isfinite(seconds) and seconds >= 0:
+            return max(1, seconds)
+    return None
+
+
+def make_open_meteo_fetcher(source, *, client=None, sleep=time.sleep, wait_on_limits=True,
+                          clock=time.time, jitter=random.random, max_attempts=3, on_quota=None):
     limiter = RateLimiter(source.get("limits", {}).get("min_interval_seconds", 0), sleep=sleep)
 
     def fetch(item, destination):
@@ -44,8 +73,9 @@ def make_open_meteo_fetcher(source, *, client=None, sleep=time.sleep, wait_on_li
         with contextlib.ExitStack() as stack:
             http = client if client is not None else stack.enter_context(httpx.Client())
             attempt = 1
-            while attempt <= 3:
+            while max_attempts is None or attempt <= max_attempts:
                 limiter.wait()
+                retry_delay = None
                 try:
                     response = http.get(source["api_url"], params=params,
                                         headers={"User-Agent": USER_AGENT}, timeout=60)
@@ -59,10 +89,14 @@ def make_open_meteo_fetcher(source, *, client=None, sleep=time.sleep, wait_on_li
                         reason = response.text
                     if response.status_code == 429:
                         kind = classify_limit(str(reason))
+                        supplied_delay = provider_delay(response.headers, clock=clock)
+                        delay = (supplied_delay + jitter() if supplied_delay is not None else WAIT_SECONDS[kind])
+                        if on_quota is not None:
+                            on_quota(delay)
                         if kind == 'day' or not wait_on_limits or waits[kind] >= MAX_WAITS[kind]:
                             raise QuotaExhausted(f'cota esgotada ({kind}): {reason}')
                         waits[kind] += 1
-                        sleep(WAIT_SECONDS[kind])
+                        sleep(delay)
                         continue
                     if response.status_code not in {408, 500, 502, 503, 504}:
                         if response.status_code >= 400:
@@ -83,9 +117,14 @@ def make_open_meteo_fetcher(source, *, client=None, sleep=time.sleep, wait_on_li
                             temp.unlink(missing_ok=True)
                         return {}
                     last_error = f"HTTP {response.status_code}: {reason}"
-                if attempt < 3:
-                    sleep(2 ** attempt)
+                    retry_delay = provider_delay(response.headers, clock=clock)
+                if max_attempts is None or attempt < max_attempts:
+                    delay = min(60, 2 ** min(attempt, 6))
+                    delay = max(delay, retry_delay or 0) + jitter()
+                    logger.warning('Open-Meteo: tentativa %s falhou (%s); nova tentativa em %.1f s',
+                                   attempt, last_error, delay)
+                    sleep(delay)
                 attempt += 1
-        raise DownloadError(f"falhou após 3 tentativas: {last_error}")
+        raise DownloadError(f"falhou após {max_attempts} tentativas: {last_error}")
 
     return fetch

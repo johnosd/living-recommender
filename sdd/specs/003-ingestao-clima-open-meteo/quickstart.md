@@ -7,7 +7,7 @@ Passos manuais para conferir a feature depois do `sdd-execute`. Tudo roda na rai
 - `uv` e Python 3.12 (`uv sync --locked`).
 - **Silver da CAOP construída** em `.data/lake/silver/dim_municipality/data.parquet` (spec 001): `uv run --locked python -m pipelines.cli.build_caop --local` (precisa dos GeoPackages já coletados com `collect_caop`).
 - Acesso à internet, só para a coleta real (§4). Nenhuma chave de API, nenhum `.env`.
-- Cota do Open-Meteo livre: 10.000 chamadas/dia no plano gratuito. A coleta real consome cerca de 21 mil a 31 mil chamadas no total, ou seja, **3 dias** (R-003).
+- Cota do Open-Meteo livre: 600 unidades/minuto, 5.000/hora e 10.000/dia simultaneamente no plano gratuito. O cabeçalho real medido em 2026-11-11 confirmou 67,78571 unidades por município, cerca de 20.878 no total. A duração depende da cota disponível; os limites podem exigir vários dias (R-003). Em uma rejeição, use `Retry-After` e `X-RateLimit-Reset` quando presentes, sem presumir a virada exata do relógio. O cliente atual classifica o texto e usa esperas fixas; `--no-wait` permite encerrar com progresso salvo para uma retomada orientada pelos cabeçalhos.
 
 ## 2. Verificações automatizadas (sem rede)
 
@@ -52,6 +52,8 @@ uv run --locked python -m pipelines.cli.collect_open_meteo --local
 # 3. Staging e cobertura
 uv run --locked python -m pipelines.cli.build_climate --local
 ```
+
+Para aguardar automaticamente as cotas, substitua o passo 2 por `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. O supervisor grava manifests a cada 10 municípios e antes de esperar por cota, mantém o limitador de taxa entre lotes e retoma apenas os pendentes. Prefere `Retry-After`, depois `X-RateLimit-Reset`; sem cabeçalhos válidos, usa 61/3.605/86.405 segundos conforme o tipo de cota. Falhas temporárias usam 2, 4, 8, 16, 32 e até 60 segundos, mais jitter de até um segundo; uma espera maior informada pelo servidor prevalece. Essas retentativas continuam até recuperar ou receber Ctrl+C; erros permanentes encerram com falha. A máquina precisa permanecer ligada. `--continuous` não combina com `--no-wait`, `--recollect` ou `--max-municipalities`.
 
 Registrar no `plan.md` (Execution Notes) e em `research.md` (R3, R4):
 

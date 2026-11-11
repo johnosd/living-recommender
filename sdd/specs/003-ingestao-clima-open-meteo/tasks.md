@@ -239,6 +239,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] T036+1 Descoberta em T036: limitar memória do DuckDB no target exclusivo `climate`, mantendo o target `local` anterior intacto; repetir volume e medir árvore de processos (R-015).
 - [ ] T037 **Coleta real e medição (manual, SC-008):** seguir `quickstart.md` §4: smoke de 5 municípios, repetir por dia até 308/308, `build_climate`; registrar execuções, chamadas por município, texto real do 429 (emendar a fixture se diferir, R-002), lacunas, pontos divergentes, elevação 0 m e o tamanho do bruto; atualizar `research.md` (R3, R4)
 - [X] T038 Rodar a validação de `quickstart.md` (§2 e §3)
+- [X] T038+1 Descoberta em T037 e solicitada pelo autor: modo `--continuous` com supervisor, checkpoints a cada 10 municípios e antes da espera por cota, respeito a `Retry-After`/`X-RateLimit-Reset`, backoff exponencial com jitter para falhas temporárias, Ctrl+C e erros permanentes encerrando a execução. Preservar os contratos e o comportamento dos modos existentes.
 
 ### Checklist de Release
 
@@ -263,10 +264,10 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 **Registro da Fase**:
 
 - Status: parcial — coleta completa pendente; implementação, validação local e CI remoto aprovados
-- Feito: Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending; PR #3 em rascunho autorizado pelo autor, quality e secrets/gitleaks verdes no commit afa0903
+- Feito: implementação e verificação local concluídas; volume sintético 2922920; fonte real 219/308 com 89 pending e 2078310 linhas reais. T038+1 implementada: supervisão contínua com checkpoints, cabeçalhos de cota e backoff. Processo local em segundo plano aguarda a cota para continuar e executar o build final. PR #3 em rascunho, CI verde somente em afa0903
 - Contrato: três travas íntegras (001, 002, 003); 5/5 contratos verdes na suíte completa
-- Testes executados: uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; ruff limpo; 3 travas íntegras; dbt 31/31 CAOP, 17/17 observations, 23/23 climate; volume 555,90 MiB; retomada: 11/11 contratos/Windows; CI remoto 209 passed e 1 skipped específico do Windows; gitleaks sem achados ([run 43107887816](https://github.com/johnosd/living-recommender/actions/runs/43107887816))
-- Pendências: somente T037: completar 308/308 após cota; as retomadas de 21:53/22:00 UTC mantiveram 71 atuais, 237 pending e retorno 2. Não marcar Implementada ainda
+- Testes executados: `uv run --locked python -m pytest -q --basetemp .data/pytest-continuous-final`: 225/225; `uv run --locked ruff check pipelines tests`: limpo; 3 travas íntegras. Build real parcial: 2.078.310 linhas e dbt climate aprovado. Evidência anterior: dbt 31/31 CAOP, 17/17 observations, 23/23 climate; volume 555,90 MiB; CI remoto em afa0903 com 209 passed e 1 skipped específico do Windows; gitleaks sem achados ([run 43107887816](https://github.com/johnosd/living-recommender/actions/runs/43107887816))
+- Pendências: somente T037: completar 308/308 e conferir o build final. Último reset informado: 23:00:30 UTC / 20:00:30 Brasília. Conferir `.data/climate-continuous-status.json` e logs antes de iniciar outro coletor. Não marcar Implementada ainda. T038+1: `uv run --locked python -m pytest -q --basetemp .data/pytest-continuous-final` passou 225/225; ruff limpo e três travas íntegras; revisão sem achados importantes pendentes
 
 
 ## Dependencies & Execution Order

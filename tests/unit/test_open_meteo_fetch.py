@@ -23,7 +23,7 @@ def test_quota_waits_are_bounded_and_never_leave_partial_files(tmp_path, reason,
         return httpx.Response(429, text=error_response(reason))
 
     with httpx.Client(transport=httpx.MockTransport(respond)) as client:
-        fetch = make_open_meteo_fetcher(catalog(1)['open_meteo'], client=client, sleep=sleeps.append)
+        fetch = make_open_meteo_fetcher(catalog(1)['open_meteo'], client=client, sleep=sleeps.append, jitter=lambda: 0)
         with pytest.raises(QuotaExhausted, match=reason):
             fetch(ITEM, tmp_path / 'out.json')
     assert sleeps == [wait] * count and len(requests) == count + 1
@@ -45,7 +45,7 @@ def test_http_errors_retry_only_transient_failures(tmp_path, kind):
         return httpx.Response(int(kind), text=error_response('bad parameter'))
 
     with httpx.Client(transport=httpx.MockTransport(respond)) as client:
-        fetch = make_open_meteo_fetcher(catalog(1)['open_meteo'], client=client, sleep=sleeps.append)
+        fetch = make_open_meteo_fetcher(catalog(1)['open_meteo'], client=client, sleep=sleeps.append, jitter=lambda: 0)
         with pytest.raises(DownloadError):
             fetch(ITEM, tmp_path / 'out.json')
     transient = kind in ('timeout', '500', '408')

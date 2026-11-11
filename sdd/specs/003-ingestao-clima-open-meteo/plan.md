@@ -33,6 +33,7 @@ Como o plano gratuito comporta ~100 a 140 municípios por dia, a coleta é **ret
 - **D3. `pending` é uma entrada, nunca estado.** Entrada `pending` exige `error`, não tem `key`/`sha256` e é ignorada por `latest_dataset_states`. Status da execução: `failed` se todas falharam; `partial` se houver `failed` ou `pending`; senão `changed`/`unchanged`.
 - **D4. Modelo e requisição fixos.** `models=era5`, `timezone=auto`, 13 variáveis do catálogo, **uma requisição por município com a janela inteira**. Mudar modelo, janela ou variáveis é mudança de catálogo e torna todos os municípios pendentes de novo; os brutos antigos permanecem.
 - **D5. Cota por classificação do 429.** `reason` com `minutely` → espera 61 s (até 5×); `hourly` → espera 3.605 s (1×); `daily` → `QuotaExhausted` sem esperar; 429 sem palavra reconhecida é tratado como `hourly`. `--no-wait` e esperas esgotadas viram `QuotaExhausted`. `QuotaExhausted` e Ctrl+C marcam o item corrente e os seguintes como `pending` e a execução sai com **código 2**; `failed` sai com **1** e vence.
+  - Adendo solicitado pelo autor em T037: os limites de espera acima continuam sendo os fallbacks dos modos anteriores. Quando válidos, `Retry-After` e depois `X-RateLimit-Reset` determinam a espera. O novo `--continuous` supervisiona execuções com até 10 municípios, salva o manifest antes de aguardar qualquer cota e retoma só os pendentes; não muda a parada diária do coletor interno. Mantém um único fetcher/limitador por sessão. Falhas temporárias têm backoff exponencial até 60 s mais jitter, respeitando um prazo maior do servidor; no modo contínuo não há teto de retentativas transitórias. Ctrl+C e erros permanentes encerram.
 - **D6. Estado atual.** Um município está atual se o `reference_period` (a janela), o `model` e a assinatura ordenada de variáveis/unidades da sua entrada `changed` mais recente forem iguais aos do catálogo. Entradas sem assinatura exigem recoleta; reordenar a lista não altera a assinatura. Sem `--recollect`, a execução pula os atuais sem chamar a fonte; com ele, consulta e compara a impressão digital. Sem nada a fazer: `up_to_date`, sem manifest e sem consumir `run_id`.
 - **D7. Mudança por impressão digital sem `generationtime_ms`.** O `sha256` do manifest é o dos bytes; o `fingerprint` é o JSON canônico sem `generationtime_ms`, o único campo volátil observado (research R5). O bruto guarda os bytes originais.
 - **D8. O dia é o dia local.** A data de cada observação é o texto de `daily.time` (a fonte agrega no fuso do município com `timezone=auto`), convertido para `date` sem deslocamento de fuso.
@@ -163,13 +164,13 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | Área | Estado |
 | --- | --- |
 | Implementação | Fases 1–6 concluídas; Polish local concluído, gate externo pendente |
-| Qualidade local | 210/210 pytest; 5/5 contratos; ruff limpo; três travas íntegras |
+| Qualidade local | 225/225 pytest após T038+1; 5/5 contratos do clima; ruff limpo; três travas íntegras; revisão sem achados importantes pendentes |
 | dbt isolado | CAOP 31/31; observations 17/17; climate 23/23 |
 | Volume sintético | 2.922.920 linhas; 555,90 MiB de pico amostrado da árvore; 117,99 MiB do Python; build 20,38 s |
-| Fonte real | 71/308 atuais; 237 pending por cota horária; 673.790 linhas; 3 recoletas unchanged; zero falhas |
+| Fonte real | 219/308 atuais; 89 pending por cota horária; 2.078.310 linhas; 3 recoletas unchanged; zero municípios failed; 12.685.102 bytes de bruto |
 | Preservação real | 7 arquivos dos outros lakes com SHA-256 inalterado |
 | CI remoto | [PR #3](https://github.com/johnosd/living-recommender/pull/3), commit afa0903: quality e secrets/gitleaks aprovados; 209 testes verdes e 1 específico de Windows dispensado no Linux; dbt 31/31, 17/17, 23/23 |
-| Pendente | somente T037 até 308/308 e medição restante. Status segue Em Execução |
+| Pendente | somente T037 até 308/308 e build final; T038+1 concluída. Processo contínuo em segundo plano aguarda cota. Status segue Em Execução |
 
 ## Riscos e Decisões
 
@@ -182,7 +183,7 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | --- | --- | --- | --- |
 | R-001 | O plano gratuito do Open-Meteo é **só para uso não comercial** (CC BY 4.0 vale para os dados, mas a API gratuita não). | Médio: bloqueia uso comercial futuro; nada é publicado nesta spec. | Risco aceito pelo autor (spec, Clarifications). Atribuição no catálogo, no manifest e em cada linha; `usage_restriction` no catálogo; migrar para um plano comercial é gate da Fase B comercial. Complexity Tracking. |
 | R-002 | O texto real do 429 (minuto/hora/dia) **não foi verificado**; a classificação se apoia em palavras-chave de uma forma documentada (research R4). | Médio: um dia classificado como hora faria esperar 1 h antes de parar. | Padrão seguro: 429 desconhecido = hora, que espera e depois pausa com `pending`, nunca falha o município. Parcialmente verificado em T037: limite horário real igual a `HOUR_LIMIT`; minuto e dia ainda não observados. Nenhuma fixture travada alterada. |
-| R-003 | O peso real das requisições não é exposto pela API; a estimativa é 68 a 100 chamadas por município (21 mil a 31 mil no total). | Médio: pode exigir mais de 3 dias. | `--max-municipalities` para controlar o gasto; medir o peso real em T037 e registrar em `research.md`. A coleta é retomável por construção. |
+| R-003 | No planejamento, o peso das requisições não havia sido medido; a estimativa era 68 a 100 chamadas por município (21 mil a 31 mil no total). | Médio: o tempo de conclusão depende das cotas disponíveis. | Resolvido quanto ao peso: em 2026-11-11, `X-RateLimit-Cost` confirmou 67,78571 unidades por município, coerente com a fórmula oficial (cerca de 20.878 unidades para 308). A coleta é retomável; a disponibilidade deve seguir os cabeçalhos da resposta, não uma previsão fixa de dias. |
 | R-004 | Grade de ~25 km do `era5`: municípios vizinhos partilham a célula e recebem séries iguais; relevo (Serra da Estrela, Madeira) suavizado; células de mar (Corvo: 12 km, elevação 0). **Além disso, 24 meses não são uma normal climática.** | Médio para a qualidade do critério "clima". | `rpt_climate_points` mostra distância e elevação; nada é corrigido nem herdado entre vizinhos (D9). A camada Silver deve rotular o indicador "últimos 24 meses" e comparar municípios com cautela. Alternativa futura: ampliar a janela (mudança de catálogo) ou trocar de modelo. |
 | R-005 | A extração de `collect_items` altera código compartilhado com a spec 002. | Alto se regredir. | Resolvido: `collect_datasets` fica como invólucro com as mesmas quatro chaves; 210/210 testes e o contrato travado da 002, o da 001 e os 140 testes são o gate (T003/T005); `check-contract-tests.ps1` das duas features em cada fase. |
 | R-006 | Os meses finais da janela podem vir de reanálise preliminar e ser revistos pela fonte. | Baixo: uma recoleta pode virar `changed`. | Comportamento correto pela constitution V (bruto novo, o antigo permanece). Documentar no runbook; `--recollect` explícito. |
@@ -198,6 +199,7 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | R-014 | Variável extra malformada é tolerada na coleta mas podia bloquear a transformação. | Baixo: bruto aceito não chegaria ao staging. | Filtrar as variáveis declaradas antes de percorrer as séries; parâmetro opcional mantém a interface dos contratos. |
 
 | R-015 | Volume completo teve pico amostrado de 1.501,91 MB na árvore de processos, embora Python ficasse em 119,18 MB. | Médio: acima do alvo de ~1 GB; DuckDB usava limite padrão da máquina. | Resolvido: target exclusivo `climate`, uma thread e `memory_limit: 384MB`; target `local` de CAOP/observations preservado. Volume repetido: 2.922.920 linhas, 556 MiB de pico amostrado da árvore e 118 MiB do Python; build 20,38 s. Suíte final 210/210 verde, três travas íntegras e lint limpo. |
+| R-016 | Operação contínua solicitada pelo autor pode aguardar horas; um encerramento forçado pode deixar brutos sem manifest. | Médio: esperas longas precisam de checkpoints e a máquina ligada. | Supervisor optativo `--continuous`: lotes de 10, manifest antes de qualquer espera por cota, retomada por estado vigente, Ctrl+C preservado. Um único limitador atravessa os lotes. Backoff exponencial limitado, com jitter, para falhas temporárias; erros permanentes encerram. Contratos e modos anteriores preservados. |
 
 ## Execution Notes
 
@@ -217,9 +219,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 6 | Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida | Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes |
 | 2026-11-11 | Fase 7 | Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending | T037: completar 308/308 após cota horária; CI remoto/gitleaks sem evidência. Não marcar Implementada ainda |
 | 2026-11-11 | Fase 7 — retomada | PR #3 em rascunho autorizado e criado; CI 43107887816 com quality e secrets verdes no commit afa0903. Validação local da retomada: 11/11 e três travas íntegras. Duas tentativas reais preservaram os 71 atuais, zero bruto novo, 237 pending e retorno 2 | T037: a fonte ainda recusa por cota horária; falta 308/308 |
+| 2026-11-11 | Fase 7 — T037/T038+1 | Mais 148 municípios coletados: 219/308, 89 pending, 2.078.310 linhas reais sem lacunas; build parcial e preservação de 7 arquivos confirmados. Custo medido 67,78571. Novo --continuous com checkpoints e backoff: 225/225 testes, lint limpo, três travas íntegras, revisão aprovada. Iniciado supervisor local às 22:41 UTC, aguardando Retry-After até cerca de 23:00:30 UTC | T037: concluir 308/308; supervisor executará build e verificação final. CI remoto ainda cobre somente afa0903 |
 
 
-**PRÓXIMO**: retomar `uv run --locked python -m pipelines.cli.collect_open_meteo --local --no-wait` após a cota ficar disponível; executar `build_climate --local`; concluir T037 antes de Implementada. CI do PR #3 já confirmado; manter o PR em rascunho enquanto a coleta estiver incompleta.
+**PRÓXIMO**: acompanhar `.data/climate-continuous-status.json` e os logs do processo já iniciado, sem abrir outro coletor. O supervisor continuará os 89 pendentes após a renovação informada (23:00:30 UTC / 20:00:30 Brasília) e executará build e verificação final. Conferir 308/308 e concluir T037 antes de Implementada. O CI do PR #3 prova afa0903; não cobre as mudanças locais desta retomada. Manter o PR em rascunho.
 
 ## Arquivos Principais
 
