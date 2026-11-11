@@ -14,6 +14,7 @@ from pyproj import Transformer
 from shapely.geometry import Point
 from shapely.wkb import loads as load_wkb
 
+from pipelines.cli._promote import promote_paths
 from pipelines.collectors._shared.manifest import file_digest, latest_changed
 from pipelines.collectors._shared.storage import LocalStorage, _canonical_path
 from pipelines.collectors.caop.transform import prepare_caop
@@ -37,7 +38,7 @@ def _run_dbt(candidate: Path, run_id: str) -> None:
     })
     command = [
         executable, "build", "--project-dir", "analytics/dbt", "--profiles-dir", "analytics/dbt",
-        "--target", "local",
+        "--target", "local", "--select", "tag:caop",
     ]
     result = subprocess.run(command, cwd=project_root, env=env, text=True, capture_output=True, check=False)
     if result.returncode:
@@ -76,36 +77,18 @@ def _validate_spatial(candidate: Path, run_id: str) -> None:
                 raise BuildError(f"{dimension}: ponto fora do território: {getattr(row, code_column)}")
 
 
+# Cada tabela é promovida sozinha: trocar `lake/bronze` ou `lake/silver` inteiros apagaria o staging
+# de observações (spec 002), que convive com a CAOP no mesmo lake.
+PROMOTED = (
+    "lake/bronze/stg_caop_municipalities",
+    "lake/bronze/stg_caop_parishes",
+    "lake/silver/dim_municipality",
+    "lake/silver/dim_parish",
+)
+
+
 def _promote(root: Path, candidate: Path) -> None:
-    lake = root / "lake"
-    lake.mkdir(parents=True, exist_ok=True)
-    changed = []
-    try:
-        for tier in ("bronze", "silver"):
-            current = lake / tier
-            staged = candidate / "lake" / tier
-            backup = lake / f".previous-{tier}-{candidate.name}"
-            had_previous = current.exists()
-            if had_previous:
-                os.replace(current, backup)
-            try:
-                os.replace(staged, current)
-            except OSError:
-                if had_previous:
-                    os.replace(backup, current)
-                raise
-            changed.append((current, staged, backup, had_previous))
-    except OSError:
-        for current, staged, backup, had_previous in reversed(changed):
-            os.replace(current, staged)
-            if had_previous:
-                os.replace(backup, current)
-        raise
-    for _, _, backup, had_previous in changed:
-        if had_previous:
-            if not _canonical_path(backup.resolve()).is_relative_to(_canonical_path(lake.resolve())):
-                raise BuildError("backup fora da área de promoção")
-            shutil.rmtree(backup)
+    promote_paths(root, candidate, PROMOTED)
 
 
 def build_caop(root: Path = Path(".data")) -> dict:

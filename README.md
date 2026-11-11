@@ -2,9 +2,9 @@
 
 Plataforma web que recomenda **onde morar em Portugal**, município a município e, dentro de cada município, freguesia a freguesia. A recomendação se baseia no orçamento de aluguel e nas preferências de cada pessoa.
 
-> **Status:** implementação em andamento. A coleta da CAOP (em disco local ou em um bucket S3) e as dimensões territoriais Bronze/Silver já estão disponíveis; veja como executar e visualizar a base no [guia de coletas](docs/runbooks/coletas.md). A arquitetura e o roteiro estão em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md).
+> **Status:** implementação em andamento. A coleta da CAOP (em disco local ou em um bucket S3), as dimensões territoriais Bronze/Silver e a coleta do Pordata e do INE, com o staging de observações municipais e o relatório de cobertura, já estão disponíveis; veja como executar e visualizar a base no [guia de coletas](docs/runbooks/coletas.md). A arquitetura e o roteiro estão em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md).
 
-*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: implementation in progress; CAOP collection (local or S3) is available.*
+*English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: implementation in progress; CAOP, Pordata and INE collection (local or S3) and municipal staging are available.*
 
 ---
 
@@ -69,9 +69,9 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 
 Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência, até a integração com a API oficial do Idealista, já solicitada. Nenhum anúncio individual é publicado. Licenças e regras de uso de cada fonte estão nas seções 3.4 e 5 do plano.
 
-**Atribuição da CAOP:** Fonte: Direção-Geral do Território (DGT), CAOP2025, licença CC-BY-4.0. O catálogo de fontes, com URLs, versão e licença, é o [config/sources.yml](config/sources.yml).
+**Atribuições:** CAOP: Fonte: Direção-Geral do Território (DGT), CAOP2025, licença CC-BY-4.0. INE: Instituto Nacional de Estatística, IP – Portugal, licença CC BY 4.0 (cite o indicador e o período). Pordata: os Termos Legais não concedem licença de reutilização; a coleta é um risco aceito pelo autor e nenhum dado dessa fonte é redistribuído (detalhes em [guia de coletas](docs/runbooks/coletas.md)). O catálogo de fontes, com URLs, versão e licença, é o [config/sources.yml](config/sources.yml).
 
-Para executar a coleta CAOP disponível, consulte o [guia de coletas](docs/runbooks/coletas.md).
+Para executar as coletas disponíveis (CAOP, Pordata e INE) e o staging de observações, consulte o [guia de coletas](docs/runbooks/coletas.md).
 
 ## Roteiro
 
@@ -96,8 +96,8 @@ Estado atual:
 .agents/                 skills do agente de desenvolvimento
 sdd/                     ADRs (adr/) e specs das features (specs/)
 config/sources.yml       catálogo de fontes (CAOP)
-pipelines/               coletor da CAOP, storage local/S3 e CLIs (collect, build, view)
-analytics/dbt/           modelos Bronze/Silver e testes de qualidade
+pipelines/               coletores (CAOP, Pordata, INE), storage local/S3 e CLIs (collect, load, build, view)
+analytics/dbt/           modelos Bronze/Silver, seed de sinônimos de município e testes de qualidade
 tests/                   unitários, integração, contrato e fixtures sintéticas
 docs/runbooks/           guias de operação (coletas)
 ```

@@ -1,6 +1,6 @@
 # Coletas de dados
 
-Este guia descreve a coleta da CAOP (local ou em S3), a construção das dimensões territoriais e como visualizar os resultados. O contexto está na [spec de ingestão CAOP](../../sdd/specs/001-ingestao-caop/spec.md).
+Este guia descreve a coleta da CAOP (local ou em S3), a construção das dimensões territoriais, a coleta do Pordata e do INE com o staging de observações e como visualizar os resultados. O contexto está na [spec de ingestão CAOP](../../sdd/specs/001-ingestao-caop/spec.md).
 
 ## Pré-requisitos
 
@@ -110,6 +110,74 @@ Start-Process .data/explore/caop.html
 
 Os dados são arquivos Parquet locais, não um servidor de banco de dados. O explorador e os CSVs são gerados desses arquivos e ficam em `.data/`, ignorada pelo Git. A edição da fonte (`caop_version`), a coleta (`source_run_id` e `collected_at_utc`) e o processamento (`processed_at_utc`) são informações separadas.
 
+## Pordata, INE e observações municipais
+
+A spec [002-ingestao-pordata-ine](../../sdd/specs/002-ingestao-pordata-ine/spec.md) acrescenta quatro comandos. **Antes do `build_observations`, rode o `build_caop`**: o staging resolve cada município contra a dimensão `lake/silver/dim_municipality`.
+
+### Coletar o Pordata (16 CSV)
+
+```powershell
+uv run --locked python -m pipelines.cli.collect_pordata --local --root .data
+```
+
+Baixa os 16 datasets do catálogo (~82 MB, cerca de 1 minuto por causa do limite de 1 s entre pedidos). Cada dataset tem **estado próprio**: a saída mostra uma linha por dataset (`changed`, `unchanged` ou `failed` com o motivo).
+
+| Status da execução | O que aconteceu | Código de saída |
+| --- | --- | --- |
+| `changed` | Pelo menos um dataset mudou; os que não mudaram aparecem como `unchanged` e não gravam arquivo. | `0` |
+| `unchanged` | Todos os datasets têm o mesmo conteúdo da última coleta válida. Só um manifest novo. | `0` |
+| `partial` | Algum dataset falhou (URL morta, HTML no lugar do CSV, coluna ausente), mas os demais foram gravados. A falha fica no manifest com o motivo e nenhum arquivo parcial dela é gravado. | `1` |
+| `failed` | Todos falharam. | `1` |
+
+Um dataset que falhou **não** vira estado vigente: na próxima execução bem-sucedida ele é gravado normalmente. Para repetir só depois de corrigir o catálogo, basta rodar o comando de novo. As colunas são validadas **pelo rótulo** (o prefixo numérico varia por dataset), e `--s3 --bucket <b> [--prefix <p>]` troca o destino, como na CAOP.
+
+### Coletar o INE (3 indicadores)
+
+```powershell
+uv run --locked python -m pipelines.cli.collect_ine --local --root .data
+```
+
+Consulta a API de indicadores do INE (rendas `0014698`, criminalidade `0008074` com as 7 categorias de crime e poder de compra `0014580`), sempre no nível município. A API **não envia `ETag`** e devolve o horário de extração e a ordem das linhas diferentes a cada chamada, então a mudança é detectada por uma impressão digital do conteúdo: repetir o comando sem o INE ter republicado dá `unchanged`. A API é instável (houve timeout de 60 s e uma coleta de 204 s contra 8 s na repetição); a CLI espera até 90 s por pedido e tenta 3 vezes.
+
+### Carregar a planilha do Pordata à mão
+
+O Pordata só oferece o poder de compra por município por um botão do site (não existe URL de download). Exporte-a assim: na página *Municípios › Poder de compra per capita*, use **Exportar para Excel** e guarde o `.xlsx` **fora do repositório** (por exemplo, em `Downloads`). Depois:
+
+```powershell
+uv run --locked python -m pipelines.cli.load_pordata_manual --local --root .data --file "C:\caminho\PORDATA_NUTS2013_Poder-de-compra-per-capita.xlsx"
+```
+
+A planilha é validada (abas `Quadro` e `Metainformação`, cabeçalho `Âmbito Geográfico | Anos` e exatamente 308 linhas `Município`) e guardada como bruto, com estado e manifest como qualquer outro dataset. O mesmo arquivo de novo dá `unchanged`; um arquivo inválido dá `failed` e código `1`, sem gravar nada. O seu arquivo só é lido, nunca alterado. O mesmo indicador vem também pela API do INE (`ine/poder_compra_per_capita`); os dois ficam como datasets distintos.
+
+### Construir o staging e ver a cobertura
+
+```powershell
+uv run --locked python -m pipelines.cli.build_observations --local --root .data
+```
+
+Usa o **estado vigente de cada dataset** (confere o `sha256` do bruto), resolve o município de cada linha e roda o dbt em área temporária. Só depois dos testes promove `lake/bronze/stg_observation/` (uma linha por dataset, município, período e filtros) e `lake/bronze/rpt_observation_coverage/`, **sem tocar** na CAOP. O mesmo vale ao contrário: reconstruir a CAOP não apaga as observações.
+
+- **Município:** no Pordata, pelo nome, usando o seed `analytics/dbt/seeds/municipality_synonyms.csv` (5 grafias: `Lagoa`, `Lagoa [R.A.A.]`, `Calheta [R.A.A.]`, `Calheta [R.A.M.]`, `Vila da Praia da Vitória`) ou o nome normalizado quando for único; no INE, pelo código (os 4 últimos caracteres são o `dico`). Um nome sem correspondência **reprova o build** e lista o dataset e os nomes; um homônimo sem sinônimo também.
+- **Ausência:** valor ausente fica **nulo com o símbolo da fonte** (`x`, `-`, `...`); nunca vira zero. Os zeros no staging são zeros informados pela fonte.
+- **Cobertura:** a saída mostra, por dataset, o último período, quantos dos 308 municípios têm valor nele, quantos não têm e quantas linhas de agregação (Portugal, regiões, NUTS) foram excluídas. O arquivo `.data/lake/bronze/coverage.csv` (separador `;`, abre no Excel) lista os ausentes de cada dataset por código e nome, e o `latest_period_with_data` diz o último período que tem algum valor.
+
+### Licenças e atribuição
+
+- **INE:** CC BY 4.0. Cite "Instituto Nacional de Estatística, IP – Portugal", o indicador e o período, e sinalize dados modificados.
+- **Pordata:** os [Termos Legais](https://www.pordata.pt/pt/termos-e-condicoes-de-utilizacao) **não concedem licença de reutilização**; o autor aceitou coletar mesmo assim (risco **R-001** do plano da spec 002). O catálogo registra `license_id: not_granted_by_source`, o bruto fica fora do Git e nunca é redistribuído, e a publicação de qualquer indicador derivado do Pordata deve reavaliar a licença (alternativa: séries equivalentes do INE).
+
+### Onde os arquivos ficam
+
+```text
+.data/
+├── raw/source=pordata/dataset=<id>/run_id=<run_id>/<id>.csv   (ou .xlsx na carga manual)
+├── raw/source=ine/dataset=<id>/run_id=<run_id>/<id>.json
+├── manifests/pordata/<run_id>.json   manifests/ine/<run_id>.json
+└── lake/bronze/{stg_observation, rpt_observation_coverage}/data.parquet   e   coverage.csv
+```
+
 ## Estado da verificação
 
 Em 2026-11-04, os três ZIPs oficiais foram coletados em `.data/raw/` e transformados localmente: 308 municípios, 3.259 freguesias e 18 códigos de freguesia com letras. A fixture sintética nacional passou no `dbt build`; a execução real local também passou. Isso não demonstra execução no CI remoto, ainda pendente. O destino S3 foi exercitado só contra um S3 simulado (moto), não contra uma conta AWS real.
+
+Em 2026-11-11, a spec 002 foi verificada contra as fontes reais: os 16 CSV do Pordata (43 s, tamanhos idênticos aos da pesquisa), os 3 indicadores do INE (a segunda e a terceira coletas deram `unchanged`), a planilha do autor (308 municípios × 11 anos) e o `build_observations` contra a Silver real: **1.168.860 observações de 20 datasets**, todos os municípios resolvidos e o lake da CAOP byte a byte intacto. Achados de cobertura: as rendas do INE têm valor em 247 dos 308 municípios em 2025; `ensino_nao_superior` não tem valor em nenhum município em 2024 (o último período com dados é 2023); `ensino_superior` tem 63 em 2025. O CI remoto ainda precisa confirmar os novos passos do dbt.

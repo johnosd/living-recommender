@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-03
 
-**Status**: Convergência Pendente
+**Status**: Convergida
 
 **Input**: "fundação da ingestão + CAOP — referências em .docs/" (ver `.docs/fontes_de_dados.md` §3 e `.docs/plano_plataforma_recomendacao_portugal.md` §5–§6)
 

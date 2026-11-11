@@ -15,7 +15,30 @@ RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
 
 
 class DownloadError(RuntimeError):
-    """Falha ao obter um ZIP da fonte."""
+    """Falha ao obter um arquivo da fonte."""
+
+
+def zip_content_check(content_type: str, first_chunk: bytes, url: str) -> None:
+    """Padrão da CAOP: o primeiro bloco precisa ser um ZIP (GeoPackage)."""
+    if "text/html" in content_type:
+        raise DownloadError(f"resposta HTML no lugar de GeoPackage ZIP: {url}")
+    if not first_chunk.startswith(b"PK\x03\x04"):
+        raise DownloadError(f"arquivo não é ZIP/GeoPackage: {url}")
+
+
+def csv_content_check(content_type: str, first_chunk: bytes, url: str) -> None:
+    """CSV de texto: recusa páginas HTML servidas no lugar do arquivo."""
+    head = first_chunk.lstrip()[:15].lower()
+    if "text/html" in content_type or head.startswith((b"<!doctype", b"<html", b"<?xml")):
+        raise DownloadError(f"resposta HTML no lugar de CSV: {url}")
+
+
+def json_content_check(content_type: str, first_chunk: bytes, url: str) -> None:
+    """JSON da API: recusa HTML e qualquer corpo que não comece como objeto ou lista."""
+    if "text/html" in content_type:
+        raise DownloadError(f"resposta HTML no lugar de JSON: {url}")
+    if first_chunk.lstrip()[:1] not in (b"[", b"{"):
+        raise DownloadError(f"resposta não é JSON: {url}")
 
 
 class RateLimiter:
@@ -45,7 +68,7 @@ class RateLimiter:
 
 
 class HttpDownloader:
-    """Instância compartilhada entre as três regiões para limitar a taxa."""
+    """Instância compartilhada entre os downloads de uma fonte para limitar a taxa."""
 
     def __init__(
         self,
@@ -57,6 +80,7 @@ class HttpDownloader:
         rate_limiter: RateLimiter | None = None,
         sleep: Callable[[float], None] = time.sleep,
         user_agent: str = USER_AGENT,
+        content_check: Callable[[str, bytes, str], None] = zip_content_check,
     ):
         if timeout <= 0 or max_attempts < 1 or backoff < 0:
             raise ValueError("timeout, max_attempts ou backoff inválido")
@@ -67,6 +91,9 @@ class HttpDownloader:
         self.rate_limiter = rate_limiter or RateLimiter()
         self.sleep = sleep
         self.user_agent = user_agent
+        self.content_check = content_check
+        # Cabeçalhos de cache da última resposta bem-sucedida; só para auditoria no manifest.
+        self.last_headers: dict[str, str | None] = {}
 
     def __call__(self, url: str, destination: str | Path) -> Path:
         destination = Path(destination)
@@ -104,14 +131,15 @@ class HttpDownloader:
         ) as response:
             response.raise_for_status()
             content_type = response.headers.get("content-type", "").lower()
-            if "text/html" in content_type:
-                raise DownloadError(f"resposta HTML no lugar de GeoPackage ZIP: {url}")
             first = True
             for chunk in response.iter_bytes(chunk_size=1024 * 1024):
                 if first:
-                    if not chunk.startswith(b"PK\x03\x04"):
-                        raise DownloadError(f"arquivo não é ZIP/GeoPackage: {url}")
+                    self.content_check(content_type, chunk, url)
                     first = False
                 output.write(chunk)
             if first:
                 raise DownloadError(f"download vazio: {url}")
+            self.last_headers = {
+                "etag": response.headers.get("etag"),
+                "last_modified": response.headers.get("last-modified"),
+            }
