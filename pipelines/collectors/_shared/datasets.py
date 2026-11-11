@@ -28,6 +28,14 @@ class DatasetCollectionError(Exception):
     """A coleta não pôde começar (catálogo, run_id ou destino); nada foi baixado."""
 
 
+class StopCollection(Exception):
+    """Um fetcher pede o fim limpo da coleta: o item atual e os seguintes ficam `pending` (spec 003)."""
+
+
+class QuotaExhausted(StopCollection):
+    """A fonte recusou novas chamadas por cota; a coleta para e a próxima execução continua (spec 003)."""
+
+
 def _suffix(dataset: dict[str, Any]) -> str:
     if dataset.get("format") in EXTENSIONS:
         return EXTENSIONS[dataset["format"]]

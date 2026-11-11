@@ -1,0 +1,17 @@
+{
+  "feature": "003-ingestao-clima-open-meteo",
+  "lockedAt": "2026-11-11 17:29",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_climate_collection_contract.py",
+      "sha256": "09996018d474adb4a2096c417a1ab2e364672800a73cb3abee52b25e924dc992",
+      "tests": "unknown"
+    },
+    {
+      "path": "tests/fixtures/open_meteo/responses.py",
+      "sha256": "0ccbeedb3422d452a5c87fe93596f7854f76e75752acc1a51e17131ef2e58228",
+      "tests": "unknown"
+    }
+  ]
+}
