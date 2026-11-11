@@ -10,7 +10,7 @@ from pipelines.collectors._shared.manifest import encode_manifest
 
 SCHEMA_VERSION = 2
 RUN_STATUSES = {"changed", "unchanged", "partial", "failed"}
-DATASET_STATUSES = {"changed", "unchanged", "failed"}
+DATASET_STATUSES = {"changed", "unchanged", "failed", "pending"}
 
 
 class DatasetManifestError(ValueError):
@@ -25,7 +25,7 @@ def run_status(entries: list[dict]) -> str:
     failed = statuses.count("failed")
     if failed == len(statuses):
         return "failed"
-    if failed:
+    if failed or "pending" in statuses:
         return "partial"
     return "changed" if "changed" in statuses else "unchanged"
 
@@ -36,7 +36,7 @@ def validate_entry(entry: dict) -> None:
     status = entry.get("status")
     if status not in DATASET_STATUSES:
         raise DatasetManifestError(f"status de dataset desconhecido: {status}")
-    if status == "failed":
+    if status in {"failed", "pending"}:
         if not entry.get("error"):
             raise DatasetManifestError("falha exige mensagem de erro")
         return

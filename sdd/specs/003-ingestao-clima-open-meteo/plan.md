@@ -162,9 +162,9 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Fase 1 | Catálogo climático validado; fontes anteriores preservadas |
-| Evidência | pytest completo: 146 verdes e 5 contratos vermelhos por NotImplementedError; ruff limpo; 3 travas íntegras |
-| Pendente | Implementar núcleo compartilhado; contratos 003 ainda são stubs |
+| Fase 2 | collect_items extraído com pending, limite e parada limpa; invólucro 002 preservado |
+| Evidência | pytest completo: 149 verdes + 5 stubs vermelhos; núcleo: 5/5; ruff limpo; três travas íntegras |
+| Pendente | Implementar US1; baseline antes da refatoração: 146 verdes e 5 stubs |
 
 ## Riscos e Decisões
 
@@ -197,9 +197,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | Data | Fase/Story | Resumo | Pendência Principal |
 | --- | --- | --- | --- |
 | 2026-11-11 | Fase 1 | Catálogo climático validado; fontes anteriores preservadas | Implementar núcleo compartilhado; contratos 003 ainda são stubs |
+| 2026-11-11 | Fase 2 | collect_items extraído com pending, limite e parada limpa; invólucro 002 preservado | Implementar US1; baseline antes da refatoração: 146 verdes e 5 stubs |
 
 
-**PRÓXIMO**: fase 2; Implementar núcleo compartilhado; contratos 003 ainda são stubs
+**PRÓXIMO**: fase 3; Implementar US1; baseline antes da refatoração: 146 verdes e 5 stubs
 
 ## Arquivos Principais
 

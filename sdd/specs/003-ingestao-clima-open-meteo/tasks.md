@@ -54,15 +54,24 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **⚠️ CRITICAL**: nenhuma user story começa antes desta fase terminar.
 
-- [ ] T003 ~ `pipelines/collectors/_shared/datasets.py`: extrair `collect_items` de `collect_datasets` conforme `logic/coleta-clima.md` §1 (parâmetros `state_is_current`, `skip_current`, `max_items`; retorno com `skipped_current`, `remaining`, `quota_exhausted`, `interrupted`, `up_to_date`; `StopCollection`/`KeyboardInterrupt` marcam o item corrente e os seguintes como `pending`; `_collect_one` apaga o bruto do item e repropaga; `meta["entry_extra"]` entra no topo da entrada). `collect_datasets` vira invólucro e devolve **só** as quatro chaves de hoje. `StopCollection` e `QuotaExhausted` já existem (criadas pelo plan). → contrato: `test_us2_ac1_ac2_ac4_fr012_fr013_fr015_quota_stop_marks_pending_and_resume_fetches_only_pending` (fecha na Fase 4)
-- [ ] T004 ~ `pipelines/collectors/_shared/dataset_manifest.py`: `pending` em `DATASET_STATUSES`; `validate_entry` trata `pending` como `failed`; `run_status` conforme D3 do plano. `latest_dataset_states` **não muda** (FR-006, FR-012)
-- [ ] T005 [P] Testes do núcleo em `tests/unit/test_collect_items.py`: `pending` por `QuotaExhausted` e por `KeyboardInterrupt` simulado (o bruto do item interrompido é apagado e o manifest é gravado); `skip_current` com `state_is_current`; `max_items` e `remaining`; `up_to_date` sem manifest e sem consumir `run_id`; `entry_extra` presente em `changed` e `unchanged`; `pending` nunca vira estado; `collect_datasets` devolve as 4 chaves. Rodar **toda** a suíte e as três travas.
+- [X] T003 ~ `pipelines/collectors/_shared/datasets.py`: extrair `collect_items` de `collect_datasets` conforme `logic/coleta-clima.md` §1 (parâmetros `state_is_current`, `skip_current`, `max_items`; retorno com `skipped_current`, `remaining`, `quota_exhausted`, `interrupted`, `up_to_date`; `StopCollection`/`KeyboardInterrupt` marcam o item corrente e os seguintes como `pending`; `_collect_one` apaga o bruto do item e repropaga; `meta["entry_extra"]` entra no topo da entrada). `collect_datasets` vira invólucro e devolve **só** as quatro chaves de hoje. `StopCollection` e `QuotaExhausted` já existem (criadas pelo plan). → contrato: `test_us2_ac1_ac2_ac4_fr012_fr013_fr015_quota_stop_marks_pending_and_resume_fetches_only_pending` (fecha na Fase 4)
+- [X] T004 ~ `pipelines/collectors/_shared/dataset_manifest.py`: `pending` em `DATASET_STATUSES`; `validate_entry` trata `pending` como `failed`; `run_status` conforme D3 do plano. `latest_dataset_states` **não muda** (FR-006, FR-012)
+- [X] T005 [P] Testes do núcleo em `tests/unit/test_collect_items.py`: `pending` por `QuotaExhausted` e por `KeyboardInterrupt` simulado (o bruto do item interrompido é apagado e o manifest é gravado); `skip_current` com `state_is_current`; `max_items` e `remaining`; `up_to_date` sem manifest e sem consumir `run_id`; `entry_extra` presente em `changed` e `unchanged`; `pending` nunca vira estado; `collect_datasets` devolve as 4 chaves. Rodar **toda** a suíte e as três travas.
 
-- [ ] T006 Linha de base e registro: antes de mexer em `datasets.py`, rodar a suíte completa e as três travas e anotar em Execution Notes (esperado: 140 verdes + os 5 contratos vermelhos por `NotImplementedError`); repetir ao fim da fase para provar que nada regrediu
+- [X] T006 Linha de base e registro: antes de mexer em `datasets.py`, rodar a suíte completa e as três travas e anotar em Execution Notes (esperado: 140 verdes + os 5 contratos vermelhos por `NotImplementedError`); repetir ao fim da fase para provar que nada regrediu
 
 **Checkpoint**: suíte existente (140) + `test_collect_items.py` verdes; contratos 001 e 002 íntegros.
 
 ---
+
+**Registro da Fase**:
+
+- Status: concluída
+- Feito: collect_items extraído com pending, limite e parada limpa; invólucro 002 preservado
+- Contrato: três travas íntegras (001, 002, 003); contratos futuros permanecem vermelhos por stubs.
+- Testes executados: pytest completo: 149 verdes + 5 stubs vermelhos; núcleo: 5/5; ruff limpo; três travas íntegras
+- Pendências: Implementar US1; baseline antes da refatoração: 146 verdes e 5 stubs
+
 
 ## Phase 3: User Story 1 - Coletar o clima diário dos 308 municípios com rastreabilidade (Priority: P1) 🎯 MVP
 
@@ -225,7 +234,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 ### Checklist de Release
 
 - [X] Fase 1 (Setup) concluída
-- [ ] Fase 2 (Foundational) concluída, sem regressão nas specs 001 e 002
+- [X] Fase 2 (Foundational) concluída, sem regressão nas specs 001 e 002
 - [ ] Fase 3 (User Story 1) concluída
 - [ ] Fase 4 (User Story 2) concluída
 - [ ] Fase 5 (User Story 3) concluída
