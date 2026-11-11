@@ -252,7 +252,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] `uv run --locked ruff check pipelines tests` limpo
 - [X] `uv run --locked python -m pytest -q --basetemp .pytest_tmp` verde, sem rede
 - [X] `dbt build --select tag:caop`, `tag:observations` e `tag:climate` verdes isoladamente
-- [ ] CI verde, incluindo o passo do dbt do clima e o `gitleaks`
+- [X] CI verde, incluindo o passo do dbt do clima e o `gitleaks`
 - [X] `config/sources.yml`, `.docs/fontes_de_dados.md`, `docs/runbooks/coletas.md` e `README.md` atualizados (Quality Gate 6)
 - [X] Atribuição Open-Meteo/ERA5 e restrição de uso não comercial presentes no catálogo, no manifest e no staging (R-001)
 - [X] Nenhum segredo, bruto real ou resposta real no Git; nenhum recurso AWS criado
@@ -262,11 +262,11 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Registro da Fase**:
 
-- Status: parcial — implementação e validação local prontas; coleta completa e CI remoto pendentes
-- Feito: Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending
+- Status: parcial — coleta completa pendente; implementação, validação local e CI remoto aprovados
+- Feito: Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending; PR #3 em rascunho autorizado pelo autor, quality e secrets/gitleaks verdes no commit afa0903
 - Contrato: três travas íntegras (001, 002, 003); 5/5 contratos verdes na suíte completa
-- Testes executados: uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; ruff limpo; 3 travas íntegras; dbt 31/31 CAOP, 17/17 observations, 23/23 climate; volume 555,90 MiB
-- Pendências: T037: completar 308/308 após cota horária; CI remoto/gitleaks sem evidência. Não marcar Implementada ainda
+- Testes executados: uv run --locked python -m pytest -q --basetemp .pytest_tmp: 210/210; ruff limpo; 3 travas íntegras; dbt 31/31 CAOP, 17/17 observations, 23/23 climate; volume 555,90 MiB; retomada: 11/11 contratos/Windows; CI remoto 209 passed e 1 skipped específico do Windows; gitleaks sem achados ([run 43107887816](https://github.com/johnosd/living-recommender/actions/runs/43107887816))
+- Pendências: somente T037: completar 308/308 após cota; as retomadas de 21:53/22:00 UTC mantiveram 71 atuais, 237 pending e retorno 2. Não marcar Implementada ainda
 
 
 ## Dependencies & Execution Order

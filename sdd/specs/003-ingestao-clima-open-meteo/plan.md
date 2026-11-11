@@ -168,7 +168,8 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | Volume sintético | 2.922.920 linhas; 555,90 MiB de pico amostrado da árvore; 117,99 MiB do Python; build 20,38 s |
 | Fonte real | 71/308 atuais; 237 pending por cota horária; 673.790 linhas; 3 recoletas unchanged; zero falhas |
 | Preservação real | 7 arquivos dos outros lakes com SHA-256 inalterado |
-| Pendente | T037 até 308/308 e medição restante; CI remoto/gitleaks. Status segue Em Execução |
+| CI remoto | [PR #3](https://github.com/johnosd/living-recommender/pull/3), commit afa0903: quality e secrets/gitleaks aprovados; 209 testes verdes e 1 específico de Windows dispensado no Linux; dbt 31/31, 17/17, 23/23 |
+| Pendente | somente T037 até 308/308 e medição restante. Status segue Em Execução |
 
 ## Riscos e Decisões
 
@@ -215,9 +216,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 5 | Staging diário em fluxo, checksum e dbt isolado; promoção preserva outros lakes | Relatórios US4; catálogo explícito das fixtures documentado em R-011 |
 | 2026-11-11 | Fase 6 | Relatórios e CSV com rollback conjunto; estado por janela/modelo/variáveis; revisão corrigida | Polish, volume, smoke real e CI remoto; regressões da revisão: 32 testes focados verdes |
 | 2026-11-11 | Fase 7 | Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending | T037: completar 308/308 após cota horária; CI remoto/gitleaks sem evidência. Não marcar Implementada ainda |
+| 2026-11-11 | Fase 7 — retomada | PR #3 em rascunho autorizado e criado; CI 43107887816 com quality e secrets verdes no commit afa0903. Validação local da retomada: 11/11 e três travas íntegras. Duas tentativas reais preservaram os 71 atuais, zero bruto novo, 237 pending e retorno 2 | T037: a fonte ainda recusa por cota horária; falta 308/308 |
 
 
-**PRÓXIMO**: retomar `uv run --locked python -m pipelines.cli.collect_open_meteo --local --no-wait` após a cota ficar disponível; executar `build_climate --local`; confirmar CI remoto e concluir T037 antes de Implementada.
+**PRÓXIMO**: retomar `uv run --locked python -m pipelines.cli.collect_open_meteo --local --no-wait` após a cota ficar disponível; executar `build_climate --local`; concluir T037 antes de Implementada. CI do PR #3 já confirmado; manter o PR em rascunho enquanto a coleta estiver incompleta.
 
 ## Arquivos Principais
 
@@ -264,4 +266,15 @@ uv run --locked python -m pipelines.cli.build_climate --local --root .data/ci-cl
 uv run --locked python -m pipelines.cli.build_climate --local
 ```
 
-A suíte final foi executada após o target de memória; os três builds dbt foram isolados, sem serviços externos. O build real foi chamado pela função pública `build_climate(.data)` com verificação de SHA-256 dos outros 7 arquivos antes/depois; a CLI `build_climate --local` também passou, com as mesmas 673.790 linhas. Não houve execução de UI/browser (não aplicável a pipeline sem interface), S3 real, AWS, publicação ou CI remoto.
+A suíte final foi executada após o target de memória; os três builds dbt foram isolados, sem serviços externos. O build real foi chamado pela função pública `build_climate(.data)` com verificação de SHA-256 dos outros 7 arquivos antes/depois; a CLI `build_climate --local` também passou, com as mesmas 673.790 linhas. Na etapa local anterior à retomada, não houve execução de UI/browser (não aplicável a pipeline sem interface), S3 real, AWS, publicação ou CI remoto; a confirmação remota posterior está registrada na seção seguinte.
+
+## CI remoto e retomada confirmados — 2026-11-11, 22:03 UTC
+
+- PR em rascunho: [#3](https://github.com/johnosd/living-recommender/pull/3), criado após autorização explícita do autor; head `afa0903f24d5c289071ce449fc04a6e22cd843ea`.
+- [Workflow pull_request](https://github.com/johnosd/living-recommender/actions/runs/43107887816): `quality` e `secrets` concluídos com sucesso. Pytest: 209 passed, 1 skipped (teste de prefixo estendido exclusivo de Windows); lint limpo; dbt CAOP 31/31, observations 17/17, climate 23/23. Gitleaks v8.30.1 examinou 17 commits e reportou `no leaks found`.
+- Código/configuração/testes locais conferidos idênticos ao commit validado no CI (`git diff --quiet afa0903 -- pipelines tests analytics config .github`). Este checkpoint altera só documentação; não há push adicional nem merge.
+- Validação local desta retomada: `uv run --locked python -m pytest -q tests/contracts/test_climate_collection_contract.py tests/unit/test_local_storage_and_http.py --basetemp .data/resume-contract-tests` → 11/11; ruff limpo e três travas íntegras.
+- Retomadas às 21:53 e 22:00 UTC: ambas retornaram 2 por cota horária; municípios atuais foram pulados; 237 pending, sem falhas nem bruto novo. Não presumir que a disponibilidade da fonte volte na virada da hora UTC.
+- Ao capturar logs de subprocessos no Windows, definir `PYTHONIOENCODING=utf-8` no ambiente do processo; a primeira leitura UTF-8 de um log CP1252 falhou somente na apresentação, depois de a coleta já ter retornado corretamente 2. O coletor e os manifests não foram afetados.
+
+Consultas somente leitura: `gh run list --branch feature/003-ingestao-clima-open-meteo --limit 8 --json databaseId,headSha,status,conclusion,workflowName,url,createdAt`; `gh run view 43107887816 --json headSha,status,conclusion,jobs,url`; `gh run view 43107887816 --log`.

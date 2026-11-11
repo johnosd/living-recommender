@@ -87,3 +87,9 @@ Estimativa para 1 município, 24 meses, 13 variáveis: a regra publicada (dias �
 - Atribuição Open-Meteo/ERA5, restrição de uso não comercial e CC-BY-4.0 conferidas nos manifests e nas 673.790 linhas reais. Brutos e relatórios reais estão só em `.data/`, ignorada pelo Git.
 
 Esses resultados são prova local parcial da fonte. Não demonstram 308/308, S3 real, CI remoto, deploy ou publicação.
+
+## Retomada e CI remoto — 2026-11-11, 22:03 UTC
+
+Retomadas `collect_open_meteo --local --no-wait` às 21:53 e 22:00 UTC devolveram código 2, com 71 municípios já atuais pulados e 237 pending por `Hourly API request limit exceeded. Please try again in the next hour.`. Nenhum bruto novo foi gravado; o estado vigente e as 673.790 observações existentes permanecem válidos. A virada da hora UTC não demonstrou liberação da cota; seu instante exato continua desconhecido.
+
+CI remoto confirmado separadamente da coleta: [PR #3](https://github.com/johnosd/living-recommender/pull/3) em rascunho, autorizado pelo autor, e [run 43107887816](https://github.com/johnosd/living-recommender/actions/runs/43107887816) no commit afa0903. Quality: 209 passed, 1 skipped específico de Windows, lint e três builds dbt verdes (31/31, 17/17, 23/23). Secrets: gitleaks v8.30.1, 17 commits examinados, sem achados. O status de T037 continua pendente até 308/308; a verificação remota não amplia a cobertura real de 71 municípios.
