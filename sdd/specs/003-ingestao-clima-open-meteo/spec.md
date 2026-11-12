@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-11
 
-**Status**: Implementada
+**Status**: Convergida
 
 **Input**: "planeje a ingestão dos dados de clima — referências: .docs/ e MPAlugueisLisboa" (ver `.docs/fontes_de_dados.md` §3.3 e §4, `.docs/plano_plataforma_recomendacao_portugal.md` §5.4, §8 e Fase 2, e o legado `src/Weather/` de MPAlugueisLisboa)
 
