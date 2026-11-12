@@ -79,7 +79,7 @@ def test_the_manual_dataset_enters_the_staging_with_the_municipality_resolved(tm
     assert main(["--local", "--root", str(root), "--file", str(source)]) == 0
 
     result = builder.build_observations(root)
-    assert result["datasets"] == 20 and result["not_collected"] == []
+    assert result["datasets"] == 21 and result["not_collected"] == []
     staging = pd.read_parquet(root / "lake/bronze/stg_observation/data.parquet")
     manual = staging[staging.dataset_id == DATASET]
     assert len(manual) == 308 * 2 and set(manual.period) == {2019, 2021}

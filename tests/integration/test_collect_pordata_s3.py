@@ -56,7 +56,7 @@ def test_sc005_s3_and_local_have_the_same_keys_bytes_and_manifest(tmp_path, s3):
     assert main(argv, downloader=_downloader()) == 0
     local = _snapshot(LocalStorage(tmp_path / "local"))
     remote = _snapshot(S3Storage(BUCKET, "dev"))
-    assert len(local) == 17  # 16 CSV e 1 manifest
+    assert len(local) == 18  # 17 CSV e 1 manifest
     assert remote == local
     stored = {item["Key"] for item in s3.list_objects_v2(Bucket=BUCKET)["Contents"]}
     assert all(key.startswith("dev/") for key in stored)
