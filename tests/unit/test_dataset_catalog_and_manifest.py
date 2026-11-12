@@ -67,7 +67,7 @@ def test_real_catalog_declares_pordata_and_ine_datasets():
     pordata = get_dataset_source(catalog, "pordata", strict_metadata=True)
     ine = get_dataset_source(catalog, "ine", strict_metadata=True)
     methods = [dataset["collection_method"] for dataset in pordata["datasets"]]
-    assert methods.count("http_download") == 16 and methods.count("manual_upload") == 1
+    assert methods.count("http_download") == 17and methods.count("manual_upload") == 1
     assert [dataset["indicator"] for dataset in ine["datasets"]] == ["0014698", "0008074", "0014580"]
     assert ine["datasets"][1]["params"]["Dim3"] == "T,1,2,3,4,5,6"
     assert pordata["license_id"] == "not_granted_by_source"

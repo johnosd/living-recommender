@@ -22,7 +22,7 @@ def test_build_resolves_every_municipality_and_promotes_the_staging(tmp_path):
     root = tmp_path / "data"
     seed(root, prepare=False)
     result = builder.build_observations(root)
-    assert (result["observations"], result["datasets"]) == (12936, 19)
+    assert (result["observations"], result["datasets"]) == (13552, 20)
     assert result["not_collected"] == ["pordata/poder_compra_per_capita_xlsx"]
     frame = _staging(root)
     silver = pd.read_parquet(root / "lake/silver/dim_municipality/data.parquet")

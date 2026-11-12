@@ -114,7 +114,7 @@ Os dados são arquivos Parquet locais, não um servidor de banco de dados. O exp
 
 A spec [002-ingestao-pordata-ine](../../sdd/specs/002-ingestao-pordata-ine/spec.md) acrescenta quatro comandos. **Antes do `build_observations`, rode o `build_caop`**: o staging resolve cada município contra a dimensão `lake/silver/dim_municipality`.
 
-### Coletar o Pordata (16 CSV)
+### Coletar o Pordata (17 CSV)
 
 ```powershell
 uv run --locked python -m pipelines.cli.collect_pordata --local --root .data
