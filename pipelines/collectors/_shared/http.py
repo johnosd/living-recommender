@@ -33,6 +33,15 @@ def csv_content_check(content_type: str, first_chunk: bytes, url: str) -> None:
         raise DownloadError(f"resposta HTML no lugar de CSV: {url}")
 
 
+def xlsx_content_check(content_type: str, first_chunk: bytes, url: str) -> None:
+    """Planilha xlsx (um ZIP): recusa páginas HTML e qualquer corpo que não comece como ZIP."""
+    head = first_chunk.lstrip()[:15].lower()
+    if "text/html" in content_type or head.startswith((b"<!doctype", b"<html")):
+        raise DownloadError(f"resposta HTML no lugar de planilha: {url}")
+    if not first_chunk.startswith(b"PK\x03\x04"):
+        raise DownloadError(f"arquivo não é uma planilha xlsx: {url}")
+
+
 def json_content_check(content_type: str, first_chunk: bytes, url: str) -> None:
     """JSON da API: recusa HTML e qualquer corpo que não comece como objeto ou lista."""
     if "text/html" in content_type:

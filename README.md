@@ -81,6 +81,8 @@ O comando mantém a configuração do catálogo lida no início. Alterações de
 
 A coleta real e o build locais foram concluídos: **308/308 municípios, 2.922.920 observações e nenhuma lacuna nas 13 variáveis**. Alertas dos pontos e evidências de validação estão no guia de coletas; os dados reais permanecem fora do Git.
 
+A spec 004 entrega a **correspondência de freguesias 2013→2025**, necessária para qualquer indicador por freguesia do Censos 2021. `collect_parish_crosswalk` baixa as duas planilhas oficiais do INE (antes de 2013 → 2013, e antes de 2013 → as 302 freguesias repostas em 2025) e `build_parish_crosswalk` as encadeia numa tabela de pares com a natureza da relação (um-para-um, um-para-muitos, muitos-para-um, muitos-para-muitos) e os sinais de herança, origem parcial, nome e município alterados. **Não há repartição de valores**: a herança é só um sinal. Um gate reprova a promoção se a `dim_parish` não for coberta por inteiro. Os comandos e o que fazer numa reprovação estão no [guia de coletas](docs/runbooks/coletas.md); a licença das planilhas ainda precisa de confirmação.
+
 ## Roteiro
 
 | Fase | Entrega | Estado |
@@ -103,8 +105,8 @@ Estado atual:
 .planning/               fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
 .agents/                 skills do agente de desenvolvimento
 sdd/                     ADRs (adr/) e specs das features (specs/)
-config/sources.yml       catálogo de fontes (CAOP)
-pipelines/               coletores (CAOP, Pordata, INE), storage local/S3 e CLIs (collect, load, build, view)
+config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias)
+pipelines/               coletores (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias), storage local/S3 e CLIs (collect, load, build, view)
 analytics/dbt/           modelos Bronze/Silver, seed de sinônimos de município e testes de qualidade
 tests/                   unitários, integração, contrato e fixtures sintéticas
 docs/runbooks/           guias de operação (coletas)

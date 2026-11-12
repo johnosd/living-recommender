@@ -1,0 +1,17 @@
+{
+  "feature": "004-correspondencia-freguesias",
+  "lockedAt": "2026-11-12 15:45",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_parish_crosswalk_contract.py",
+      "sha256": "aa19a44b824a4f8c320f50b809d4c213bf84ebea3b831bd1587b0e8ca42ee9f7",
+      "tests": "unknown"
+    },
+    {
+      "path": "tests/fixtures/parish_crosswalk/tables.py",
+      "sha256": "58e32605f5adb5d3c348471d02e9aa76e4ba4bd4259d2b0e5909ea7b20efd85e",
+      "tests": "unknown"
+    }
+  ]
+}
