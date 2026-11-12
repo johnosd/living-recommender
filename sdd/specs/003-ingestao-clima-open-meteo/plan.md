@@ -163,14 +163,14 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Implementação | Fase 8 em execução: CF-001 corrigido por snapshot de catálogo por sessão; CF-002/CF-003 em fechamento |
+| Implementação | Fase 8 concluída: T039/CF-001, T040/CF-002 e T041/CF-003 encerradas; 62/62 tasks |
 | Qualidade local | 228/228 pytest após T039; 5/5 contratos do clima; ruff limpo; três travas íntegras; revisão independente sem achados importantes |
 | dbt isolado | CAOP 31/31; observations 17/17; climate 23/23 |
 | Volume sintético | 2.922.920 linhas; 555,90 MiB de pico amostrado da árvore; 117,99 MiB do Python; build 20,38 s |
 | Fonte real | 308/308 atuais; zero pendentes e lacunas; 2.922.920 linhas; 3 recoletas unchanged; zero municípios failed; 17.821.354 bytes de bruto |
 | Preservação real | 7 arquivos dos outros lakes com SHA-256 inalterado |
-| CI remoto | [PR #3](https://github.com/johnosd/living-recommender/pull/3), commit afa0903: quality e secrets/gitleaks aprovados; 209 testes verdes e 1 específico de Windows dispensado no Linux; dbt 31/31, 17/17, 23/23 |
-| Pendente | T040: CI remoto da correção; T041: reconciliação pronta, alinhamento de SC-008 aguardando decisão do autor |
+| CI remoto | [PR #3](https://github.com/johnosd/living-recommender/pull/3), commit a660b63, [run 43137560825](https://github.com/johnosd/living-recommender/actions/runs/43137560825): quality e secrets aprovados; 227 passed e 1 skip específico de Windows; dbt 31/31, 17/17, 23/23; gitleaks sem achados em 22 commits |
+| Pendente | Nenhuma task de execução. Reconciliação histórica aceita pelo autor e SC-008 emendado; nova auditoria sdd-converge ainda não executada |
 
 ## Riscos e Decisões
 
@@ -201,6 +201,7 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | R-015 | Volume completo teve pico amostrado de 1.501,91 MB na árvore de processos, embora Python ficasse em 119,18 MB. | Médio: acima do alvo de ~1 GB; DuckDB usava limite padrão da máquina. | Resolvido: target exclusivo `climate`, uma thread e `memory_limit: 384MB`; target `local` de CAOP/observations preservado. Volume repetido: 2.922.920 linhas, 556 MiB de pico amostrado da árvore e 118 MiB do Python; build 20,38 s. Suíte final 210/210 verde, três travas íntegras e lint limpo. |
 | R-016 | Operação contínua solicitada pelo autor pode aguardar horas; um encerramento forçado pode deixar brutos sem manifest. | Médio: esperas longas precisam de checkpoints e a máquina ligada. | Supervisor optativo `--continuous`: lotes de 10, manifest antes de qualquer espera por cota, retomada por estado vigente, Ctrl+C preservado. Um único limitador atravessa os lotes. Backoff exponencial limitado, com jitter, para falhas temporárias; erros permanentes encerram. Contratos e modos anteriores preservados. |
 | R-017 | Catálogo relido entre lotes, com fetcher vinculado ao modelo anterior, podia gerar proveniência incorreta (CF-001). | Alto: configuração e dados podiam divergir se o arquivo mudasse durante a sessão. | Resolvido por snapshot independente do catálogo por invocação, compartilhado pelos lotes e fetcher; alterações entram na próxima execução. Regressões de modelo/janela/variáveis passaram; limitador preservado. |
+| R-018 | Medição da primeira coleta não instrumentou todas as tentativas e o consumo histórico exato não pode ser recuperado (CF-003). | Médio: impediria demonstrar o total exato de SC-008. | Resolvido por reconciliação de evidências e aceite explícito do autor em 2026-11-12 UTC à exceção restrita à coleta histórica. Custos medidos e estimados separados; total exato declarado não recuperável; cobertura/proveniência preservadas. |
 
 
 ## Execution Notes
@@ -224,9 +225,11 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 7 — T037/T038+1 | Mais 148 municípios coletados: 219/308, 89 pending, 2.078.310 linhas reais sem lacunas; build parcial e preservação de 7 arquivos confirmados. Custo medido 67,78571. Novo --continuous com checkpoints e backoff: 225/225 testes, lint limpo, três travas íntegras, revisão aprovada. Iniciado supervisor local às 22:41 UTC, aguardando Retry-After até cerca de 23:00:30 UTC | T037: concluir 308/308; supervisor executará build e verificação final. CI remoto ainda cobre somente afa0903 |
 | 2026-11-12 UTC | Fechamento T037 | Coleta 308/308 sem falhas; 17.821.354 bytes; build via uv recuperou falha de PATH do supervisor e produziu 2.922.920 linhas sem lacunas. Medição final e preservação de 7 arquivos passaram; CLI confirma 308 atuais sem rede; contratos 5/5 e trava íntegra | Nenhuma task de implementação; CI remoto somente em afa0903; alertas de pontos registrados |
 | 2026-11-12 UTC | Fase 8 — T039/T041 | Três regressões vermelhas reproduziram CF-001; snapshot por sessão corrigiu modelo/janela/variáveis, com contratos 5/5 verdes. Reconciliação histórica pronta: 17 manifests, 311 sucessos municipais e pelo menos 321 HTTP identificáveis; custo exato não recuperável | T040: CI da correção; T041: aguardar alinhamento explícito de SC-008 |
+| 2026-11-12 UTC | Fase 8 — T040 | Correção a660b63 publicada no PR #3 em rascunho; CI 43137560825 quality/secrets aprovado: 227 testes e 1 skip Windows, dbt 31/17/23, gitleaks 22 commits sem achados. Fonte local permanece 308/308 | Somente T041: decisão sobre SC-008; proposta e reconciliação prontas, sem novas consultas |
+| 2026-11-12 UTC | Fase 8 — T041 | Autor aceitou explicitamente a reconciliação e o ajuste restrito de SC-008: 17 execuções, 311 sucessos, subconjunto com custo exposto 10.033,28508 e estimativa de 21.081,36 para sucessos; total histórico exato não recuperável. 62/62 tasks | Handoff para nova auditoria sdd-converge; PR em rascunho, sem merge |
 
 
-**PRÓXIMO**: T039 validada localmente e revisada; publicar a correção e validar seu CI no PR #3 (T040). Aguardar decisão sobre SC-008/T041 sem consumir nova cota. Os dados reais já estão completos e preservados; não há coletor ativo.
+**PRÓXIMO**: executar nova auditoria sdd-converge sobre a correção e a emenda aprovada de SC-008. Execução concluída, 62/62 tasks; CI cobre todo o código de produção em a660b63, com fechamento documental posterior. PR #3 segue em rascunho; nenhum merge/deploy realizado, nenhuma nova coleta necessária.
 
 ## Arquivos Principais
 

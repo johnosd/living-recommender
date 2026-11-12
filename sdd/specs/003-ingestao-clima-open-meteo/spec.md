@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-11
 
-**Status**: Em Execução
+**Status**: Implementada
 
 **Input**: "planeje a ingestão dos dados de clima — referências: .docs/ e MPAlugueisLisboa" (ver `.docs/fontes_de_dados.md` §3.3 e §4, `.docs/plano_plataforma_recomendacao_portugal.md` §5.4, §8 e Fase 2, e o legado `src/Weather/` de MPAlugueisLisboa)
 
@@ -179,7 +179,7 @@ Ao fim da transformação, o operador recebe um relatório que diz, por variáve
 - **SC-005**: Para a janela de 24 meses, cada município completo tem exatamente os dias esperados para as 13 variáveis (730 dias na janela inicial), ou a lacuna aparece no relatório de cobertura.
 - **SC-006**: As execuções com destino local e com destino S3 (simulado) produzem o mesmo conjunto de chaves e manifests equivalentes.
 - **SC-007**: A suíte de testes da feature roda sem acesso à rede e passa no CI.
-- **SC-008**: A primeira coleta real, feita em ambiente local, registra o total de chamadas gastas da cota, o número de execuções necessárias para completar os 308 municípios e a lista dos municípios com lacuna ou ponto divergente. Essa verificação manual é distinta da prova automatizada.
+- **SC-008**: A primeira coleta real, feita em ambiente local, registra o total de chamadas gastas da cota, o número de execuções necessárias para completar os 308 municípios e a lista dos municípios com lacuna ou ponto divergente. Essa verificação manual é distinta da prova automatizada. **Emenda aprovada pelo autor em 2026-11-12 UTC, restrita à coleta histórica de 11–12/11:** aceita-se a reconciliação de 17 execuções, 311 consultas municipais bem-sucedidas e pelo menos 321 chamadas HTTP identificáveis; o custo exposto de 10.033,28508 unidades cobre somente o subconjunto instrumentado e a sondagem, e o custo de aproximadamente 21.081,36 unidades para os 311 sucessos é uma estimativa separada. O consumo histórico total exato é declarado não recuperável, sem nova coleta para reconstruí-lo. Essa exceção não transforma estimativas em medições nem reduz os critérios de cobertura ou proveniência.
 
 ## Assumptions
 
@@ -220,3 +220,5 @@ Durante T037, o autor pediu retries e exponential backoff para o processo contin
 - Decisão durante execução (2026-11-11): mudanças no conjunto de variáveis ou nas unidades provocam nova coleta automaticamente, mesmo com janela e modelo iguais. Reordenar a lista não muda a configuração. Entradas antigas sem assinatura devem ser recoletadas.
 
 - Correção de convergência CF-001 (2026-11-12 UTC): cada invocação da CLI usa um snapshot independente do catálogo, carregado uma única vez. Todos os checkpoints e esperas de `--continuous` mantêm essa configuração e o mesmo limitador. Alterações no catálogo são aplicadas na próxima invocação, quando a regra de estado vigente provoca a recoleta necessária.
+
+- Alinhamento de SC-008/T041 (2026-11-12 UTC): o autor selecionou explicitamente "Aceitar reconciliação e ajustar SC-008" após revisar os totais, o custo medido do subconjunto e a estimativa separada. Exceção limitada à medição histórica não instrumentada; não houve nova chamada à fonte para esse fechamento.
