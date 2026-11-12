@@ -12,6 +12,7 @@ collect_ine     --s3 --bucket <b> [--prefix <p>]
 ```
 
 - `--local` e `--s3` são exclusivos; `--bucket`/`--prefix` só valem com `--s3`; `--s3` exige `--bucket` (erro de argumento, código 2). O modo local não exige credenciais; no S3 elas vêm só da cadeia padrão da AWS.
+- `--catalog <arquivo>` (aceito também por `load_pordata_manual`) aponta um catálogo YAML alternativo; o padrão é `config/sources.yml`.
 - Lê `config/sources.yml` e recusa fonte, dataset ou indicador que não esteja no catálogo. `collect_pordata` trata só os datasets `http_download`; o dataset `manual_upload` é ignorado aqui (entra por `load_pordata_manual`).
 - Antes de qualquer rede, o destino passa pelo `preflight` (escrita e remoção); falha ali sai sem manifest.
 - Saída: uma linha por dataset (`changed`/`unchanged`/`failed`, tamanho, motivo se falhou), o status da execução e a chave do manifest.
@@ -33,7 +34,7 @@ build_observations --local [--root <dir>]
 
 - Pré-requisito: a Silver da CAOP (`<root>/lake/silver/dim_municipality/data.parquet`). Ausente → falha pedindo `build_caop`.
 - Para cada fonte, usa o **estado vigente de cada dataset** (verificando `sha256` do bruto), prepara o Parquet longo, roda o dbt em área temporária e só promove `lake/bronze/stg_observation/` e `lake/bronze/rpt_observation_coverage/` se todos os testes passarem. **Nunca** substitui `lake/bronze` ou `lake/silver` inteiros (isso apagaria a CAOP).
-- Saída: contagem de observações por fonte e a tabela de cobertura (dataset, último período, municípios com valor de 308, sem valor, linhas de agregação excluídas), além de `<root>/lake/bronze/coverage.csv` com a lista de ausentes.
+- Saída: o total de linhas e de datasets (`Observações: N linhas de K datasets`), o caminho do staging, a tabela de cobertura (dataset, último período, municípios com valor de 308, sem valor, linhas de agregação excluídas) com a linha dos datasets **ainda não coletados** (por exemplo, a planilha manual antes da carga) e o caminho de `<root>/lake/bronze/coverage.csv`, que lista os ausentes de cada dataset por código e nome.
 - Município sem correspondência → código `1`, informando dataset e nomes.
 
 ## Invariantes

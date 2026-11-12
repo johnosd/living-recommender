@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-11
 
-**Status**: Em Execução
+**Status**: Convergida
 
 **Input**: "ingestao pordata e Ine — referência: .docs/" (ver `.docs/fontes_de_dados.md` §2.2, §3.3 e §5, e `.docs/plano_plataforma_recomendacao_portugal.md` §5.4, §8 e Fase 2)
 

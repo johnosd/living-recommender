@@ -3,12 +3,12 @@
 ## 1. Coleta por dataset (`collect_datasets`)
 
 ```text
-collect_datasets(catalog, source_id, storage, fetcher, validator, run_id, collected_at_utc, work_dir, fingerprint=None):
+collect_datasets(catalog, source_id, storage, fetcher, validator, run_id, collected_at_utc, work_dir, fingerprint=None, dataset_ids=None):
   source = catálogo[source_id] com `datasets` não vazio         # senão DatasetCollectionError (antes de qualquer rede)
   run_id válido e sem manifest/raw já existentes                # idem
   preflight do destino, se existir; list_keys() uma única vez   # falha → DatasetCollectionError("destino…")
   estado = estado_vigente_por_dataset(storage, source_id)       # lê os manifests UMA vez
-  para cada dataset do catálogo:                                # sequencial; o fetcher respeita o rate limit
+  para cada dataset do catálogo (ou só de `dataset_ids`):       # sequencial; o fetcher respeita o rate limit
     tente:
       fetcher(dataset, work_dir/arquivo)                        # baixa para o temporário
       validator(dataset, work_dir/arquivo)                      # reprova HTML, vazio, colunas ausentes
@@ -26,6 +26,7 @@ collect_datasets(catalog, source_id, storage, fetcher, validator, run_id, collec
 - **Estado vigente por dataset**: a entrada `changed` mais recente daquele `dataset_id` em qualquer manifest da fonte (inclusive `partial`). `failed` e `unchanged` nunca são estado, mas o `unchanged` herda `key`/`sha256` do estado.
 - O bruto de um dataset só é gravado **depois** de validado e de comparado; o manifest vem por último.
 - Se o `put_file` do dataset falhar, nenhuma chave dele fica gravada e os datasets seguintes continuam.
+- `dataset_ids` restringe a coleta a esses datasets e recusa um id fora do catálogo (`DatasetCollectionError`, antes de qualquer rede). É assim que `collect_pordata` coleta só os `http_download` e `load_pordata_manual` só o dataset manual; o manifest da execução lista apenas os datasets coletados, e o estado dos demais vem dos manifests anteriores.
 
 ## 2. Impressão digital do INE
 

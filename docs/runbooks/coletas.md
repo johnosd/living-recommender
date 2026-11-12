@@ -176,8 +176,54 @@ Usa o **estado vigente de cada dataset** (confere o `sha256` do bruto), resolve 
 └── lake/bronze/{stg_observation, rpt_observation_coverage}/data.parquet   e   coverage.csv
 ```
 
+## Clima Open-Meteo (spec 003)
+
+Requer a Silver da CAOP em `.data/lake/silver`, com os 308 pontos representativos. O catálogo fixa `era5`, 13 variáveis diárias e 2024-11-01 a 2026-10-31 (730 dias). Uma chamada HTTP por município pode pesar dezenas de chamadas na cota; estima-se concluir em cerca de três dias, a confirmar pela fonte. Sem chave ou serviço AWS nesta execução.
+
+```powershell
+# Primeiro lote; não consulta os municípios já atuais.
+uv run --locked python -m pipelines.cli.collect_open_meteo --local --max-municipalities 5 --no-wait
+# Retomar. --no-wait salva pendências em vez de esperar minuto/hora.
+uv run --locked python -m pipelines.cli.collect_open_meteo --local --no-wait
+# Gerar staging e relatórios; cobertura parcial é válida.
+uv run --locked python -m pipelines.cli.build_climate --local
+# Reconsultar até 3 municípios para detectar revisão da mesma janela.
+uv run --locked python -m pipelines.cli.collect_open_meteo --local --recollect --max-municipalities 3 --no-wait
+```
+
+O código `0` significa sucesso, lote concluído ou nada a coletar; `1` significa falha de dado/configuração; `2` significa pendências por cota ou Ctrl+C, com manifest salvo. Falha vence pendência no código de saída. Sem `--no-wait`, o limite por minuto espera 61 s até cinco vezes; por hora espera 3.605 s uma vez; diário pausa imediatamente. O limite de lote não cria `pending` artificial. `--silver` permite selecionar a dimensão local, inclusive com destino `--s3`.
+
+O estado atual compara janela, modelo e assinatura das variáveis/unidades. Mudar qualquer um desses itens gera nova coleta, sem sobrescrever o bruto anterior; reordenar variáveis não exige recoleta. Sem mudança e sem `--recollect`, não há chamada nem manifest novo. A impressão digital ignora apenas `generationtime_ms`; o SHA-256 continua auditando os bytes originais. Os meses finais podem ser reanálise preliminar e mudar numa recoleta legítima.
+
+```text
+.data/raw/source=open_meteo/dataset=<dico>/run_id=<run>/<dico>.json
+.data/manifests/open_meteo/<run>.json
+.data/lake/bronze/{stg_climate_daily,rpt_climate_coverage,rpt_climate_points}/data.parquet
+.data/lake/bronze/{climate_coverage,climate_points}.csv
+```
+
+Os CSV usam `;` e UTF-8 com BOM para abrir no Excel. A promoção dos dois CSV e das três tabelas tem rollback; feche os arquivos no Excel antes de reconstruir. `missing_days_total` soma dias nulos dos municípios coletados; não coletados são listados à parte, por código e nome. O relatório de pontos mostra distância > 25 km e elevação 0 m para revisão, sem corrigir, deslocar o ponto ou herdar dados dos vizinhos. A resolução de ~25 km e uma série de apenas 24 meses limitam seu uso como indicador de clima.
+
+Ctrl+C preserva os municípios concluídos e marca o atual e os seguintes como pendentes. Encerramento forçado pode deixar brutos órfãos, que não são estado e são ignorados na retomada. Não apague manifests nem dados de outras fontes para retomar. O build usa o target dbt `climate` com uma thread e limite de 384 MB no DuckDB (o target `local` das outras fontes é preservado). Confere checksum e tamanho antes de transformar; uma falha dbt preserva a versão anterior, e CAOP/Pordata/INE não são promovidos por esse comando.
+
+Licença e atribuição: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF. O plano gratuito da API permite uso não comercial: risco aceito R-001; migrar para plano comercial é gate da futura fase comercial. Nenhum bruto real entra no Git.
+
+O [quickstart da 003](../../sdd/specs/003-ingestao-clima-open-meteo/quickstart.md) descreve o cenário offline. Para fixtures, use o catálogo gerado explicitamente: `build_climate --local --root .data/ci-climate --catalog .data/ci-climate/catalog.yml`.
+
 ## Estado da verificação
 
 Em 2026-11-04, os três ZIPs oficiais foram coletados em `.data/raw/` e transformados localmente: 308 municípios, 3.259 freguesias e 18 códigos de freguesia com letras. A fixture sintética nacional passou no `dbt build`; a execução real local também passou. Isso não demonstra execução no CI remoto, ainda pendente. O destino S3 foi exercitado só contra um S3 simulado (moto), não contra uma conta AWS real.
 
 Em 2026-11-11, a spec 002 foi verificada contra as fontes reais: os 16 CSV do Pordata (43 s, tamanhos idênticos aos da pesquisa), os 3 indicadores do INE (a segunda e a terceira coletas deram `unchanged`), a planilha do autor (308 municípios × 11 anos) e o `build_observations` contra a Silver real: **1.168.860 observações de 20 datasets**, todos os municípios resolvidos e o lake da CAOP byte a byte intacto. Achados de cobertura: as rendas do INE têm valor em 247 dos 308 municípios em 2025; `ensino_nao_superior` não tem valor em nenhum município em 2024 (o último período com dados é 2023); `ensino_superior` tem 63 em 2025. O CI remoto ainda precisa confirmar os novos passos do dbt.
+
+Em 2026-11-11, a spec 003 passou nos 210 testes offline, nos três builds dbt isolados (CAOP 31/31, observações 17/17, clima 23/23) e no volume sintético de 2.922.920 linhas: 555,90 MiB de pico amostrado da árvore de processos. Na fonte real, foram coletados **71/308 municípios**, com 3 recoletas `unchanged`; a cota horária encerrou o lote com **237 pendentes** e nenhum `failed`. O build real produziu **673.790 linhas**, sem lacunas nos coletados, e preservou os 7 arquivos dos outros lakes. Os 237 restantes seguem pendentes. O CI remoto foi confirmado em seguida no [PR #3](https://github.com/johnosd/living-recommender/pull/3), em rascunho: quality e secrets/gitleaks verdes no [run 43107887816](https://github.com/johnosd/living-recommender/actions/runs/43107887816), commit afa0903; 209 testes verdes e 1 específico de Windows dispensado no Linux. Retome o mesmo comando `collect_open_meteo --local --no-wait` quando a cota estiver disponível e depois rode `build_climate --local`.
+
+Na retomada às 21:53 e 22:00 UTC, a API ainda retornou limite horário; a CLI saiu com código 2, pulou os 71 municípios atuais e não gravou bruto novo. Não presumir liberação na virada da hora; a resposta da fonte determina quando é possível avançar. T037 permanece aberta até completar os 308 municípios.
+
+Atualização de 2026-11-11, 22:41 UTC: a retomada coletou mais 148 municípios, sem falha de dado; um HTTP 502 foi recuperado. O estado vigente passou a **219/308**, com **89 pendentes**, **2.078.310 linhas**, nenhuma lacuna nos coletados e **12.685.102 bytes** de bruto. O build parcial passou e os 7 arquivos das outras fontes mantiveram SHA-256. Os pontos de Vila Franca de Xira e Alcochete retornaram elevação 0 m; nenhum ponto excedeu 25 km de divergência. O 429 horário informou reset em **23:00:30 UTC / 20:00:30 Brasília**.
+
+Para aguardar e retomar automaticamente: `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. O supervisor salva um manifest a cada 10 municípios e antes de esperar por cota, mantém o limitador entre lotes e consulta apenas os pendentes. Prefere `Retry-After` e depois `X-RateLimit-Reset`; sem informação válida, usa o fallback conservador do tipo de cota. Falhas temporárias recebem espera exponencial de 2 a 60 s com jitter de até 1 s, sem teto de tentativas no modo contínuo; um prazo maior informado pelo servidor prevalece. Erros permanentes encerram com falha; Ctrl+C encerra com progresso salvo. Os modos anteriores mantêm suas regras; não combinar `--continuous` com `--no-wait`, `--recollect` ou `--max-municipalities`. Após terminar, executar `build_climate --local`.
+
+Nesta operação local, o supervisor está em segundo plano e chama o build automaticamente quando a coleta terminar. Evidências ignoradas pelo Git: `.data/climate-continuous-status.json`, `.data/climate-continuous.log` e `.data/climate-continuous-errors.log`. `phase: completed` e `returncode: 0` indicam que coleta, build e verificação local terminaram; o status documental de T037 ainda deve ser conferido antes de marcar Implementada. A operação depende da máquina ligada e conectada, sem serviço externo ou publicação automática.
+
+**Estado final conferido em 2026-11-12 UTC:** coleta concluída, nenhum processo ativo, **308/308 municípios e 2.922.920 linhas**, todas as 13 variáveis sem lacunas. Bruto: 17.821.354 bytes; outros 7 arquivos preservados. O build automático terminou com erro de PATH (`dbt` não encontrado); foi recuperado com `uv run --locked python -m pipelines.cli.build_climate --local`, seguido da verificação completa. O status operacional agora registra `completed`, incluindo a recuperação. Uma nova execução da coleta confirma 308/308 atuais, sem rede. O relatório sinaliza Sesimbra a 30,06 km e elevação 0 m em Vila Franca de Xira, Alcochete e Setúbal. Esses alertas não são lacunas nem falhas da coleta. T037 concluída; o CI remoto continua sendo o de afa0903, anterior aos últimos commits locais.

@@ -59,7 +59,9 @@ def test_manifest_records_reference_period_and_release_date_from_the_response(tm
     assert main(["--local", "--root", str(root)], downloader=offline_downloader(_texts())) == 0
     entry = {e["dataset_id"]: e for e in _last_manifest(LocalStorage(root))["datasets"]}["rendas_novos_contratos"]
     assert entry["reference_period"] == "2025" and entry["source_release_date"] == "2026-09-29"
-    assert _last_manifest(LocalStorage(root))["license_id"] == "CC-BY-4.0"
+    manifest = _last_manifest(LocalStorage(root))
+    assert manifest["license_id"] == "CC-BY-4.0" and manifest["collection_method"] == "api_json"
+    assert {e["collection_method"] for e in manifest["datasets"]} == {"api_json"}
 
 
 def test_a_failing_indicator_gives_partial_and_exit_code_1_without_blocking_the_others(tmp_path, capsys):

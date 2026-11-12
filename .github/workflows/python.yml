@@ -34,6 +34,16 @@ jobs:
         if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/observations/ci_seed.py') != '' }}
         run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:observations
 
+      - name: Prepare climate fixture
+        if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/climate/ci_seed.py') != '' }}
+        run: uv run --locked python -m tests.fixtures.climate.ci_seed --root .data/ci-climate
+      - name: Build dbt climate from fixture
+        if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/climate/ci_seed.py') != '' }}
+        env:
+          OBS_SILVER_DIR: .data/ci-climate/lake/silver
+          CAOP_DUCKDB_PATH: .data/ci-climate/climate.duckdb
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target climate --select tag:climate
+
   secrets:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

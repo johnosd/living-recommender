@@ -259,7 +259,7 @@
 - Feito: T034: `README.md` (status, atribuições do INE e do Pordata, estrutura), `docs/runbooks/coletas.md` (seção nova com `collect_pordata`, `collect_ine`, `load_pordata_manual`, `build_observations`, leitura de `partial` e da cobertura, como exportar a planilha, licenças, layout do raw e o estado da verificação real) e `.docs/fontes_de_dados.md` (licença do Pordata, cobertura das rendas do INE, códigos do INE, layout do raw, `HEAD` descartado, estrutura de código); `plan.md` e `data-model.md` corrigidos nas frases sobre particionamento e resolução no dbt (R-010). T035: coleta real (ver Testes). T036: gate final (ver Testes). **Achado da coleta real (R-008 se materializando):** a API do INE devolve as mesmas linhas da criminalidade em **ordem diferente** entre chamadas (2 de 12 períodos, zero diferença de conteúdo), o que fez `taxa_criminalidade` aparecer como `changed` na 2.ª coleta; a impressão digital passou a ordenar os registros, com teste de regressão (`tests/unit/test_ine_fingerprint.py`, 4 testes) e a correção confirmada nas duas respostas reais. Os estados gravados com o algoritmo anterior foram descartados (só os que eu tinha acabado de criar em `.data`) e a coleta foi refeita.
 - Contrato: `uv run --locked python -m pytest -q tests/contracts --basetemp .pytest_tmp` → 10/10 verdes (5 da 002 e 5 da CAOP); `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra. Nenhum arquivo de contrato foi editado.
 - Testes executados: **Coleta real (T035, `--root .data`):** `collect_pordata` → 16 datasets `changed` em 43 s, tamanhos idênticos aos da pesquisa; `collect_ine` → 3 `changed` e, repetido duas vezes, 3 `unchanged` (após a correção da impressão digital); `load_pordata_manual` com a planilha do autor → `changed`, e de novo `unchanged`, com o `sha256` do arquivo idêntico antes e depois; `build_observations` contra a Silver real → **1.168.860 observações de 20 datasets em 15 s**, todos os 308 municípios resolvidos pelas 5 grafias do seed, 0 `dico` nulo, 121.642 nulos todos com símbolo, nenhum dado em `lake/gold` ou `published`, e `lake/silver` e `stg_caop_*` com o `sha256` idêntico antes e depois. Cobertura real: rendas do INE 247/308 em 2025; `ensino_nao_superior` 0/308 em 2024 (último período com dados: 2023); `ensino_superior` 63/308 em 2025; `desemprego_registado` 278/308; os demais 308/308. **Gate local (T036):** `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 139 passed; `dbt build --select tag:caop` (após `ci_seed` da CAOP) → PASS=31; `--select tag:observations` (após `ci_seed` de observações) → PASS=17. **`gitleaks` v8.30.1 via Docker:** modo `dir` sobre 327 arquivos atuais (inclui o código novo ainda não commitado) → no leaks; modo `git` sobre 7 commits (como no CI) → no leaks. **Reprodução do job `quality` em container Linux** (Python 3.12.12, a partir dos arquivos atuais, com os passos novos): ruff limpo, 138 passed e 1 skipped (o teste do prefixo de caminho do Windows, esperado), `dbt build` 31 e 17 passos. `git status` sem dado real, planilha ou credencial; `.data` e `.pytest_tmp` ignorados. Iterações: a fixture de cobertura precisou do diretório de saída do novo modelo pré-criado; um helper inútil (`nl_join`) foi removido; um `try/except/pass` virou `contextlib.suppress`.
-- Pendências: (1) **CI no GitHub:** a branch ainda não foi enviada com estas mudanças, então o workflow `Python quality` (jobs `quality` e `secrets`) não rodou para elas; por isso o item "CI e `gitleaks` verdes" do Checklist de Release fica **aberto**. A evidência local (`gitleaks` e reprodução em Linux) é forte, mas não substitui o run real. (2) R-001 (licença do Pordata) e R-004 (rendas do INE em ~80% dos municípios) seguem como riscos conhecidos do dado, não da implementação. (3) O dataset Pordata 845 continua sem URL (fora do escopo).
+- Pendências: (1) **CI no GitHub:** a branch ainda não foi enviada com estas mudanças, então o workflow `Python quality` (jobs `quality` e `secrets`) não rodou para elas; por isso o item "CI e `gitleaks` verdes" do Checklist de Release fica **aberto**. A evidência local (`gitleaks` e reprodução em Linux) é forte, mas não substitui o run real. **Resolvida em 2026-11-11:** o commit `d511ec5` foi enviado e o PR #2 (hoje MERGED) rodou o workflow `Python quality` no GitHub: run de `push` 43089912012 (1 min 53 s) e de `pull_request` 43090260004, ambos `success`. O job `quality` passou em todos os passos (lint, `pytest` sem serviços externos, fixture e `dbt build` da CAOP, fixture e `dbt build` de observações), e o job `secrets` (`Scan Git history for secrets`) passou, exercitando o `gitleaks` no GitHub. O item do Checklist de Release foi marcado. (2) R-001 (licença do Pordata) e R-004 (rendas do INE em ~80% dos municípios) seguem como riscos conhecidos do dado, não da implementação. (3) O dataset Pordata 845 continua sem URL (fora do escopo).
 
 ### Checklist de Release
 
@@ -271,7 +271,7 @@
 - [X] Fase 6 (US4) concluída.
 - [X] Fase 7 (US5) concluída.
 - [X] Cinco contratos verdes no `pytest` completo; `check-contract-tests.ps1` íntegro para 001 e 002.
-- [ ] `ruff`, `pytest` e `dbt build` (tags `caop` e `observations`) verdes com fixtures sem rede; CI e `gitleaks` verdes.
+- [X] `ruff`, `pytest` e `dbt build` (tags `caop` e `observations`) verdes com fixtures sem rede; CI e `gitleaks` verdes.
 - [X] Atribuições do INE e do Pordata e o R-001 documentados; nenhum bruto real nem credencial no Git.
 - [X] `quickstart.md` executado; coleta real distinguida da prova automatizada.
 - [X] Spec 001 e seu lake inalterados (contrato da CAOP verde, `lake/silver` e `stg_caop_*` intactos).
@@ -310,3 +310,58 @@
 | SC-005 | T013 |
 | SC-006 | T036 |
 | SC-007 | T035 |
+
+---
+
+## Phase 9: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-11. Auditados FR-001 a FR-023, SC-001 a SC-007, as cinco histórias e os casos de borda contra o código e a coleta real; só os pontos abaixo ficaram sem cobertura. IDs continuam a numeração (`T037`+).
+
+- [X] T037 [MEDIUM, F-001, FR-005 / data-model] Registrar o método de coleta **por dataset** no manifest v2: cada entrada de `datasets[]` ganha `collection_method` (o do dataset, herdado da fonte quando não o redefine), e o `collection_method` da execução passa a ser o método comum ou `mixed`, de modo que a carga manual grave `manual_upload` (hoje grava `http_download`, o método da fonte). Alterar `pipelines/collectors/_shared/datasets.py` (`_entry`) e `dataset_manifest.py` (`make_dataset_manifest`, `validate_entry`), sem editar o contrato travado (ele não afirma `collection_method`); atualizar o exemplo de manifest em `data-model.md`. Acrescentar testes: `tests/unit/test_dataset_catalog_and_manifest.py` (método por dataset, `mixed`) e `tests/integration/test_load_pordata_manual.py` (a carga manual registra `manual_upload` na entrada e na execução; `collect_pordata` continua `http_download`). Manifests já gravados continuam válidos (campo ausente é lido como o método da execução).
+- [X] T038 [LOW, F-002, Constitution Quality Gate 6] Corrigir `quickstart.md` da feature: o staging é um único `lake/bronze/stg_observation/data.parquet` (sem particionamento físico, R-010) e a coleta real do Pordata leva cerca de 1 minuto (43 s medidos), não "alguns minutos".
+
+**Critério de Conclusão**: `uv run --locked python -m pytest -q --basetemp .pytest_tmp` verde com os testes novos; os 5 contratos da 002 e os da CAOP verdes e `check-contract-tests.ps1` íntegro para 001 e 002; `ruff` limpo; um manifest novo da carga manual mostra `manual_upload`; `quickstart.md` sem a divergência.
+
+**Registro da Fase**:
+
+- Status: concluída em 2026-11-11 (T037–T038).
+- Feito: T037 (F-001, FR-005): `_entry` em `datasets.py` passou a gravar `collection_method` em cada entrada de `datasets[]`, e `make_dataset_manifest` calcula o `collection_method` da execução como o método comum a todas as entradas ou `mixed` (entradas sem o campo, de manifests anteriores, valem o método da fonte). A carga manual do Pordata agora registra `manual_upload` na entrada e na execução; `collect_pordata` segue `http_download` e `collect_ine`, `api_json`. O exemplo de manifest e a regra foram atualizados em `data-model.md`. Testes: 1 unitário novo (método comum, `mixed` e entrada sem o campo) e asserções acrescentadas aos testes de integração das três CLIs. T038 (F-002): `quickstart.md` corrigido (staging em `data.parquet` único, sem particionamento; coleta real do Pordata em cerca de 1 minuto, 43 s medidos) e com a verificação do `manual_upload` na carga manual.
+- Contrato: `uv run --locked python -m pytest -q tests/contracts --basetemp .pytest_tmp` → 10/10 verdes (5 da 002 e 5 da CAOP); `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra. O contrato travado não afirma `collection_method` e não foi editado.
+- Testes executados: `uv run --locked ruff check pipelines tests` → All checks passed; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → 140 passed; `dbt build --select tag:caop` → PASS=31 e `--select tag:observations` → PASS=17 (fixtures novas). **Verificação no dado real:** `load_pordata_manual` com a planilha do autor → `unchanged`, nenhum raw novo (continua 1 arquivo), `sha256` do arquivo do autor idêntico, e o manifest novo traz `collection_method: manual_upload` (os manifests antigos, gravados antes da correção, seguem válidos e legíveis); `build_observations` real depois da mudança → 1.168.860 observações de 20 datasets, igual ao build anterior.
+- Pendências: Nenhuma. O manifest da primeira carga manual (anterior à correção) segue registrando `http_download` na execução; é histórico imutável e não é lido para decidir estado, então foi mantido.
+
+---
+
+## Phase 10: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-11 (terceira passada). As Phases 9 resolveram F-001 e F-002; a comparação sistemática das colunas e campos reais (staging, cobertura, manifest e seed) com o `data-model.md` achou mais um ponto. IDs continuam a numeração (`T039`+).
+
+- [X] T039 [LOW, F-003, FR-019 / US4-AC2] Acrescentar `latest_period_with_data` ao parágrafo "Cobertura" de `data-model.md`: é o último período com pelo menos um valor não nulo no dataset e difere de `latest_period` quando o período mais recente está vazio (na coleta real, `ensino_nao_superior` tem `latest_period` 2024 e `latest_period_with_data` 2023). Só documentação; o código e os testes já cobrem a coluna (`test_a_dataset_with_nothing_in_the_latest_period_reports_zero_and_the_last_period_with_data`).
+
+**Critério de Conclusão**: `data-model.md` descreve as 9 colunas reais de `rpt_observation_coverage`; nenhum código alterado; `check-contract-tests.ps1` íntegro para 001 e 002.
+
+**Registro da Fase**:
+
+- Status: concluída em 2026-11-11 (T039).
+- Feito: T039 (F-003): o parágrafo "Cobertura" de `data-model.md` passou a descrever as 9 colunas reais de `rpt_observation_coverage`, incluindo `latest_period_with_data` (último período com algum valor não nulo; difere de `latest_period` quando o período mais recente está vazio; nulo se o dataset não tiver nenhum valor), com o exemplo real de `ensino_nao_superior`. Só documentação.
+- Contrato: `uv run --locked python -m pytest -q tests/contracts --basetemp .pytest_tmp` → 10/10 verdes (5 da 002 e 5 da CAOP); `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra.
+- Testes executados: Nenhum código foi alterado (`git diff --stat -- pipelines tests analytics` vazio), então a suíte completa da Phase 9 (140 passed) segue válida. Conferência de documentação: o script que compara as colunas reais (staging, cobertura, manifest e seed) com o `data-model.md` agora não aponta nenhuma coluna ausente em staging e cobertura (os campos do manifest aparecem no JSON de exemplo); `uv run --locked ruff check pipelines tests` → All checks passed. A afirmação do documento foi verificada no Parquet real: `ensino_nao_superior` tem `latest_period` 2024, `latest_period_with_data` 2023 e 0 municípios com valor.
+- Pendências: Nenhuma.
+
+---
+
+## Phase 11: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-11 (quarta passada). Esta passada estendeu a comparação de deriva ao contrato das CLIs e ao documento de lógica; o `data-model.md` já havia sido conferido na passada anterior. IDs continuam a numeração (`T040`+).
+
+- [X] T040 [LOW, F-004, Constitution Quality Gate 6] Alinhar dois documentos da feature ao código, sem alterar código nem testes: em `contracts/ingestao-cli.md`, (a) acrescentar `--catalog <arquivo>` (catálogo YAML alternativo; padrão `config/sources.yml`) às três CLIs de coleta, e (b) corrigir a saída de `build_observations`, que imprime o total de linhas e de datasets, a tabela de cobertura (com a linha de datasets "não coletados", como a planilha manual antes da carga) e o caminho do `coverage.csv`, e não uma contagem "por fonte"; em `logic/ingestao-datasets.md` §1, acrescentar o parâmetro `dataset_ids=None` à assinatura de `collect_datasets` e uma linha dizendo que restringe a coleta a esses datasets (usado por `collect_pordata`, só `http_download`, e por `load_pordata_manual`, só o dataset manual) e recusa um id fora do catálogo.
+
+**Critério de Conclusão**: `contracts/ingestao-cli.md` e `logic/ingestao-datasets.md` descrevem as opções e a assinatura reais (conferir contra `--help` das CLIs e `inspect.signature(collect_datasets)`); nenhum código alterado; `check-contract-tests.ps1` íntegro para 001 e 002.
+
+**Registro da Fase**:
+
+- Status: concluída em 2026-11-11 (T040).
+- Feito: T040 (F-004): `contracts/ingestao-cli.md` passou a citar `--catalog <arquivo>` (catálogo YAML alternativo; padrão `config/sources.yml`; aceito pelas três CLIs de coleta, incluindo `load_pordata_manual`) e a descrever a saída real de `build_observations` (total de linhas e de datasets, caminho do staging, tabela de cobertura com a linha dos datasets ainda não coletados e o caminho do `coverage.csv` com os ausentes por código e nome), em vez de uma contagem "por fonte". `logic/ingestao-datasets.md` §1 passou a mostrar `dataset_ids=None` na assinatura de `collect_datasets` e a explicar que ele restringe a coleta (usado por `collect_pordata`, só `http_download`, e por `load_pordata_manual`, só o dataset manual) e recusa um id fora do catálogo. Só documentação.
+- Contrato: `check-contract-tests.ps1` das specs 002 e 001 → PASS, trava íntegra; os 10 contratos (5 da 002 e 5 da CAOP) seguem verdes, pois nenhum código ou teste foi tocado.
+- Testes executados: Nenhum código foi alterado (`git diff --stat -- pipelines tests analytics config` vazio), então a suíte completa da Phase 9 (140 passed) e o CI do commit `74a64cd` continuam válidos. Conferência da documentação contra o código real: o `--help` de `collect_pordata`, `collect_ine` e `load_pordata_manual` mostra `--catalog` (e o contrato agora o cita); `inspect.signature(collect_datasets)` termina em `fingerprint=None, dataset_ids=None` (e a lógica agora mostra os dois); as quatro linhas que `build_observations` imprime batem com o contrato.
+- Pendências: Nenhuma.

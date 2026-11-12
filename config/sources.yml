@@ -73,3 +73,36 @@ sources:
         indicator: "0014580"
         unit: "Número índice (Portugal = 100)"
         params: {Dim1: T, Dim2: "lvl@5"}
+
+  open_meteo:
+    id: open_meteo
+    publisher: Open-Meteo.com
+    responsible_party: living-recommender
+    # R-001 (plan 003): o plano gratuito é só para uso não comercial; o autor aceitou o risco (como no Pordata).
+    license_id: CC-BY-4.0
+    usage_restriction: "plano gratuito: uso não comercial (risco aceito R-001)"
+    attribution: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"
+    collection_method: api_json
+    frequency: quarterly
+    territorial_level: municipality
+    api_url: https://archive-api.open-meteo.com/v1/archive
+    model: era5                         # R1: o único modelo com as 13 variáveis completas e reprodutível
+    timezone: auto                      # R2: o dia é o dia local do município
+    window: {start: "2024-11-01", end: "2026-10-31"}   # 24 meses completos; 730 dias
+    expected_municipalities: 308
+    point_divergence_km: 25             # R6
+    limits: {per_minute: 600, per_hour: 5000, per_day: 10000, min_interval_seconds: 7}
+    variables:
+      - {id: temperature_2m_mean, unit: "°C"}
+      - {id: temperature_2m_max, unit: "°C"}
+      - {id: temperature_2m_min, unit: "°C"}
+      - {id: apparent_temperature_mean, unit: "°C"}
+      - {id: apparent_temperature_max, unit: "°C"}
+      - {id: apparent_temperature_min, unit: "°C"}
+      - {id: precipitation_sum, unit: "mm"}
+      - {id: snowfall_sum, unit: "cm"}
+      - {id: sunshine_duration, unit: "s"}
+      - {id: wind_speed_10m_mean, unit: "km/h"}
+      - {id: wind_speed_10m_max, unit: "km/h"}
+      - {id: wind_gusts_10m_max, unit: "km/h"}
+      - {id: relative_humidity_2m_mean, unit: "%"}

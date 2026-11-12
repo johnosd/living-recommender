@@ -28,6 +28,14 @@ class DatasetCollectionError(Exception):
     """A coleta não pôde começar (catálogo, run_id ou destino); nada foi baixado."""
 
 
+class StopCollection(Exception):
+    """Um fetcher pede o fim limpo da coleta: o item atual e os seguintes ficam `pending` (spec 003)."""
+
+
+class QuotaExhausted(StopCollection):
+    """A fonte recusou novas chamadas por cota; a coleta para e a próxima execução continua (spec 003)."""
+
+
 def _suffix(dataset: dict[str, Any]) -> str:
     if dataset.get("format") in EXTENSIONS:
         return EXTENSIONS[dataset["format"]]
@@ -51,6 +59,7 @@ def _entry(dataset: dict[str, Any], status: str, **fields: Any) -> dict[str, Any
     entry = {
         "dataset_id": dataset["id"],
         "origin": dataset.get("origin") or dataset.get("indicator"),
+        "collection_method": dataset.get("collection_method"),
         "status": status,
         "key": None,
         "sha256": None,
@@ -86,6 +95,7 @@ def _collect_one(
             "reference_period": meta.get("reference_period"),
             "source_release_date": meta.get("source_release_date"),
             "http": {k: meta[k] for k in ("etag", "last_modified") if meta.get(k)} or None,
+            **meta.get("entry_extra", {}),
         }
         if state is not None and state["fingerprint"] == fp:
             return _entry(
@@ -94,9 +104,14 @@ def _collect_one(
             )
         stage = "gravação raw"
         key = f"raw/source={source_id}/dataset={dataset['id']}/run_id={run_id}/{dataset['id']}{suffix}"
-        storage.put_file(key, path)
         written = key
+        storage.put_file(key, path)
         return _entry(dataset, "changed", key=key, sha256=sha256, bytes=size, fingerprint=fp, **common)
+    except (StopCollection, KeyboardInterrupt):
+        if written:
+            with contextlib.suppress(Exception):
+                storage.delete(written)
+        raise
     except Exception as exc:  # noqa: BLE001 - fetchers/validators/backends lançam erros variados
         if written:  # limpeza best effort; o erro original é o que vale
             with contextlib.suppress(Exception):
@@ -136,6 +151,21 @@ def collect_datasets(
         if unknown:
             raise DatasetCollectionError(f"dataset não cadastrado: {', '.join(unknown)}")
         datasets = [dataset for dataset in datasets if dataset["id"] in set(dataset_ids)]
+    result = collect_items(
+        source, datasets, source_id=source_id, storage=storage, fetcher=fetcher,
+        validator=validator, run_id=run_id, collected_at_utc=collected_at_utc,
+        work_dir=work_dir, fingerprint=fingerprint,
+    )
+    return {key: result[key] for key in ("status", "run_id", "manifest_key", "datasets")}
+
+
+def collect_items(
+    source, items, *, source_id, storage, fetcher, validator, run_id, collected_at_utc,
+    work_dir, fingerprint=None, state_is_current=None, skip_current=False, max_items=None,
+):
+    """Coleta unidades independentes, preservando progresso numa parada limpa."""
+    if max_items is not None and (type(max_items) is not int or max_items <= 0):
+        raise DatasetCollectionError("max_items precisa ser inteiro positivo")
     if not RUN_ID.fullmatch(run_id):
         raise DatasetCollectionError("run_id inválido")
     manifest_key = f"manifests/{source_id}/{run_id}.json"
@@ -146,6 +176,19 @@ def collect_datasets(
         states = latest_dataset_states(storage, source_id)
     except Exception as exc:
         raise DatasetCollectionError(f"destino sem permissão ou inacessível: {exc}") from exc
+    todo = [item for item in items if not (
+        skip_current and item["id"] in states
+        and (state_is_current is None or state_is_current(item, states[item["id"]]))
+    )]
+    skipped = len(items) - len(todo)
+    if not todo:
+        return {"status": "unchanged", "run_id": run_id, "manifest_key": None, "datasets": [],
+                "skipped_current": skipped, "remaining": 0, "quota_exhausted": False,
+                "interrupted": False, "up_to_date": True}
+    remaining = max(0, len(todo) - max_items) if max_items is not None else 0
+    if max_items is not None:
+        todo = todo[:max_items]
+    quota_exhausted = interrupted = False
     marker = f"/run_id={run_id}/"
     if manifest_key in existing or any(
         key.startswith(f"raw/source={source_id}/") and marker in key for key in existing
@@ -156,12 +199,22 @@ def collect_datasets(
     work_dir.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, Any]] = []
     try:
-        for dataset in datasets:
-            entries.append(_collect_one(
-                dataset, source_id=source_id, state=states.get(dataset["id"]), storage=storage,
-                fetcher=fetcher, validator=validator, fingerprint=fingerprint, run_id=run_id,
-                work_dir=work_dir,
-            ))
+        for index, dataset in enumerate(todo):
+            try:
+                state = states.get(dataset['id'])
+                if state is not None and state_is_current is not None and not state_is_current(dataset, state):
+                    state = None  # nova configuração precisa virar estado, mesmo com bytes iguais
+                entries.append(_collect_one(
+                    dataset, source_id=source_id, state=state, storage=storage,
+                    fetcher=fetcher, validator=validator, fingerprint=fingerprint, run_id=run_id,
+                    work_dir=work_dir,
+                ))
+            except (StopCollection, KeyboardInterrupt) as exc:
+                quota_exhausted = isinstance(exc, QuotaExhausted)
+                interrupted = isinstance(exc, KeyboardInterrupt)
+                reason = "interrompida pelo operador" if interrupted else str(exc)
+                entries.extend(_entry(item, "pending", error=reason) for item in todo[index:])
+                break
         manifest = make_dataset_manifest(
             source, source_id=source_id, run_id=run_id, collected_at_utc=collected_at_utc,
             datasets=entries,
@@ -176,7 +229,8 @@ def collect_datasets(
             raise DatasetCollectionError(f"manifest não gravado: {exc}") from exc
         return {
             "status": manifest["status"], "run_id": run_id, "manifest_key": manifest_key,
-            "datasets": entries,
+            "datasets": entries, "skipped_current": skipped, "remaining": remaining,
+            "quota_exhausted": quota_exhausted, "interrupted": interrupted, "up_to_date": False,
         }
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)

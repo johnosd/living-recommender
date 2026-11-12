@@ -63,7 +63,7 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 | AIMA (condicional) | Estrangeiros residentes por nacionalidade (comunidade brasileira e lusófona) | Município, se disponível |
 | SNS Transparência (condicional) | Utentes sem médico de família | ACES, herdado pelos municípios |
 | Censos 2021 (INE) | População e faixas etárias | Freguesia |
-| Open-Meteo Histórico, World Weather Online | Médias climáticas, dias extremos, conforto climático | Ponto (centroide) |
+| Open-Meteo Histórico (`era5`); WWO como fallback futuro | Coleta diária municipal de 24 meses; score e extremos em etapa futura | Ponto representativo da CAOP |
 | Anúncios de arrendamento (Idealista) | Aluguel pedido, **só agregado** (mediana, P25–P75, n) | Município / freguesia |
 | Wikipedia | Texto descritivo dos municípios (CC BY-SA, com atribuição) | Município |
 
@@ -72,6 +72,14 @@ Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência
 **Atribuições:** CAOP: Fonte: Direção-Geral do Território (DGT), CAOP2025, licença CC-BY-4.0. INE: Instituto Nacional de Estatística, IP – Portugal, licença CC BY 4.0 (cite o indicador e o período). Pordata: os Termos Legais não concedem licença de reutilização; a coleta é um risco aceito pelo autor e nenhum dado dessa fonte é redistribuído (detalhes em [guia de coletas](docs/runbooks/coletas.md)). O catálogo de fontes, com URLs, versão e licença, é o [config/sources.yml](config/sources.yml).
 
 Para executar as coletas disponíveis (CAOP, Pordata e INE) e o staging de observações, consulte o [guia de coletas](docs/runbooks/coletas.md).
+
+A ingestão climática da spec 003 oferece `collect_open_meteo` (308 municípios, retomada por cota, sem chave) e `build_climate` (staging diário, cobertura de lacunas e divergência dos pontos). São 13 variáveis de 2024-11-01 a 2026-10-31, preservando nulos e o dia local. O plano gratuito é restrito a uso não comercial, risco aceito pelo autor; atribuição Open-Meteo/ERA5 acompanha os registros. A verificação local, a coleta real e o CI remoto são registrados separadamente no [guia de coletas](docs/runbooks/coletas.md).
+
+Para coletar sem intervenção nas renovações de cota: `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. Esse modo salva checkpoints a cada 10 municípios, aguarda o prazo do servidor e repete falhas temporárias com espera exponencial. Ctrl+C encerra com progresso salvo; erros permanentes exigem correção. Ao concluir, rode `uv run --locked python -m pipelines.cli.build_climate --local`.
+
+O comando mantém a configuração do catálogo lida no início. Alterações de modelo, janela ou variáveis passam a valer na próxima execução, que recoleta os municípios incompatíveis.
+
+A coleta real e o build locais foram concluídos: **308/308 municípios, 2.922.920 observações e nenhuma lacuna nas 13 variáveis**. Alertas dos pontos e evidências de validação estão no guia de coletas; os dados reais permanecem fora do Git.
 
 ## Roteiro
 

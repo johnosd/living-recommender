@@ -1,4 +1,4 @@
-"""Manifest v2: uma execução com vários datasets independentes, cada um com seu estado.
+"""Manifest v2: uma execução com vários datasets independentes, cada um com seu estado e seu método de coleta.
 
 Convive com o manifest v1 da CAOP (`manifest.py`, `files[]`), que não é alterado.
 """
@@ -10,7 +10,7 @@ from pipelines.collectors._shared.manifest import encode_manifest
 
 SCHEMA_VERSION = 2
 RUN_STATUSES = {"changed", "unchanged", "partial", "failed"}
-DATASET_STATUSES = {"changed", "unchanged", "failed"}
+DATASET_STATUSES = {"changed", "unchanged", "failed", "pending"}
 
 
 class DatasetManifestError(ValueError):
@@ -25,7 +25,7 @@ def run_status(entries: list[dict]) -> str:
     failed = statuses.count("failed")
     if failed == len(statuses):
         return "failed"
-    if failed:
+    if failed or "pending" in statuses:
         return "partial"
     return "changed" if "changed" in statuses else "unchanged"
 
@@ -36,7 +36,7 @@ def validate_entry(entry: dict) -> None:
     status = entry.get("status")
     if status not in DATASET_STATUSES:
         raise DatasetManifestError(f"status de dataset desconhecido: {status}")
-    if status == "failed":
+    if status in {"failed", "pending"}:
         if not entry.get("error"):
             raise DatasetManifestError("falha exige mensagem de erro")
         return
@@ -65,6 +65,7 @@ def make_dataset_manifest(
         raise DatasetManifestError("collected_at_utc deve estar em UTC")
     for entry in datasets:
         validate_entry(entry)
+    methods = {entry.get("collection_method") or source["collection_method"] for entry in datasets}
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "source_id": source_id,
@@ -72,11 +73,16 @@ def make_dataset_manifest(
         "collected_at_utc": collected_at_utc,
         "status": run_status(datasets),
         "license_id": source["license_id"],
-        "collection_method": source["collection_method"],
+        # O método real da execução: o comum a todos os datasets, ou `mixed`. Na carga manual do Pordata,
+        # por exemplo, o método da fonte (`http_download`) não descreve como o dataset foi obtido.
+        "collection_method": methods.pop() if len(methods) == 1 else "mixed",
         "datasets": datasets,
     }
     if source.get("attribution"):
         manifest["attribution"] = source["attribution"]
+    for field in ('model', 'window', 'variables', 'usage_restriction'):
+        if source.get(field) is not None:
+            manifest[field] = source[field]
     return manifest
 
 

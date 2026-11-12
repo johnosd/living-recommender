@@ -6,3 +6,10 @@ caop_territory:
       path: "{{ env_var('CAOP_DUCKDB_PATH', '.data/ci/caop.duckdb') }}"
       schema: main
       threads: 2
+    climate:
+      type: duckdb
+      path: "{{ env_var('CAOP_DUCKDB_PATH', '.data/ci-climate/climate.duckdb') }}"
+      schema: main
+      threads: 1
+      settings:
+        memory_limit: 384MB
