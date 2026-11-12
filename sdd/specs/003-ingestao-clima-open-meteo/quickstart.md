@@ -55,6 +55,8 @@ uv run --locked python -m pipelines.cli.build_climate --local
 
 Para aguardar automaticamente as cotas, substitua o passo 2 por `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. O supervisor grava manifests a cada 10 municípios e antes de esperar por cota, mantém o limitador de taxa entre lotes e retoma apenas os pendentes. Prefere `Retry-After`, depois `X-RateLimit-Reset`; sem cabeçalhos válidos, usa 61/3.605/86.405 segundos conforme o tipo de cota. Falhas temporárias usam 2, 4, 8, 16, 32 e até 60 segundos, mais jitter de até um segundo; uma espera maior informada pelo servidor prevalece. Essas retentativas continuam até recuperar ou receber Ctrl+C; erros permanentes encerram com falha. A máquina precisa permanecer ligada. `--continuous` não combina com `--no-wait`, `--recollect` ou `--max-municipalities`.
 
+O catálogo é lido uma vez no início de cada comando. Se editar modelo, janela, variáveis ou unidades durante uma espera, a sessão em andamento continua com sua configuração original; execute novamente o comando para aplicar a alteração e recoletar os municípios incompatíveis. Essa regra mantém requisições, validação e manifests coerentes entre checkpoints.
+
 Registrar no `plan.md` (Execution Notes) e em `research.md` (R3, R4):
 
 - número de execuções necessárias e de municípios por execução (calcula o peso real por município: `10.000 ÷ municípios no dia`);

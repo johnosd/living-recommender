@@ -77,6 +77,8 @@ A ingestão climática da spec 003 oferece `collect_open_meteo` (308 municípios
 
 Para coletar sem intervenção nas renovações de cota: `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. Esse modo salva checkpoints a cada 10 municípios, aguarda o prazo do servidor e repete falhas temporárias com espera exponencial. Ctrl+C encerra com progresso salvo; erros permanentes exigem correção. Ao concluir, rode `uv run --locked python -m pipelines.cli.build_climate --local`.
 
+O comando mantém a configuração do catálogo lida no início. Alterações de modelo, janela ou variáveis passam a valer na próxima execução, que recoleta os municípios incompatíveis.
+
 A coleta real e o build locais foram concluídos: **308/308 municípios, 2.922.920 observações e nenhuma lacuna nas 13 variáveis**. Alertas dos pontos e evidências de validação estão no guia de coletas; os dados reais permanecem fora do Git.
 
 ## Roteiro

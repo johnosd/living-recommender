@@ -163,14 +163,14 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Implementação | Todas as fases e tasks concluídas; coleta e build reais completos |
-| Qualidade local | 225/225 pytest após T038+1; 5/5 contratos do clima; ruff limpo; três travas íntegras; revisão sem achados importantes pendentes |
+| Implementação | Fase 8 em execução: CF-001 corrigido por snapshot de catálogo por sessão; CF-002/CF-003 em fechamento |
+| Qualidade local | 228/228 pytest após T039; 5/5 contratos do clima; ruff limpo; três travas íntegras; revisão independente sem achados importantes |
 | dbt isolado | CAOP 31/31; observations 17/17; climate 23/23 |
 | Volume sintético | 2.922.920 linhas; 555,90 MiB de pico amostrado da árvore; 117,99 MiB do Python; build 20,38 s |
 | Fonte real | 308/308 atuais; zero pendentes e lacunas; 2.922.920 linhas; 3 recoletas unchanged; zero municípios failed; 17.821.354 bytes de bruto |
 | Preservação real | 7 arquivos dos outros lakes com SHA-256 inalterado |
 | CI remoto | [PR #3](https://github.com/johnosd/living-recommender/pull/3), commit afa0903: quality e secrets/gitleaks aprovados; 209 testes verdes e 1 específico de Windows dispensado no Linux; dbt 31/31, 17/17, 23/23 |
-| Pendente | Nenhuma task de implementação; CI remoto ainda cobre somente afa0903. Sesimbra (30,06 km) e três elevações 0 m ficam sinalizadas no relatório, como previsto |
+| Pendente | T040: CI remoto da correção; T041: reconciliação pronta, alinhamento de SC-008 aguardando decisão do autor |
 
 ## Riscos e Decisões
 
@@ -200,6 +200,8 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | R-015 | Volume completo teve pico amostrado de 1.501,91 MB na árvore de processos, embora Python ficasse em 119,18 MB. | Médio: acima do alvo de ~1 GB; DuckDB usava limite padrão da máquina. | Resolvido: target exclusivo `climate`, uma thread e `memory_limit: 384MB`; target `local` de CAOP/observations preservado. Volume repetido: 2.922.920 linhas, 556 MiB de pico amostrado da árvore e 118 MiB do Python; build 20,38 s. Suíte final 210/210 verde, três travas íntegras e lint limpo. |
 | R-016 | Operação contínua solicitada pelo autor pode aguardar horas; um encerramento forçado pode deixar brutos sem manifest. | Médio: esperas longas precisam de checkpoints e a máquina ligada. | Supervisor optativo `--continuous`: lotes de 10, manifest antes de qualquer espera por cota, retomada por estado vigente, Ctrl+C preservado. Um único limitador atravessa os lotes. Backoff exponencial limitado, com jitter, para falhas temporárias; erros permanentes encerram. Contratos e modos anteriores preservados. |
+| R-017 | Catálogo relido entre lotes, com fetcher vinculado ao modelo anterior, podia gerar proveniência incorreta (CF-001). | Alto: configuração e dados podiam divergir se o arquivo mudasse durante a sessão. | Resolvido por snapshot independente do catálogo por invocação, compartilhado pelos lotes e fetcher; alterações entram na próxima execução. Regressões de modelo/janela/variáveis passaram; limitador preservado. |
+
 
 ## Execution Notes
 
@@ -221,16 +223,17 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 7 — retomada | PR #3 em rascunho autorizado e criado; CI 43107887816 com quality e secrets verdes no commit afa0903. Validação local da retomada: 11/11 e três travas íntegras. Duas tentativas reais preservaram os 71 atuais, zero bruto novo, 237 pending e retorno 2 | T037: a fonte ainda recusa por cota horária; falta 308/308 |
 | 2026-11-11 | Fase 7 — T037/T038+1 | Mais 148 municípios coletados: 219/308, 89 pending, 2.078.310 linhas reais sem lacunas; build parcial e preservação de 7 arquivos confirmados. Custo medido 67,78571. Novo --continuous com checkpoints e backoff: 225/225 testes, lint limpo, três travas íntegras, revisão aprovada. Iniciado supervisor local às 22:41 UTC, aguardando Retry-After até cerca de 23:00:30 UTC | T037: concluir 308/308; supervisor executará build e verificação final. CI remoto ainda cobre somente afa0903 |
 | 2026-11-12 UTC | Fechamento T037 | Coleta 308/308 sem falhas; 17.821.354 bytes; build via uv recuperou falha de PATH do supervisor e produziu 2.922.920 linhas sem lacunas. Medição final e preservação de 7 arquivos passaram; CLI confirma 308 atuais sem rede; contratos 5/5 e trava íntegra | Nenhuma task de implementação; CI remoto somente em afa0903; alertas de pontos registrados |
+| 2026-11-12 UTC | Fase 8 — T039/T041 | Três regressões vermelhas reproduziram CF-001; snapshot por sessão corrigiu modelo/janela/variáveis, com contratos 5/5 verdes. Reconciliação histórica pronta: 17 manifests, 311 sucessos municipais e pelo menos 321 HTTP identificáveis; custo exato não recuperável | T040: CI da correção; T041: aguardar alinhamento explícito de SC-008 |
 
 
-**PRÓXIMO**: implementação e T037 concluídas. Handoff para sdd-converge; manter explícito que o CI do PR #3 prova afa0903 e não os commits locais posteriores. Não há coletor ativo; a CLI confirma 308/308 atuais. Publicação e merge permanecem separados da validação local.
+**PRÓXIMO**: T039 validada localmente e revisada; publicar a correção e validar seu CI no PR #3 (T040). Aguardar decisão sobre SC-008/T041 sem consumir nova cota. Os dados reais já estão completos e preservados; não há coletor ativo.
 
 ## Arquivos Principais
 
-- `sdd/specs/003-ingestao-clima-open-meteo/{tasks,quickstart,research}.md`
-- `pipelines/cli/{collect_open_meteo,build_climate}.py`
-- `analytics/dbt/profiles.yml` e `models/climate/`
-- `docs/runbooks/coletas.md`, `.docs/fontes_de_dados.md`, `README.md`
+- `pipelines/cli/collect_open_meteo.py`
+- `tests/integration/test_open_meteo_catalog_snapshot.py`
+- `sdd/specs/003-ingestao-clima-open-meteo/{tasks,spec,quickstart,research}.md`
+- `.github/workflows/python.yml`, `README.md`
 
 ## Cuidados para Retomada
 

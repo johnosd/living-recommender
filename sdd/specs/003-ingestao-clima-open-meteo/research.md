@@ -111,3 +111,26 @@ A supervisão retomou após as cotas e concluiu **308/308 municípios**, sem mun
 O build automático falhou por ausência de `dbt` no PATH do supervisor iniciado diretamente pelo Python. A coleta já estava completa e os brutos foram preservados. A recuperação com `uv run --locked python -m pipelines.cli.build_climate --local` passou, produzindo **2.922.920 linhas**, todos os 308 municípios completos nas 13 variáveis, zero lacunas e zero não coletados. O helper operacional ignorado pelo Git foi corrigido para chamar o build via uv; não houve mudança de código de produção nesta recuperação.
 
 A medição final confirmou cobertura e preservação dos 7 arquivos de outras fontes por SHA-256. A CLI retornou `nada a coletar (308/308 atuais)`, sem novas consultas. Há um ponto acima de 25 km: **Sesimbra (1511), 30,06 km**, e três elevações 0 m: **Vila Franca de Xira (1114), Alcochete (1502), Setúbal (1512)**. São alertas previstos em R6, preservados no CSV sem deslocar ou substituir dados. T037 concluída; 5/5 contratos do clima passaram novamente e a trava está íntegra. A suíte 225/225 do commit 7811147 permanece a evidência da última alteração de código; o CI remoto continua limitado a afa0903.
+
+## Reconciliação histórica da cota — T041 / CF-003
+
+Escopo: primeira execução com manifest em 2026-11-11 21:18:29 UTC até o último lote iniciado em 2026-11-12 00:03:37 UTC, mais a sondagem de cota das 22:14:42 UTC. Evidências locais: 17 arquivos em `.data/manifests/open_meteo/`, `.data/climate-quota-resume-headers.jsonl`, `.data/climate-quota-probe.json`, logs das retomadas e `.data/climate-continuous-errors.log`. Sondagens exploratórias anteriores ao primeiro manifest não integram estes totais.
+
+| Medida | Total | Natureza da evidência |
+| --- | ---: | --- |
+| Execuções internas com manifest | 17 | Contagem exata dos manifests; inclui checkpoints do supervisor |
+| Execuções com novos municípios | 13 | 308 entradas `changed` no total |
+| Execução de recoleta | 1 | 3 entradas `unchanged`, sem bruto novo |
+| Execuções apenas com pendência | 3 | Nenhum município novo; uma recusa por cota confirmada em cada uma |
+| Consultas municipais bem-sucedidas | 311 | 308 coletas iniciais + 3 recoletas; não confundir com municípios distintos |
+| Entradas `pending` acumuladas | 816 | Não são chamadas HTTP: há itens não tentados e municípios repetidos entre manifests |
+| Execuções com recusa por cota | 6 | Pelo menos 6 respostas HTTP 429; todas horárias; nenhum limite diário ou minutely observado |
+| Falhas HTTP transitórias documentadas | 3 | Um 502 no observador e dois 500 no log do supervisor; recuperados |
+| Sondagem pequena fora dos manifests | 1 | HTTP 200, um dia/uma variável, custo exposto 1,0 |
+| Chamadas HTTP identificáveis no período | Pelo menos 321 | 311 sucessos municipais + 6 recusas por cota + 3 falhas transitórias + 1 sondagem; não é um total exaustivo de transporte |
+
+Os cabeçalhos instrumentados cobrem **148 sucessos municipais**, cujo `X-RateLimit-Cost` soma **10.032,28508 unidades**, usando a precisão efetivamente devolvida (67,78571 cada). Somando a sondagem com custo 1,0, o custo explicitamente registrado é **10.033,28508 unidades** para esse subconjunto. Há também um 502 e um 429 no observador, sem `X-RateLimit-Cost`; a ausência do cabeçalho não foi convertida em um custo medido zero.
+
+Aplicar a fórmula documentada a todas as 311 consultas municipais bem-sucedidas dá **aproximadamente 21.081,36 unidades**, incluindo as três recoletas. Esse valor é uma estimativa calculada, não a soma de 311 cabeçalhos observados e não um saldo recuperado do servidor. As contagens acima não permitem reconstruir consumo total exato por IP, retentativas de transporte não instrumentadas ou outras aplicações que compartilhassem a conexão. O custo ponderado total exato desta coleta histórica é **não recuperável com as evidências existentes**.
+
+Proposta de alinhamento de SC-008, pendente de decisão do autor: aceitar a reconciliação auditável das execuções/consultas e o custo medido do subconjunto instrumentado, mantendo separado o custo estimado e declarando explicitamente o total histórico não recuperável. Cobertura, alertas e demais critérios de qualidade permanecem exigidos e verificados. Nenhuma nova consulta real foi feita para reconstruir esta medição.

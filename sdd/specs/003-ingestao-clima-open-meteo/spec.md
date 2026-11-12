@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-11
 
-**Status**: Convergência Pendente
+**Status**: Em Execução
 
 **Input**: "planeje a ingestão dos dados de clima — referências: .docs/ e MPAlugueisLisboa" (ver `.docs/fontes_de_dados.md` §3.3 e §4, `.docs/plano_plataforma_recomendacao_portugal.md` §5.4, §8 e Fase 2, e o legado `src/Weather/` de MPAlugueisLisboa)
 
@@ -218,3 +218,5 @@ Ao fim da transformação, o operador recebe um relatório que diz, por variáve
 Durante T037, o autor pediu retries e exponential backoff para o processo continuar automaticamente. Acrescenta-se o modo optativo `--continuous`: cada execução interna preserva a parada por cota de FR-012 e grava seu manifest; o supervisor aguarda o prazo informado pelo provedor e inicia outra execução apenas para os pendentes. Checkpoints também ocorrem a cada 10 municípios. Falhas temporárias de rede e HTTP 408/500/502/503/504 usam retentativas com espera exponencial limitada a 60 segundos, mais jitter de até um segundo; um prazo maior fornecido pelo servidor prevalece. No modo contínuo, essas retentativas não têm teto de quantidade. Erros permanentes/de dados e Ctrl+C encerram o processo. Os modos anteriores e todos os contratos travados permanecem válidos; `--continuous` não combina com `--no-wait`, `--recollect` ou `--max-municipalities`.
 
 - Decisão durante execução (2026-11-11): mudanças no conjunto de variáveis ou nas unidades provocam nova coleta automaticamente, mesmo com janela e modelo iguais. Reordenar a lista não muda a configuração. Entradas antigas sem assinatura devem ser recoletadas.
+
+- Correção de convergência CF-001 (2026-11-12 UTC): cada invocação da CLI usa um snapshot independente do catálogo, carregado uma única vez. Todos os checkpoints e esperas de `--continuous` mantêm essa configuração e o mesmo limitador. Alterações no catálogo são aplicadas na próxima invocação, quando a regra de estado vigente provoca a recoleta necessária.

@@ -2,6 +2,7 @@
 import argparse
 import sys
 import time
+from copy import deepcopy
 from pathlib import Path
 
 from pipelines.cli._common import (
@@ -33,10 +34,16 @@ def main(argv=None, *, fetcher=None, validator=None, storage=None, sleep=time.sl
     check_destination_arguments(parser, args)
     if args.continuous and (args.recollect or args.max_municipalities is not None):
         parser.error('--continuous não combina com --recollect ou --max-municipalities')
+    try:
+        catalog = deepcopy(load_catalog(args.catalog) if args.catalog else load_catalog())
+    except (OSError, ValueError) as exc:
+        print(f"Open-Meteo: falha: {exc}", file=sys.stderr)
+        return 1
     delays, fetcher_cache = [], [fetcher]
     while True:
         delays.clear()
-        code, result = _collect_once(args, fetcher_cache=fetcher_cache, validator=validator, storage=storage,
+        code, result = _collect_once(args, catalog=catalog, fetcher_cache=fetcher_cache,
+                                     validator=validator, storage=storage,
                                      on_quota=delays.append)
         if (not args.continuous or code == 1 or result is None or result['interrupted']
                 or result['up_to_date'] or (code == 0 and not result['remaining'])):
@@ -53,10 +60,9 @@ def main(argv=None, *, fetcher=None, validator=None, storage=None, sleep=time.sl
                 return 2
 
 
-def _collect_once(args, *, fetcher_cache, validator=None, storage=None, on_quota=None):
+def _collect_once(args, *, catalog, fetcher_cache, validator=None, storage=None, on_quota=None):
     run_id = new_run_id()
     try:
-        catalog = load_catalog(args.catalog) if args.catalog else load_catalog()
         source = get_climate_source(catalog)
         if fetcher_cache[0] is None:
             fetcher_cache[0] = make_open_meteo_fetcher(
