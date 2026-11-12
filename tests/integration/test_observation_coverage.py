@@ -25,7 +25,7 @@ def built(tmp_path_factory):
 
 def test_coverage_counts_and_lists_the_municipalities_without_value(built):
     _, _, coverage = built
-    assert len(coverage) == 19
+    assert len(coverage) == 20
     rendas = coverage.loc[("ine", "rendas_novos_contratos")]
     assert rendas.latest_period == 2025 and rendas.latest_period_with_data == 2025
     assert (rendas.municipalities_expected, rendas.municipalities_with_value) == (308, 298)
@@ -54,7 +54,7 @@ def test_absence_stays_null_with_its_symbol_in_the_staging(built):
 def test_coverage_csv_lists_each_missing_municipality_with_code_and_name(built):
     root, _, _ = built
     report = pd.read_csv(root / "lake/bronze/coverage.csv", sep=";", encoding="utf-8-sig", dtype=str)
-    assert len(report) == 19 and "missing_dico" not in report.columns
+    assert len(report) == 20 and "missing_dico" not in report.columns
     rendas = report[report.dataset_id == "rendas_novos_contratos"].iloc[0]
     assert rendas.municipalities_with_value == "298"
     assert rendas.missing.startswith("0001 Município 0001; 0002 Município 0002")

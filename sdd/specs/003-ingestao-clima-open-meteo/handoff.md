@@ -99,3 +99,9 @@ Atualização vigente às 22:41 UTC: **219/308**, 89 pendentes, 2.078.310 linhas
 
 
 Fechamento em 2026-11-12 UTC: T037 concluída, 308/308 e 2.922.920 linhas sem lacunas, 17.821.354 bytes de bruto; 7 arquivos de outras fontes preservados. Build do supervisor falhou por dbt fora do PATH, recuperado via uv, sem alteração de produção. Nenhum coletor ativo; status operacional completed. Sesimbra diverge 30,06 km e três pontos têm elevação 0 m, registrados sem correção automática. Contratos finais 5/5 e trava íntegra. Handoff para sdd-converge; CI remoto ainda somente afa0903, não os commits locais posteriores.
+
+
+Fase 8 (2026-11-12 UTC): T039/CF-001 corrigida por snapshot profundo do catálogo uma vez por sessão, com aplicação de alterações na próxima invocação. Local 228/228 e revisão independente aprovadas. T040/CF-002 concluída: a660b63 publicado no PR #3 em rascunho, CI 43137560825 verde (227 passed, 1 skip Windows; dbt 31/17/23; secrets/gitleaks sem achados). Somente T041/CF-003 aberta: research.md contém a reconciliação completa e a proposta de alinhar SC-008 ao total histórico não recuperável; decisão estruturada enviada ao autor, ainda sem resposta. Não presumir aceite nem gastar nova cota.
+
+
+Fechamento da Fase 8: o autor aceitou a reconciliação e o ajuste de SC-008, limitado à coleta histórica de 11–12/11. T041 concluída, custos medidos/estimados separados e total exato declarado não recuperável; nenhuma nova consulta. Todas as 62 tasks estão concluídas. CI cobre o código corrigido em a660b63; docs posteriores registram o aceite e o resultado do CI. Retomar por sdd-converge; não chamar de Convergida antes dessa nova auditoria.
