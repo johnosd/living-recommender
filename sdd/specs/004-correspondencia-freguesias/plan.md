@@ -152,7 +152,7 @@ Verificado no plan: lint limpo; os 5 contratos falham só por `NotImplementedErr
 | Fase 3 (US1) | Concluída: T006–T012; contratos 1–3 verdes; coleta local e S3 (moto) cobertas |
 | Fase 4 (US2) | Concluída: T013–T018; contrato 4 verde; `build_parish_crosswalk` promove `lake/silver/xwalk_parish_2013_2025` e o CSV de revisão |
 | Fase 5 (US3) | Concluída: T019–T023; contrato 5 verde (**5/5 contratos verdes**); gate de cobertura antes do dbt, relatório `rpt_parish_crosswalk_coverage` promovido |
-| Fase 6 (Polish) | Concluída localmente: T024–T029. **Pendente de ação do autor:** CI remoto (exige push/PR), `gitleaks` do CI e os commits (Quality Gate 7) |
+| Fase 6 (Polish) | Concluída: T024–T029. CI remoto verde, incluindo o `gitleaks` ([PR #4](https://github.com/johnosd/living-recommender/pull/4), run [43311137501](https://github.com/johnosd/living-recommender/actions/runs/43311137501), commit `e485a4e`) |
 | Fase 7 (Convergence) | Concluída: T030–T034. Relatório legível `parish_crosswalk_report.csv` (CF-001) e atribuição em todas as linhas do relatório (CF-002) |
 | Catálogo | `ine_parish_crosswalk` em `config/sources.yml` (licença assumida, R-002 aberto) |
 | Verificação real (T026) | Coleta HTTP e build contra o INE e a `dim_parish` reais: 3.260 pares, 3.259/3.259 freguesias cobertas, valores idênticos à referência, 2ª coleta `unchanged`, SHA-256 das outras tabelas inalterados (detalhe no `research.md`) |
@@ -200,7 +200,7 @@ Verificado no plan: lint limpo; os 5 contratos falham só por `NotImplementedErr
 
 | 2026-11-12 | Fase 7 (Convergence) | CF-001 e CF-002 fechados: `attribution` no relatório dbt (25/25) e `parish_crosswalk_report.csv` legível, com versão da CAOP, data e atribuição em todas as linhas; testes e docs sincronizados. Reverificação: build real sem divergência, SHA-256 das outras tabelas inalterados, 4 dbt por tag e 4 travas íntegras, suíte 319 verdes. Achado: T010 instável por bytes de planilha regerada (R-012), corrigido. | Rodar `/sdd-converge` de novo; CI remoto e commits dependem do autor |
 
-**PRÓXIMO**: nenhuma task aberta. Rodar `/sdd-converge 004-correspondencia-freguesias` outra vez para confirmar que não sobra achado acionável. Aguarda o autor: criar os commits (curtos, em inglês), fazer push/PR e conferir o CI remoto e o `gitleaks`; depois `/sdd-converge 004-correspondencia-freguesias`. O status só vira `Implementada` quando os 2 itens do Checklist de Release forem marcados.
+**PRÓXIMO**: nenhuma task aberta e o Checklist de Release está completo (46/46). A feature está `Convergida`. Resta o merge do PR #4, que é decisão do autor, e as decisões em aberto do `## Resultado Final`.
 
 ## Arquivos Principais
 
@@ -249,4 +249,4 @@ Verificado no plan: lint limpo; os 5 contratos falham só por `NotImplementedErr
 
 ### Em aberto (nenhum bloqueia a convergência)
 - **Decisões do autor, sem task:** CF-003 (redação da spec sobre código numérico), CF-004 (qual estado usar quando a última execução de uma tabela falhou), CF-007 (constitution III: aviso × reprovar), Analyze A-003 (R-005, redação do FR-009) e CF-006/R-002 (licença das planilhas: `CC-BY-4.0` do aviso geral do INE, sem aviso específico confirmado na página oficial).
-- **Externo:** push/PR, CI remoto e `gitleaks` (SC-007, constitution I) e os commits em inglês (Quality Gate 7). São os 2 itens não marcados do Checklist de Release em `tasks.md`.
+- **Externo, resolvido depois da convergência:** o autor fez o commit e o push, e o PR #4 passou no CI remoto em Linux: `quality` (lint, 319 testes e os quatro builds dbt, incluindo o da correspondência) e `secrets` (`gitleaks`, "Scan Git history for secrets"), run [43311137501](https://github.com/johnosd/living-recommender/actions/runs/43311137501), commit `e485a4e`. Isso fecha SC-007 e a verificação da constitution I, e os 2 itens do Checklist de Release. O commit único tem a mensagem `feat:feature/004-correspondencia-freguesias`: curta e em inglês, mas pouco descritiva.

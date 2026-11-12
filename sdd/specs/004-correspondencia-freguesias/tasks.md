@@ -181,9 +181,9 @@ description: "Tasks da feature 004: correspondência de freguesias 2013→2025"
 - [X] Contratos das specs 001 a 003 intactos (suíte completa)
 - [X] `dim_parish`, `dim_municipality` e demais saídas com SHA-256 inalterado (SC-006)
 - [X] `config/sources.yml` e `.docs/fontes_de_dados.md` atualizados (Quality Gate 6)
-- [ ] Nenhuma planilha real nem `.data/` no Git; `gitleaks` verde no CI (verificado localmente: nada de `.data/` nem `.xlsx` versionado, sem segredos nos arquivos novos; falta o `gitleaks` do CI remoto)
+- [X] Nenhuma planilha real nem `.data/` no Git; `gitleaks` verde no CI (verificado localmente e no CI: [PR #4](https://github.com/johnosd/living-recommender/pull/4), run [43311137501](https://github.com/johnosd/living-recommender/actions/runs/43311137501), commit `e485a4e`, job `secrets` com "Scan Git history for secrets" = success)
 - [X] `quickstart.md` executado com sucesso
-- [ ] Mensagens de commit curtas e em inglês (Quality Gate 7) (ainda não há commits desta feature)
+- [X] Mensagens de commit curtas e em inglês (Quality Gate 7) (commit único `e485a4e`, `feat:feature/004-correspondencia-freguesias`: curto e em inglês, embora pouco descritivo)
 
 ---
 
