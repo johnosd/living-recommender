@@ -163,14 +163,14 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 | Área | Estado |
 | --- | --- |
-| Implementação | Fases 1–6 concluídas; Polish local concluído, gate externo pendente |
+| Implementação | Todas as fases e tasks concluídas; coleta e build reais completos |
 | Qualidade local | 225/225 pytest após T038+1; 5/5 contratos do clima; ruff limpo; três travas íntegras; revisão sem achados importantes pendentes |
 | dbt isolado | CAOP 31/31; observations 17/17; climate 23/23 |
 | Volume sintético | 2.922.920 linhas; 555,90 MiB de pico amostrado da árvore; 117,99 MiB do Python; build 20,38 s |
-| Fonte real | 219/308 atuais; 89 pending por cota horária; 2.078.310 linhas; 3 recoletas unchanged; zero municípios failed; 12.685.102 bytes de bruto |
+| Fonte real | 308/308 atuais; zero pendentes e lacunas; 2.922.920 linhas; 3 recoletas unchanged; zero municípios failed; 17.821.354 bytes de bruto |
 | Preservação real | 7 arquivos dos outros lakes com SHA-256 inalterado |
 | CI remoto | [PR #3](https://github.com/johnosd/living-recommender/pull/3), commit afa0903: quality e secrets/gitleaks aprovados; 209 testes verdes e 1 específico de Windows dispensado no Linux; dbt 31/31, 17/17, 23/23 |
-| Pendente | somente T037 até 308/308 e build final; T038+1 concluída. Processo contínuo em segundo plano aguarda cota. Status segue Em Execução |
+| Pendente | Nenhuma task de implementação; CI remoto ainda cobre somente afa0903. Sesimbra (30,06 km) e três elevações 0 m ficam sinalizadas no relatório, como previsto |
 
 ## Riscos e Decisões
 
@@ -220,9 +220,10 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 | 2026-11-11 | Fase 7 | Implementação e verificação local concluídas; volume 2922920; fonte real 71/308 com 237 pending | T037: completar 308/308 após cota horária; CI remoto/gitleaks sem evidência. Não marcar Implementada ainda |
 | 2026-11-11 | Fase 7 — retomada | PR #3 em rascunho autorizado e criado; CI 43107887816 com quality e secrets verdes no commit afa0903. Validação local da retomada: 11/11 e três travas íntegras. Duas tentativas reais preservaram os 71 atuais, zero bruto novo, 237 pending e retorno 2 | T037: a fonte ainda recusa por cota horária; falta 308/308 |
 | 2026-11-11 | Fase 7 — T037/T038+1 | Mais 148 municípios coletados: 219/308, 89 pending, 2.078.310 linhas reais sem lacunas; build parcial e preservação de 7 arquivos confirmados. Custo medido 67,78571. Novo --continuous com checkpoints e backoff: 225/225 testes, lint limpo, três travas íntegras, revisão aprovada. Iniciado supervisor local às 22:41 UTC, aguardando Retry-After até cerca de 23:00:30 UTC | T037: concluir 308/308; supervisor executará build e verificação final. CI remoto ainda cobre somente afa0903 |
+| 2026-11-12 UTC | Fechamento T037 | Coleta 308/308 sem falhas; 17.821.354 bytes; build via uv recuperou falha de PATH do supervisor e produziu 2.922.920 linhas sem lacunas. Medição final e preservação de 7 arquivos passaram; CLI confirma 308 atuais sem rede; contratos 5/5 e trava íntegra | Nenhuma task de implementação; CI remoto somente em afa0903; alertas de pontos registrados |
 
 
-**PRÓXIMO**: acompanhar `.data/climate-continuous-status.json` e os logs do processo já iniciado, sem abrir outro coletor. O supervisor continuará os 89 pendentes após a renovação informada (23:00:30 UTC / 20:00:30 Brasília) e executará build e verificação final. Conferir 308/308 e concluir T037 antes de Implementada. O CI do PR #3 prova afa0903; não cobre as mudanças locais desta retomada. Manter o PR em rascunho.
+**PRÓXIMO**: implementação e T037 concluídas. Handoff para sdd-converge; manter explícito que o CI do PR #3 prova afa0903 e não os commits locais posteriores. Não há coletor ativo; a CLI confirma 308/308 atuais. Publicação e merge permanecem separados da validação local.
 
 ## Arquivos Principais
 

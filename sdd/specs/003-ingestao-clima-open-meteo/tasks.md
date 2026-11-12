@@ -237,7 +237,7 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 - [X] T035 [P] Atualizar `.docs/fontes_de_dados.md` (§3.3 `open_meteo`: implementada pela spec 003, `era5`, janela de 24 meses, layout `dataset=<dico>`, cota e retomada, estado "implementada"; §3.4 estrutura; §4 a decisão do modelo; corrigir a linha que dizia "30 anos" e "Lambda"), `docs/runbooks/coletas.md` (coleta em 3 dias, códigos de saída, `--max-municipalities`, `--recollect`, órfãos, dados preliminares) e `README.md` (Quality Gate 6)
 - [X] T036 Teste de volume: `python -m tests.fixtures.climate.ci_seed --root .data/ci-full --days 730` e `build_climate --root .data/ci-full`; conferir 2.922.920 linhas, tempo e memória (alvo: sem passar de ~1 GB) e registrar em Execution Notes (R-010)
 - [X] T036+1 Descoberta em T036: limitar memória do DuckDB no target exclusivo `climate`, mantendo o target `local` anterior intacto; repetir volume e medir árvore de processos (R-015).
-- [ ] T037 **Coleta real e medição (manual, SC-008):** seguir `quickstart.md` §4: smoke de 5 municípios, repetir por dia até 308/308, `build_climate`; registrar execuções, chamadas por município, texto real do 429 (emendar a fixture se diferir, R-002), lacunas, pontos divergentes, elevação 0 m e o tamanho do bruto; atualizar `research.md` (R3, R4)
+- [X] T037 **Coleta real e medição (manual, SC-008):** seguir `quickstart.md` §4: smoke de 5 municípios, repetir por dia até 308/308, `build_climate`; registrar execuções, chamadas por município, texto real do 429 (emendar a fixture se diferir, R-002), lacunas, pontos divergentes, elevação 0 m e o tamanho do bruto; atualizar `research.md` (R3, R4)
 - [X] T038 Rodar a validação de `quickstart.md` (§2 e §3)
 - [X] T038+1 Descoberta em T037 e solicitada pelo autor: modo `--continuous` com supervisor, checkpoints a cada 10 municípios e antes da espera por cota, respeito a `Retry-After`/`X-RateLimit-Reset`, backoff exponencial com jitter para falhas temporárias, Ctrl+C e erros permanentes encerrando a execução. Preservar os contratos e o comportamento dos modos existentes.
 
@@ -263,11 +263,11 @@ description: "Lista de tasks da ingestão de clima Open-Meteo (spec 003)"
 
 **Registro da Fase**:
 
-- Status: parcial — coleta completa pendente; implementação, validação local e CI remoto aprovados
-- Feito: implementação e verificação local concluídas; volume sintético 2922920; fonte real 219/308 com 89 pending e 2078310 linhas reais. T038+1 implementada: supervisão contínua com checkpoints, cabeçalhos de cota e backoff. Processo local em segundo plano aguarda a cota para continuar e executar o build final. PR #3 em rascunho, CI verde somente em afa0903
+- Status: concluída — coleta e build reais completos; CI remoto registrado somente para afa0903
+- Feito: fonte real 308/308, 2.922.920 linhas completas nas 13 variáveis, nenhuma lacuna, 17.821.354 bytes de bruto; CLI confirma 308/308 atuais sem novas consultas. Build final recuperado via uv após o supervisor não encontrar dbt no PATH. Sete arquivos de outras fontes preservados; Sesimbra sinalizada a 30,06 km e três elevações 0 m. T038+1 implementada e verificada no commit 7811147. PR #3 continua em rascunho
 - Contrato: três travas íntegras (001, 002, 003); 5/5 contratos verdes na suíte completa
 - Testes executados: `uv run --locked python -m pytest -q --basetemp .data/pytest-continuous-final`: 225/225; `uv run --locked ruff check pipelines tests`: limpo; 3 travas íntegras. Build real parcial: 2.078.310 linhas e dbt climate aprovado. Evidência anterior: dbt 31/31 CAOP, 17/17 observations, 23/23 climate; volume 555,90 MiB; CI remoto em afa0903 com 209 passed e 1 skipped específico do Windows; gitleaks sem achados ([run 43107887816](https://github.com/johnosd/living-recommender/actions/runs/43107887816))
-- Pendências: somente T037: completar 308/308 e conferir o build final. Último reset informado: 23:00:30 UTC / 20:00:30 Brasília. Conferir `.data/climate-continuous-status.json` e logs antes de iniciar outro coletor. Não marcar Implementada ainda. T038+1: `uv run --locked python -m pytest -q --basetemp .data/pytest-continuous-final` passou 225/225; ruff limpo e três travas íntegras; revisão sem achados importantes pendentes
+- Pendências: nenhuma task de implementação. Conferência final de T037 em 2026-11-12 UTC: build real passou, medição final e preservação de 7 arquivos passaram, 5/5 contratos do clima verdes e trava íntegra. O CI remoto citado não cobre 7811147 nem este fechamento documental; publicação e merge não fazem parte desta prova local
 
 
 ## Dependencies & Execution Order
