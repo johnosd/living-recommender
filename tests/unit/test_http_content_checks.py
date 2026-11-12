@@ -9,6 +9,7 @@ from pipelines.collectors._shared.http import (
     RateLimiter,
     csv_content_check,
     json_content_check,
+    xlsx_content_check,
 )
 
 
@@ -61,6 +62,25 @@ def test_json_check_accepts_objects_and_lists_and_rejects_everything_else(tmp_pa
         failing.mkdir()
         with pytest.raises(DownloadError, match=message):
             _download(failing, body, content_type=content_type, check=json_content_check)
+
+
+def test_xlsx_check_accepts_a_zip_container_and_rejects_html_and_other_files(tmp_path):
+    ok = tmp_path / "ok"
+    ok.mkdir()
+    _, destination = _download(
+        ok, b"PK\x03\x04conteudo", content_type="application/octet-stream", check=xlsx_content_check,
+    )
+    assert destination.read_bytes().startswith(b"PK")
+    for body, content_type, message in [
+        (b"<html><body>erro</body></html>", "text/html", "HTML"),
+        (b"<!DOCTYPE html><html></html>", "application/octet-stream", "HTML"),
+        (b"a,b\n1,2\n", "application/octet-stream", "xlsx"),
+    ]:
+        failing = tmp_path / message
+        failing.mkdir(exist_ok=True)
+        with pytest.raises(DownloadError, match=message):
+            _download(failing, body, content_type=content_type, check=xlsx_content_check)
+        assert not (failing / "arquivo").exists()
 
 
 def test_default_check_is_still_zip_so_the_caop_downloader_is_unchanged(tmp_path):

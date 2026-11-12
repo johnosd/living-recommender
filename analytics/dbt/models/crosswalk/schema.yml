@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: xwalk_parish_2013_2025
+    description: >
+      Correspondência de freguesias entre a divisão de 2013 e a CAOP 2025, uma linha por par. A relação e os sinais
+      (herdado, origem parcial, nome e município alterados) orientam quem consome; nenhum valor é repartido.
+    columns:
+      - name: dicofre_2013
+        data_tests: [not_null]
+      - name: dicofre_2025
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_parish')
+                field: dicofre
+      - name: relation
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [one_to_one, one_to_many, many_to_one, many_to_many]
+      - name: inherited
+        data_tests: [not_null]
+      - name: partial_origin
+        data_tests: [not_null]
+      - name: name_changed
+        data_tests: [not_null]
+      - name: municipality_changed
+        data_tests: [not_null]
+      - name: pre2013_codes
+        data_tests: [not_null]
+      - name: source_run_id_2013
+        data_tests: [not_null]
+      - name: source_run_id_2025
+        data_tests: [not_null]
+      - name: sha256_2013
+        data_tests: [not_null]
+      - name: sha256_2025
+        data_tests: [not_null]
+      - name: license_id
+        data_tests: [not_null]
+
+  - name: rpt_parish_crosswalk_coverage
+    description: >
+      Cobertura da correspondência: uma linha por natureza da relação e uma linha `all` com os totais, a cobertura da
+      dim_parish e as estatísticas das tabelas de origem. A ausência é listada, nunca imputada.
+    columns:
+      - name: relation
+        data_tests: [not_null, unique]
+      - name: pairs
+        data_tests: [not_null]
+      - name: attribution
+        data_tests: [not_null]

@@ -44,6 +44,18 @@ jobs:
           CAOP_DUCKDB_PATH: .data/ci-climate/climate.duckdb
         run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target climate --select tag:climate
 
+      - name: Prepare parish crosswalk fixture
+        if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/parish_crosswalk/ci_seed.py') != '' }}
+        run: uv run --locked python -m tests.fixtures.parish_crosswalk.ci_seed --root .data/ci-xwalk
+      - name: Build dbt parish crosswalk from fixture
+        if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/parish_crosswalk/ci_seed.py') != '' }}
+        env:
+          XWALK_BUILD_DIR: .data/ci-xwalk
+          XWALK_PREPARED_DIR: .data/ci-xwalk/prepared
+          OBS_SILVER_DIR: .data/ci-xwalk/lake/silver
+          CAOP_DUCKDB_PATH: .data/ci-xwalk/xwalk.duckdb
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:parish_crosswalk
+
   secrets:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

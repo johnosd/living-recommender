@@ -19,3 +19,5 @@ models:
       +tags: ['observations']
     climate:
       +tags: ['climate']
+    crosswalk:
+      +tags: ['parish_crosswalk']

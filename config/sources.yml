@@ -106,3 +106,40 @@ sources:
       - {id: wind_speed_10m_max, unit: "km/h"}
       - {id: wind_gusts_10m_max, unit: "km/h"}
       - {id: relative_humidity_2m_mean, unit: "%"}
+
+  ine_parish_crosswalk:
+    id: ine_parish_crosswalk
+    publisher: Instituto Nacional de Estatística, IP – Portugal
+    responsible_party: living-recommender
+    # R-002 (plan 004, T028, 2026-11-12): o INE declara CC BY 4.0, com a fonte identificada, para a informação estatística
+    # (aviso do catálogo de publicações 2026, lido por busca: a página devolveu 403 a download scriptado). O robots.txt do
+    # smi.ine.pt não veta este coletor. Não há aviso específico para estas duas planilhas (metadados do SMI): CC-BY-4.0 é
+    # a licença geral do INE aplicada a elas, ainda sem confirmação na página oficial.
+    license_id: CC-BY-4.0
+    attribution: "Instituto Nacional de Estatística, IP – Portugal"
+    collection_method: http_download
+    frequency: on_demand
+    territorial_level: parish
+    # Os links `Versao/Download/N` não têm estabilidade garantida (R-001): mudança vira falha explícita.
+    datasets:
+      - id: reorganizacao_2013
+        role: pre2013_to_2013
+        origin: https://smi.ine.pt/Versao/Download/9160
+        format: xlsx
+        sheet: "Correspondências 2013"
+        columns:
+          pre_code: "Código"
+          pre_name: "Freguesias antes da Reorganização"
+          name: "Freguesias - Reorganização de 2013"
+          code: "Código Novo"
+      - id: reposicao_2025
+        role: pre2013_to_2025
+        origin: https://smi.ine.pt/Versao/Download/10698
+        format: xlsx
+        sheet: "Sheet1"
+        columns:
+          pre_code: "Código - Freguesias antes da reorganização administrativa de 2013"
+          pre_name: "Designação - Freguesias antes da reorganização administrativa de 2013"
+          municipality_name: "Designação - Município"
+          code: "Código - Freguesias repostas em 2025"
+          name: "Designação - Freguesias repostas em 2025"

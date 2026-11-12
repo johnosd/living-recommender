@@ -210,6 +210,36 @@ Licença e atribuição: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus
 
 O [quickstart da 003](../../sdd/specs/003-ingestao-clima-open-meteo/quickstart.md) descreve o cenário offline. Para fixtures, use o catálogo gerado explicitamente: `build_climate --local --root .data/ci-climate --catalog .data/ci-climate/catalog.yml`.
 
+## Correspondência de freguesias 2013→2025 (spec 004)
+
+Pré-requisito: `dim_parish` construída (`uv run --locked python -m pipelines.cli.build_caop --local`). Nenhuma chave, nenhum `.env`.
+
+```powershell
+uv run --locked python -m pipelines.cli.collect_parish_crosswalk --local
+uv run --locked python -m pipelines.cli.build_parish_crosswalk --local
+```
+
+A coleta baixa as duas planilhas do INE (`smi.ine.pt/Versao/Download/9160` e `/10698`, 233 KB no total, 1 requisição por segundo) e as guarda como bruto imutável. Cada planilha é validada antes de entrar (aba e colunas do catálogo, códigos de 6 caracteres `[0-9A-Z]`); uma que falhe fica `failed` com o motivo e **não bloqueia a outra**. Repetir sem mudança na fonte dá `unchanged` e não grava bruto novo. Os links `Versao/Download/N` não têm estabilidade garantida: se passarem a devolver HTML ou outro arquivo, a falha é explícita.
+
+O build deriva a correspondência, **verifica a cobertura** e só então roda o dbt e promove. A saída resume os pares por natureza (`one_to_one`, `one_to_many`, `many_to_one`, `many_to_many`) e os sinais `herdado`, `origem parcial`, `nome alterado` e `município alterado`.
+
+**Cobertura reprovada.** Se alguma freguesia da `dim_parish` não tiver origem, ou algum código de 2013 não tiver destino, ou algum destino não existir na `dim_parish`, o comando sai com código 1, lista os códigos e **não promove nada**: a tabela anterior continua byte a byte igual. Isso acontece, por exemplo, quando sai uma CAOP nova e a tabela do INE ainda não a cobre; a correção é estender a correspondência (outra entrega), nunca ignorar o erro. Os mesmos testes rodam de novo no dbt como segunda camada.
+
+```text
+.data/raw/source=ine_parish_crosswalk/dataset=<reorganizacao_2013|reposicao_2025>/run_id=<run>/<id>.xlsx
+.data/manifests/ine_parish_crosswalk/<run>.json
+.data/lake/silver/xwalk_parish_2013_2025/data.parquet
+.data/lake/silver/rpt_parish_crosswalk_coverage/data.parquet
+.data/lake/silver/parish_crosswalk_report.csv
+.data/lake/silver/parish_crosswalk_review.csv
+```
+
+O **CSV do relatório** (`parish_crosswalk_report.csv`, `;`, UTF-8 com BOM) é a versão legível do `rpt_parish_crosswalk_coverage`: uma linha por natureza mais `all`, com as contagens, a versão da CAOP, a data da coleta e a atribuição repetidas em todas as linhas. O CSV de revisão (`;`, UTF-8 com BOM, abre no Excel) lista os pares que não são um-para-um ou que têm algum sinal. A **herança é só um sinal**: nada é repartido entre as freguesias novas. `name_changed` é verdadeiro na maior parte das uniões desfeitas (o nome da união difere do nome restaurado); use `relation` e `inherited` para decidir. O marcador `(parte)` da fonte é textual; o relatório mostra quantas linhas o têm (11 na fonte de hoje) para denunciar uma mudança de texto do INE.
+
+Licença e atribuição: Instituto Nacional de Estatística, IP – Portugal. A licença específica das duas planilhas é **assumida** `CC-BY-4.0`, como a da fonte `ine`, e ainda precisa ser confirmada nos termos do INE (plan R-002). Nenhuma planilha real entra no Git.
+
+O [quickstart da 004](../../sdd/specs/004-correspondencia-freguesias/quickstart.md) descreve o cenário offline com a fixture (`tests.fixtures.parish_crosswalk.ci_seed`).
+
 ## Estado da verificação
 
 Em 2026-11-04, os três ZIPs oficiais foram coletados em `.data/raw/` e transformados localmente: 308 municípios, 3.259 freguesias e 18 códigos de freguesia com letras. A fixture sintética nacional passou no `dbt build`; a execução real local também passou. Isso não demonstra execução no CI remoto, ainda pendente. O destino S3 foi exercitado só contra um S3 simulado (moto), não contra uma conta AWS real.
@@ -227,3 +257,5 @@ Para aguardar e retomar automaticamente: `uv run --locked python -m pipelines.cl
 Nesta operação local, o supervisor está em segundo plano e chama o build automaticamente quando a coleta terminar. Evidências ignoradas pelo Git: `.data/climate-continuous-status.json`, `.data/climate-continuous.log` e `.data/climate-continuous-errors.log`. `phase: completed` e `returncode: 0` indicam que coleta, build e verificação local terminaram; o status documental de T037 ainda deve ser conferido antes de marcar Implementada. A operação depende da máquina ligada e conectada, sem serviço externo ou publicação automática.
 
 **Estado final conferido em 2026-11-12 UTC:** coleta concluída, nenhum processo ativo, **308/308 municípios e 2.922.920 linhas**, todas as 13 variáveis sem lacunas. Bruto: 17.821.354 bytes; outros 7 arquivos preservados. O build automático terminou com erro de PATH (`dbt` não encontrado); foi recuperado com `uv run --locked python -m pipelines.cli.build_climate --local`, seguido da verificação completa. O status operacional agora registra `completed`, incluindo a recuperação. Uma nova execução da coleta confirma 308/308 atuais, sem rede. O relatório sinaliza Sesimbra a 30,06 km e elevação 0 m em Vila Franca de Xira, Alcochete e Setúbal. Esses alertas não são lacunas nem falhas da coleta. T037 concluída; o CI remoto continua sendo o de afa0903, anterior aos últimos commits locais.
+
+Em 2026-11-12, a spec 004 foi verificada contra o INE real: as duas planilhas (205.543 e 27.382 bytes) foram coletadas, a segunda coleta deu `unchanged` nas duas e o `build_parish_crosswalk` contra a `dim_parish` real (CAOP 2025) gerou **3.260 pares** cobrindo **3.259 de 3.259 freguesias** (2.957 um-para-um, 301 um-para-muitos, 2 muitos-para-muitos; herdado 303, origem parcial 8, nome alterado 297, município alterado 0). Os SHA-256 de `dim_parish`, `dim_municipality`, `stg_observation` e `stg_climate_daily` ficaram idênticos. O detalhe está no `research.md` da spec. O CI remoto ainda precisa confirmar o novo passo do dbt.

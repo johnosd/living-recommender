@@ -7,6 +7,7 @@ sources:
       external_location: "{{ env_var('OBS_SILVER_DIR', '.data/ci-obs/lake/silver') }}/{name}/data.parquet"
     tables:
       - name: dim_municipality
+      - name: dim_parish   # spec 004: a correspondência de freguesias é testada contra ela
 
 models:
   - name: stg_observation
