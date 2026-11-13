@@ -118,13 +118,27 @@ def load_catalog(path: str | Path = DEFAULT_CATALOG) -> dict:
     if not isinstance(catalog, dict) or not isinstance(catalog.get("sources"), dict):
         raise CatalogError("catálogo deve conter o mapa sources")
     for source_id, source in catalog["sources"].items():
-        if isinstance(source, dict) and "window" in source:
+        if isinstance(source, dict) and source.get("collection_method") == "manual_extension":
+            get_manual_snapshot_source(catalog, source_id)
+        elif isinstance(source, dict) and "window" in source:
             get_climate_source(catalog, source_id, strict_metadata=True)
         elif isinstance(source, dict) and "datasets" in source:
             get_dataset_source(catalog, source_id, strict_metadata=True)
         else:
             get_source(catalog, source_id)
     return catalog
+
+
+def get_manual_snapshot_source(catalog: dict, source_id: str = "idealista") -> dict:
+    """Fonte de snapshot manual; período e pasta pertencem à execução, não ao catálogo."""
+    source = catalog.get("sources", {}).get(source_id)
+    fields = ("id", "publisher", "responsible_party", "license_id", "attribution",
+              "collection_method", "frequency", "territorial_level", "input_format", "usage_restriction")
+    if not isinstance(source, dict) or any(not source.get(field) for field in fields):
+        raise CatalogError(f"fonte manual ausente ou incompleta: {source_id}")
+    if source["id"] != source_id or source["collection_method"] != "manual_extension" or source["input_format"] != "json":
+        raise CatalogError(f"fonte manual inválida: {source_id}")
+    return dict(source)
 
 
 def validate_climate_source(source_id: str, source: dict, *, strict_metadata: bool = False) -> dict:

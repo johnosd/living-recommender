@@ -1,0 +1,12 @@
+{
+  "feature": "005-importacao-idealista-manual",
+  "lockedAt": "2026-11-13 15:56",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_idealista_import_contract.py",
+      "sha256": "c0e83f34b0e64e6d8fbcbb21e7e600b116caaf3988713ec98390333ad2eef9c7",
+      "tests": "unknown"
+    }
+  ]
+}

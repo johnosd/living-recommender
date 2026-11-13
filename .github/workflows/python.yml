@@ -56,6 +56,28 @@ jobs:
           CAOP_DUCKDB_PATH: .data/ci-xwalk/xwalk.duckdb
         run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:parish_crosswalk
 
+      - name: Prepare Idealista manual snapshot fixture
+        run: uv run --locked python -m tests.fixtures.idealista.ci_seed --root .data/ci-idealista
+      - name: Build dbt Idealista from fixture
+        env:
+          IDEALISTA_BUILD_DIR: .data/ci-idealista
+          IDEALISTA_PREPARED_DIR: .data/ci-idealista/prepared
+          OBS_SILVER_DIR: .data/ci-idealista/lake/silver
+          CAOP_DUCKDB_PATH: .data/ci-idealista/idealista.duckdb
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:idealista
+
+      - name: Prepare Censos 2021 fixture
+        run: uv run --locked python -m tests.fixtures.censos2021.ci_seed --root .data/ci-censos
+      - name: Build dbt Censos 2021 from fixture
+        env:
+          CENSOS_BUILD_DIR: .data/ci-censos
+          CENSOS_PREPARED_DIR: .data/ci-censos/prepared
+          OBS_SILVER_DIR: .data/ci-censos/lake/silver
+          CAOP_DUCKDB_PATH: .data/ci-censos/censos.duckdb
+          DBT_TARGET_PATH: .data/ci-censos/dbt-target
+          DBT_LOG_PATH: .data/ci-censos/dbt-logs
+        run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:censos
+
   secrets:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
