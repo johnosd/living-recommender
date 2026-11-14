@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: idealista_occurrences
+    description: Todas as ocorrências do snapshot manual, com valores tipados e proveniência, sem publicação.
+    columns:
+      - name: listing_id
+        data_tests: [not_null]
+      - name: snapshot_month
+        data_tests: [not_null]
+      - name: raw_key
+        data_tests: [not_null]
+      - name: raw_sha256
+        data_tests: [not_null]
+      - name: source_row
+        data_tests: [not_null]
+      - name: source_run_id
+        data_tests: [not_null]
+      - name: imported_at_utc
+        data_tests: [not_null]
+
+  - name: idealista_listings
+    description: Um anúncio por ID no snapshot escolhido; duplicatas e conflitos explícitos. Não é um agregado publicável.
+    columns:
+      - name: listing_id
+        data_tests: [not_null, unique]
+      - name: snapshot_month
+        data_tests: [not_null]
+      - name: source_id
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [idealista]
+      - name: dico
+        data_tests:
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: dicofre
+        data_tests:
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_parish')
+                field: dicofre
+      - name: locality_level
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [municipio, freguesia, regiao, conflict]
+      - name: typology
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [T0, T1, T2, T3, T4+]
+      - name: license_id
+        data_tests: [not_null]
+      - name: attribution
+        data_tests: [not_null]
+      - name: duplicate_count
+        data_tests: [not_null]
+      - name: has_conflict
+        data_tests: [not_null]

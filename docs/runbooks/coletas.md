@@ -259,3 +259,130 @@ Nesta operação local, o supervisor está em segundo plano e chama o build auto
 **Estado final conferido em 2026-11-12 UTC:** coleta concluída, nenhum processo ativo, **308/308 municípios e 2.922.920 linhas**, todas as 13 variáveis sem lacunas. Bruto: 17.821.354 bytes; outros 7 arquivos preservados. O build automático terminou com erro de PATH (`dbt` não encontrado); foi recuperado com `uv run --locked python -m pipelines.cli.build_climate --local`, seguido da verificação completa. O status operacional agora registra `completed`, incluindo a recuperação. Uma nova execução da coleta confirma 308/308 atuais, sem rede. O relatório sinaliza Sesimbra a 30,06 km e elevação 0 m em Vila Franca de Xira, Alcochete e Setúbal. Esses alertas não são lacunas nem falhas da coleta. T037 concluída; o CI remoto continua sendo o de afa0903, anterior aos últimos commits locais.
 
 Em 2026-11-12, a spec 004 foi verificada contra o INE real: as duas planilhas (205.543 e 27.382 bytes) foram coletadas, a segunda coleta deu `unchanged` nas duas e o `build_parish_crosswalk` contra a `dim_parish` real (CAOP 2025) gerou **3.260 pares** cobrindo **3.259 de 3.259 freguesias** (2.957 um-para-um, 301 um-para-muitos, 2 muitos-para-muitos; herdado 303, origem parcial 8, nome alterado 297, município alterado 0). Os SHA-256 de `dim_parish`, `dim_municipality`, `stg_observation` e `stg_climate_daily` ficaram idênticos. O detalhe está no `research.md` da spec. O CI remoto ainda precisa confirmar o novo passo do dbt.
+
+
+## Idealista: importar extração manual (spec 005)
+
+A coleta continua manual no projeto `IdealistaScraper`. Este importador recebe
+somente a pasta de JSON; não acessa o Idealista, não executa o scraper e não
+precisa de API ou chave. Os arquivos da origem não são alterados nem movidos.
+
+Na raiz do living-recommender:
+
+```powershell
+uv run --locked python -m pipelines.cli.import_idealista_snapshot --local --directory "C:/Users/johns/Documents/Projetos/IdealistaScraper/Bases/202508" --snapshot-month 2025-08
+uv run --locked python -m pipelines.cli.build_idealista --local --snapshot-month 2025-08
+```
+
+Para outra extração, indicar a nova pasta e seu mês `YYYY-MM`. O período deve
+ser informado pelo operador: a pasta 202508 significa agosto/2025, e a hora
+original de coleta permanece desconhecida. A data de importação é outra coluna.
+O build exige `dim_municipality` e `dim_parish` locais da CAOP.
+
+### Saídas e repetição
+
+- `raw/source=idealista/snapshot=2025-08/run_id=<run>/`: cópia byte a byte dos JSON com as subpastas originais.
+- `manifests/idealista/<run>.json`: inventário com origem, mês, instante de importação, contagens, licença e hashes.
+- `lake/bronze/idealista_occurrences/data.parquet`: todas as ocorrências tipadas e sua proveniência.
+- `lake/silver/idealista_listings/data.parquet`: um anúncio por ID no snapshot escolhido, com contagem de repetições e sinais de conflito.
+- `lake/bronze/idealista_reports/summary.json`: resumo do build.
+- `lake/bronze/idealista_reports/coverage.csv`: todos os 308 municípios, inclusive os sem amostra, e as regiões coletadas.
+- `lake/bronze/idealista_reports/duplicates.csv`: anúncios repetidos, ocorrência escolhida e campos divergentes.
+- `lake/bronze/idealista_reports/dbt_run_results.json`: resultado dos modelos e testes dbt daquele build.
+
+Os CSV usam `;` e UTF-8 com BOM para abrir no Excel. DICO/DICOFRE são códigos
+textuais: preserve os zeros iniciais ao importar o CSV. Todos esses dados ficam
+em `.data/`, ignorada pelo Git. **São dados privados de processamento, não arquivos
+publicáveis.** A publicação futura será somente de agregados e terá gate próprio.
+
+Repetir a mesma pasta e mês retorna `unchanged`, grava um manifest de verificação
+e não duplica raw. Mudança de conteúdo, inclusão ou remoção de arquivo gera outro
+run. O manifest `changed` completo é o commit do lote; falhas não viram lote vigente.
+Um snapshot vazio/incompleto não é prova de que não há imóveis: confira contagens
+e cobertura antes de usar os resultados. O build local seleciona o mês indicado;
+os brutos dos demais meses continuam preservados.
+
+A CLI de importação também aceita `--s3 --bucket <bucket>` e o mesmo layout,
+verificado com moto; **não foi feita importação em AWS real**. O build desta spec
+continua local.
+
+### Regras de normalização e território
+
+Preço português vira número (ex.: `1.200,50€/mês` → `1200.5`); valor ausente ou
+não interpretável fica nulo com sinal. Preço baixo não é multiplicado. Área
+fica em m²; T4, T5 e maiores recebem categoria `T4+`, mantendo `bedrooms` original.
+Links, imagens, descrições e dados do anunciante não passam às tabelas normalizadas.
+
+A primeira ocorrência por caminho relativo e posição é escolhida de forma
+estável, sem presumir que seja a mais recente. Todas as ocorrências continuam
+em Bronze e raw. Divergências de preço/área/quartos/território são sinalizadas;
+conflito de município deixa DICO/DICOFRE nulos, e conflito só de freguesia deixa
+DICOFRE nulo. Não há mistura de IDs entre meses.
+
+O nome do arquivo resolve município. Exceções, freguesias de Lisboa e regiões
+insulares estão em `analytics/dbt/seeds/idealista_file_localities.csv`. Arquivo
+municipal desconhecido reprova o build. Freguesia do título só casa por nome
+completo normalizado dentro do município, ou por sinônimo explícito em
+`analytics/dbt/seeds/parish_synonyms.csv` (inicialmente só o cabeçalho). Sem casamento,
+fica nula e entra no relatório. Não há geocodificação nem comparação aproximada.
+
+Os hashes e a consistência do manifest são verificados antes de processar.
+O build roda `dbt build --select tag:idealista` em candidato isolado e só promove
+os três diretórios desta feature depois dos testes. Falha mantém a base anterior.
+Tabela vazia é exportada com zero linhas, removendo somente o placeholder nulo
+que o adapter dbt-duckdb usa internamente para representar schema vazio.
+
+### Evidência local de 2026-11-13
+
+Importação real da pasta 202508: **324 JSON, 16.566.429 bytes, 17.472 ocorrências,
+16.117 IDs únicos e 1.355 ocorrências excedentes**. A repetição foi `unchanged`,
+sem novos brutos. Build real: **255/308 municípios com amostra**, 53 sem amostra,
+**189 anúncios regionais** das ilhas, **8.891 com freguesia resolvida** e 7.037
+anúncios municipais sem freguesia resolvida. Nenhum conflito nos campos comparados,
+nenhum preço ausente/inválido; isso não comprova qualidade de mercado nem atualidade.
+
+Os **324 hashes da origem e das cópias conferiram**; os **16 arquivos preexistentes
+do lake mantiveram seus hashes**. Os 24 passos dbt do build real passaram.
+Evidências locais ignoradas: `.data/idealista-import-evidence-before.json` e
+`.data/idealista-import-evidence-after.json`. CI remoto, AWS real, publicação e
+agregados não estão comprovados por esta execução. O período continua **2025-08**.
+
+Gate final local da spec 005: ruff limpo e **350 testes passando** em 412,66 s. Cinco travas de contrato íntegras; revisão independente das correções sem novo achado. O fluxo novo de fixture/dbt do CI foi executado localmente (24/24 passos), sem execução remota nesta sessão.
+
+
+## Censos 2021 por freguesia (spec 006)
+
+Coleta de201 datasets oficiais (2 metadados e199 lotes de até32 freguesias, todas as idades por lote), de forma sequencial, identificada e com intervalo mínimo de 2 s. Edição sempre 2021: indicador principal 0014632, geografia 2025, total + 18 faixas; fallback 0011719, geografia anterior, total + 19 faixas. Fonte CC BY 4.0; citar INE. Códigos etários variam por indicador e são interpretados pelos metadados, nunca pelo número isolado.
+
+```powershell
+uv run --locked python -m pipelines.cli.collect_censos --local --root .data
+uv run --locked python -m pipelines.cli.build_censos --local --root .data
+```
+
+D2 foi emendada com aprovação do autor após timeouts nacionais: seletores explícitos em `config/sources.yml`, com102 lotes2025 (3.259 códigos) e97 lotes2013 (3.092 códigos). Cada resposta deve conter todos os pares freguesia/faixa solicitados; a união deve cobrir exatamente o universo oficial, sem sobreposição. Alterações desse universo exigem revisão do catálogo; o build falha em vez de ocultar lacunas.
+
+Originais em `raw/source=censos/`, manifest em `manifests/censos/`. O checksum identifica bytes, e a impressão digital compara conteúdo e seletores sem DataExtracao. Cada entrada guarda snapshot da configuração; mudanças posteriores do catálogo não alteram a reconstrução desse run. A data de extração/revisão não substitui 2021.
+
+O build funciona sem rede e escolhe um único manifest completo, verificando hashes e revisões por família. Se a última coleta falhou ou ficou parcial, o default reprova e mantém a vigente. Para selecionar conscientemente um run completo anterior:
+
+```powershell
+uv run --locked python -m pipelines.cli.build_censos --local --root .data --run-id <run-completo>
+```
+
+Saídas: Bronze `census_age_category`, `census_observation`; Silver `census_parish_observation`, `census_coverage`. Relatórios em `lake/silver/census_reports/{coverage.csv,summary.csv,readiness.json,orphans.csv}`. `summary.csv` conta observações próprias/herdadas/ausentes por país, região e município; não soma habitantes herdados. Dado oficial compatível tem prioridade, ausência oficial documentada permite fallback, e confidencialidade não permite revelar um valor por outra origem. A faixa 85+ legada só combina idades 85–89 e 90+ da mesma origem publicada. Não são calculados percentuais, densidade ou ranking.
+
+Todo build usa candidato e lock exclusivo em `.build/censos`. Erros de prontidão/dbt/exportação/promoção preservam a versão válida anterior e deixam diagnóstico em `reports/censos/<build-id>/failure.json`. Um lock existente impede novo build: antes de remover APENAS esse arquivo, confirme que o PID não está ativo, leia o build_id e examine candidatos/backups `.previous-*`. Interrupção abrupta durante as trocas exige inspeção; o helper não promete transação contra queda do processo. Não apague diretórios de outras fontes nem o raw. Destinos resolvidos para fora da raiz (incluindo junctions) são recusados.
+
+Se todas as trocas terminaram e os bytes da vigente coincidem com o candidato validado, uma falha posterior de limpeza de backups gera aviso de manutenção e `maintenance.json`, sem invalidar a versão. Preserve esses backups até verificar a manutenção; não confundir aviso de limpeza com falha de qualidade.
+
+Validação sem rede: `python -m tests.fixtures.censos2021.ci_seed --root .data/ci-censos` (sob `uv run --locked`) em raiz de fixture nova; depois `python -m pipelines.cli.build_censos --local --root .data/ci-censos`. Não usar a raiz real como fixture. Contratos são travados: `check-contract-tests.ps1 -Slug 006-censos-2021-freguesia`; suíte completa: `uv run --locked python -m pytest -q --basetemp .pytest_tmp`.
+
+A prova nacional real e o CI remoto têm evidências distintas das fixtures locais; consultar o checkpoint vigente da spec 006 para o resultado efetivamente demonstrado.
+
+### Prova real concluída após emenda D2 — 2026-11-13
+
+Coleta inicial `20261113T231450079026Z-ddf26aad`:201 chamadas/201 respostas,200 changed e1 metadado unchanged,32.804.869 bytes referenciados,449,406s. Repetição `20261113T232234325869Z-00a1b4a4`:201/201 unchanged,201 chamadas,449.906s,nenhum novo raw. Ambos os manifests estão em `.data/manifests/censos/`;originais,hashes,consultas e revisões da primeira rodada foram conferidos após a segunda. Recibos e auditorias em `.data/receipts/censos-proof/`.
+
+Build real aprovado:3.259 freguesias,308 municípios,19 categorias canônicas e61.921 observações próprias;0 herdadas,0 ausentes. Bronze123.761 linhas;população total2021 de10.343.066. Cobertura regional completa e18 códigos alfanuméricos preservados. Todas as observações têm fonte,licença,território,run e referências raw verificadas. Vinte e dois arquivos vizinhos permaneceram idênticos. dbt:4 modelos e21 testes aprovados. Relatórios: `.data/lake/silver/census_reports/`. Fonte INE,Censos2021,CC-BY-4.0. O método de reexpressão não foi divulgado pelo publicador nas evidências consultadas;essa limitação permanece registrada,sem estimativa do projeto.
+
+Validação local: `uv run --locked python -m pytest -q --basetemp .data/tmp/censos-batches-full` →411 passed em571,46s;2 regressões adicionais (histórico completo41 itens e repetição por lotes) →2 passed em3,37s,fora da coleta inicial dessa suíte. Área censos →61 passed em32,12s antes dessas2 adições. `uv run --locked ruff check pipelines tests` aprovado. Seed/build de CLI em `.data/ci-censos-batches` aprovado;travas001–006 íntegras;revisão independente sem bug material. O CI remoto e seu scan de segredos seguem pendentes de commit/push/PR autorizado;nenhuma execução em nuvem ou publicação foi demonstrada. Não marcar Implementada/Convergida antes do gate restante.

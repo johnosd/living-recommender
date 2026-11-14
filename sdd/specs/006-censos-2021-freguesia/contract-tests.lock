@@ -1,0 +1,17 @@
+{
+  "feature": "006-censos-2021-freguesia",
+  "lockedAt": "2026-11-13 19:14",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_censos2021_contract.py",
+      "sha256": "fe7baecf8694b2b230f2491932bb174099d26dc312c4e47d445cd987839d21e7",
+      "tests": "unknown"
+    },
+    {
+      "path": "tests/fixtures/censos2021/responses.py",
+      "sha256": "464e0e73fa806f1ace2682afb8ef0f6a65225e1323d520fae166dd2b39966032",
+      "tests": "unknown"
+    }
+  ]
+}

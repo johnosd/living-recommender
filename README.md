@@ -83,6 +83,22 @@ A coleta real e o build locais foram concluídos: **308/308 municípios, 2.922.9
 
 A spec 004 entrega a **correspondência de freguesias 2013→2025**, necessária para qualquer indicador por freguesia do Censos 2021. `collect_parish_crosswalk` baixa as duas planilhas oficiais do INE (antes de 2013 → 2013, e antes de 2013 → as 302 freguesias repostas em 2025) e `build_parish_crosswalk` as encadeia numa tabela de pares com a natureza da relação (um-para-um, um-para-muitos, muitos-para-um, muitos-para-muitos) e os sinais de herança, origem parcial, nome e município alterados. **Não há repartição de valores**: a herança é só um sinal. Um gate reprova a promoção se a `dim_parish` não for coberta por inteiro. Os comandos e o que fazer numa reprovação estão no [guia de coletas](docs/runbooks/coletas.md); a licença das planilhas ainda precisa de confirmação.
 
+A spec 005 entrega a **importação de snapshots manuais do Idealista**. A coleta
+permanece no `IdealistaScraper`; `import_idealista_snapshot` copia a pasta indicada
+para raw com manifest, período e hashes, e `build_idealista` produz ocorrências Bronze,
+anúncios únicos Silver e relatórios de cobertura/duplicatas após testes dbt.
+O snapshot **2025-08** foi importado e construído localmente: 324 JSON, 17.472
+ocorrências, 16.117 IDs únicos, amostra em 255 municípios e 189 anúncios regionais
+das ilhas, preservados sem município inventado. Não são preços atuais. Os dados
+individuais ficam em `.data/`, fora do Git e sem publicação. Comandos, regras e
+limites de evidência estão no [guia de coletas](docs/runbooks/coletas.md#idealista-importar-extração-manual-spec-005).
+
+Na auditoria de 2026-11-13, a extração externa foi localizada em
+`C:/Users/johns/Documents/Projetos/IdealistaScraper/.data/202508`, com os mesmos
+324 arquivos e hashes da importação. Para repetir a importação, informe esse
+caminho em `--directory`; `Bases/202508` permanece como origem histórica no manifest.
+
+
 ## Roteiro
 
 | Fase | Entrega | Estado |
@@ -105,8 +121,8 @@ Estado atual:
 .planning/               fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
 .agents/                 skills do agente de desenvolvimento
 sdd/                     ADRs (adr/) e specs das features (specs/)
-config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias)
-pipelines/               coletores (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias), storage local/S3 e CLIs (collect, load, build, view)
+config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual)
+pipelines/               coletores (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual), storage local/S3 e CLIs (collect, load, build, view)
 analytics/dbt/           modelos Bronze/Silver, seed de sinônimos de município e testes de qualidade
 tests/                   unitários, integração, contrato e fixtures sintéticas
 docs/runbooks/           guias de operação (coletas)
@@ -164,3 +180,10 @@ O que é reaproveitado e o que é reescrito está na seção 3 do plano.
 ## Licença
 
 A definir.
+
+
+### Preparação dos Censos 2021 por freguesia
+
+A spec 006 acrescenta coleta auditável de população total e faixas etárias, com prioridade para dados oficiais compatíveis com a CAOP2025. Bronze preserva contagens/metadados nativos e Silver distingue dado próprio, herdado ou ausente por observação. A cobertura inclui todas as freguesias da dimensão vigente; falhas técnicas impedem promoção. O [guia de coletas](docs/runbooks/coletas.md) descreve os comandos e a recuperação. Percentuais, densidade e site ficam para as etapas seguintes; o resultado de aceite real está registrado no plano da feature.
+
+Prova local real da spec006:3.259 freguesias,308 municípios e61.921 observações próprias (total+18 faixas),sem ausências;repetição201/201 unchanged,sem novos originais. CI remoto permanece pendente. Evidências e relatórios estão no [plano006](sdd/specs/006-censos-2021-freguesia/plan.md) e no [guia de coletas](docs/runbooks/coletas.md).

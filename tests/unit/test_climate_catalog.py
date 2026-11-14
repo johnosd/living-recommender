@@ -12,7 +12,7 @@ from tests.fixtures.open_meteo.responses import catalog
 
 def test_real_catalog_and_existing_sources():
     loaded = load_catalog()
-    assert set(loaded['sources']) == {'caop', 'pordata', 'ine', 'open_meteo', 'ine_parish_crosswalk'}
+    assert set(loaded['sources']) == {'caop', 'pordata', 'ine', 'open_meteo', 'ine_parish_crosswalk', 'idealista', 'censos'}
     assert get_climate_source(loaded)['model'] == 'era5'
 
 

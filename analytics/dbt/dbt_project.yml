@@ -21,3 +21,7 @@ models:
       +tags: ['climate']
     crosswalk:
       +tags: ['parish_crosswalk']
+    idealista:
+      +tags: ['idealista']
+    censos:
+      +tags: ['censos']
