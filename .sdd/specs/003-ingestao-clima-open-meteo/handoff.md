@@ -84,7 +84,7 @@
 - `uv run --locked python -m pytest -q --basetemp .pytest_tmp` verde (sem rede; ~2 min).
 - `dbt build --select tag:caop`, `tag:observations` e `tag:climate` verdes isoladamente (o do clima sobre `tests.fixtures.climate.ci_seed`, com `OBS_SILVER_DIR=.data/ci-climate/lake/silver`).
 - CI verde (passo novo do dbt do clima).
-- Docs a atualizar no Polish: `config/sources.yml`, `.docs/fontes_de_dados.md` (§3.3, §3.4, §4), `docs/runbooks/coletas.md`, `README.md`.
+- Docs a atualizar no Polish: `config/sources.yml`, `.docs/fontes_de_dados.md` (§3.3, §3.4, §4), `.docs/runbooks/coletas.md`, `README.md`.
 - **Passada real é recomendação forte, não gate de merge:** T037 (coleta de ~3 dias, SC-008) mede o peso real da cota e confere o texto do 429. Registre o resultado em `research.md` (R3, R4) e em Execution Notes.
 
 ## Checkpoint após execução — 2026-11-11 (prevalece sobre o retrato de planejamento acima)

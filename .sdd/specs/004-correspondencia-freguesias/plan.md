@@ -1,6 +1,6 @@
 # Implementation Plan: Correspondência de freguesias 2013→2025
 
-**Slug**: `004-correspondencia-freguesias` | **Date**: 2026-11-12 | **Spec**: `sdd/specs/004-correspondencia-freguesias/spec.md`
+**Slug**: `004-correspondencia-freguesias` | **Date**: 2026-11-12 | **Spec**: `.sdd/specs/004-correspondencia-freguesias/spec.md`
 
 ## Summary
 
@@ -60,7 +60,7 @@ Coletar as duas tabelas oficiais do INE (código pré-2013 → 2013, e pré-2013
 ### Documentation (this feature)
 
 ```text
-sdd/specs/004-correspondencia-freguesias/
+.sdd/specs/004-correspondencia-freguesias/
 ├── spec.md
 ├── plan.md                         # este arquivo
 ├── tasks.md
@@ -94,7 +94,7 @@ tests/
   contracts/  test_parish_crosswalk_contract.py          # travado (5 casos)
   fixtures/   + parish_crosswalk/ tables.py (travado) ci_seed.py
   unit/ integration/                                     # + testes da feature
-docs/runbooks/coletas.md  README.md  .docs/fontes_de_dados.md      # atualizar no Polish
+.docs/runbooks/coletas.md  README.md  .docs/fontes_de_dados.md      # atualizar no Polish
 .github/workflows/python.yml                             # + passo dbt da feature
 ```
 
@@ -208,7 +208,7 @@ Verificado no plan: lint limpo; os 5 contratos falham só por `NotImplementedErr
 
 - Código: `pipelines/collectors/parish_crosswalk/*`, `pipelines/cli/{collect,build}_parish_crosswalk.py`, `analytics/dbt/models/crosswalk/`, `analytics/dbt/tests/parish_crosswalk_*.sql`
 - Catálogo e CI: `config/sources.yml` (`ine_parish_crosswalk`), `.github/workflows/python.yml`
-- Docs: `.docs/fontes_de_dados.md`, `docs/runbooks/coletas.md`, `README.md`, `research.md` (verificação real)
+- Docs: `.docs/fontes_de_dados.md`, `.docs/runbooks/coletas.md`, `README.md`, `research.md` (verificação real)
 - Pendente de ação do autor: commits, push/PR e CI remoto
 - `tests/contracts/test_parish_crosswalk_contract.py` e `tests/fixtures/parish_crosswalk/tables.py` (**travados**)
 

@@ -6,7 +6,7 @@
 
 **Status**: Convergida
 
-**Input**: "vamos especificar então" a correspondência de freguesias 2013→2025 e o TopoJSON da CAOP, pendências deixadas fora pela spec 001 (ver `sdd/specs/001-ingestao-caop/spec.md`, Clarifications; `.docs/plano_plataforma_recomendacao_portugal.md` §5.4, §8.3 e o risco da reorganização de freguesias; `.docs/fontes_de_dados.md` §3.3, fonte `censos`). A entrevista decidiu que **esta spec cobre só a correspondência**; o TopoJSON fica para outra spec.
+**Input**: "vamos especificar então" a correspondência de freguesias 2013→2025 e o TopoJSON da CAOP, pendências deixadas fora pela spec 001 (ver `.sdd/specs/001-ingestao-caop/spec.md`, Clarifications; `.docs/plano_plataforma_recomendacao_portugal.md` §5.4, §8.3 e o risco da reorganização de freguesias; `.docs/fontes_de_dados.md` §3.3, fonte `censos`). A entrevista decidiu que **esta spec cobre só a correspondência**; o TopoJSON fica para outra spec.
 
 ## Escopo
 

@@ -1,6 +1,6 @@
 # Implementation Plan: Fundação da ingestão e dimensão territorial CAOP
 
-**Slug**: `001-ingestao-caop` | **Date**: 2026-11-04 | **Spec**: `sdd/specs/001-ingestao-caop/spec.md`
+**Slug**: `001-ingestao-caop` | **Date**: 2026-11-04 | **Spec**: `.sdd/specs/001-ingestao-caop/spec.md`
 
 ## Summary
 
@@ -54,7 +54,7 @@ Criar a primeira coleta rastreável do projeto: catálogo CAOP, download das tr�
 ### Documentation (this feature)
 
 ```text
-sdd/specs/001-ingestao-caop/
+.sdd/specs/001-ingestao-caop/
   spec.md                 # existente e editada antes deste plano
   plan.md                 # este plano
   tasks.md                # sequência de execução
@@ -78,7 +78,7 @@ tests/unit/                                   # testes isolados da Foundational
 pipelines/collectors/caop/schema.py            # inspeção/validação ZIP e GeoPackage
 pipelines/cli/collect_caop.py                  # CLI local da US1
 tests/integration/test_caop_cli_local.py       # execução local sem rede
-README.md, .docs/, sdd/adr/, .planning/       # documentação existente
+README.md, .docs/, .sdd/adr/, .planning/       # documentação existente
 pipelines/collectors/caop/handler.py          # stub criado pelo sdd-plan
 pipelines/collectors/__init__.py              # stub de pacote
 pipelines/__init__.py                         # stub de pacote
@@ -137,7 +137,7 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | Fase | Todas as fases concluídas, incluindo a Phase 7 (Convergence): T001–T039. Falta apenas rodar `sdd-converge` outra vez para confirmar a convergência. |
 | Fonte real | Três ZIPs da CAOP2025 coletados em `.data/raw/`; recoleta real de 2026-11-11 deu `unchanged` (mesmos bytes). Bronze/Silver locais com 308 municípios, 3259 freguesias e 18 `dtmnfr` alfanuméricos. |
 | Coleta e transformação | Coletor com destino local ou S3 (`--s3 --bucket [--prefix]`), checksums e manifests; normalização geoespacial e `dbt build` em área temporária com promoção após qualidade. O build lê só do disco local. |
-| Visualização | `.data/explore/caop.html`, `municipios.csv` e `freguesias.csv` gerados da Silver real; guia em `docs/runbooks/coletas.md`. |
+| Visualização | `.data/explore/caop.html`, `municipios.csv` e `freguesias.csv` gerados da Silver real; guia em `.docs/runbooks/coletas.md`. |
 | Testes | 38/38 pytest (8 de S3 simulado com moto), Ruff, 31/31 passos dbt na fixture e trava P1 íntegra; build real local repetido após a simplificação (308 municípios, 3259 freguesias). Nenhum teste contra AWS real. |
 | CI | Verde no GitHub em `f6fce21`, nos runs de push (43068328762) e de pull_request (43068428750): job `quality` (lint, pytest, fixture e `dbt build`) e job `secrets` (gitleaks sobre o histórico). PR #1 mergeado em `main`. Histórico: o workflow já havia passado em `8dd4ca3`.
 | CI (histórico) | O workflow `Python quality` passou no GitHub em `8dd4ca3` (lint, pytest, fixture e `dbt build`). Os commits `8814d8a` e `a13a43c` (simplificação e S3) ainda não foram enviados, e o job `secrets` (só em PR) nunca rodou no GitHub. O mesmo `gitleaks` v8.30.1 rodou localmente via Docker sobre os 6 commits: `no leaks found`; o job `quality` foi reproduzido num container Linux a partir de `f6fce21` (37 passed, 1 skipped do Windows, dbt 31/31), sem substituir o run do GitHub. |
@@ -166,7 +166,7 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 | 2026-11-04 | Setup | T001–T004 concluídas: lock Python 3.12, CI, ignores e lint local. | Implementar helpers da Foundational; CI completo depende da US1/US2. |
 | 2026-11-04 | Foundational | T005–T010 concluídas: catálogo DGT, HTTP, storage local e manifest; 7 testes unitários e Ruff verdes. | Inspecionar schema/CRS reais na US1; contratos P1 ainda vermelhos no stub. |
 | 2026-11-04 | US1 | T011–T015 concluídas: fonte real inspecionada, coletor/CLI local e fixtures; 16/16 pytest, 5/5 contratos e Ruff verdes. | Resolver R-006 antes da US2; CI remoto e S3 ainda pendentes. |
-| 2026-11-04 | Documentação operacional | Criado `docs/runbooks/coletas.md` a pedido do usuário, com execução local, saídas e status; README aponta para o guia. | Coleta real pela CLI permanece sem execução; R-006 bloqueia US2. |
+| 2026-11-04 | Documentação operacional | Criado `.docs/runbooks/coletas.md` a pedido do usuário, com execução local, saídas e status; README aponta para o guia. | Coleta real pela CLI permanece sem execução; R-006 bloqueia US2. |
 | 2026-11-04 | US2 | T016–T024, T031–T032 concluídas: Bronze/Silver, 308/3259 linhas reais, visualizador HTML/CSV e correção da concorrência Windows; 27 pytest e 31 passos dbt verdes. | US3/S3 simulado e CI remoto pendentes; navegador automatizado indisponível para inspeção visual do HTML. |
 | 2026-11-11 | Phase 4.1 (simplificação) | T033–T036 concluídas após revisão pedida pelo usuário: extração ZIP/GeoPackage unificada em `schema.py`, código morto e redundâncias removidos, filtro redundante do staging dbt retirado; 30 pytest, 31 passos dbt e build real verdes. Cinco itens da proposta original foram descartados após verificação (ver Cuidados). | Decisão do usuário sobre `--force-check`, `_canonical_path`, `strict_metadata`, adiar US3 e `HEAD`/ETag; US3/S3 e CI remoto pendentes. |
 | 2026-11-11 | US3 | T025–T027 concluídas: `S3Storage` com escrita condicional, `--s3 --bucket [--prefix]`, preflight antes de qualquer listagem; 8 testes com S3 simulado cobrem paridade com o local (AC1), falha antes do download (AC2), modo local sem SDK (AC3) e limpeza/rerun após falha; 38 pytest e 31 passos dbt verdes. | Verificar `IfNoneMatch` num bucket real (R-008); CI remoto no GitHub; Phase 6 (README, quickstart, gate final). |
@@ -181,15 +181,15 @@ Stub não travado: `pipelines/collectors/caop/handler.py` (assinatura pública +
 
 <!-- Sobrescrita a cada checkpoint pelo sdd-execute. -->
 
-- `README.md`, `.docs/fontes_de_dados.md` e `docs/runbooks/coletas.md` — documentação alinhada ao código (T028/T037).
-- `sdd/specs/001-ingestao-caop/quickstart.md` — próximo a sincronizar (T039).
+- `README.md`, `.docs/fontes_de_dados.md` e `.docs/runbooks/coletas.md` — documentação alinhada ao código (T028/T037).
+- `.sdd/specs/001-ingestao-caop/quickstart.md` — próximo a sincronizar (T039).
 - `pipelines/collectors/_shared/storage_s3.py` e `pipelines/cli/collect_caop.py` — backend S3 e seleção de destino; `tests/integration/test_caop_s3.py` — prova com S3 simulado.
 - `pipelines/collectors/caop/schema.py` — validação do bruto e extração/seleção de camadas (`extract_gpkgs`, `select_layers`), compartilhadas com a transformação.
 - `pipelines/collectors/caop/transform.py` e `pipelines/collectors/caop/names.py` — preparo geográfico e nomes.
 - `analytics/dbt/` — staging Bronze, dimensões Silver e testes de qualidade.
 - `pipelines/cli/build_caop.py` e `pipelines/cli/view_caop.py` — build local e visualização.
 - `tests/fixtures/caop/ci_seed.py` e `tests/integration/test_caop_build.py` — fixture nacional e prova sem rede.
-- `docs/runbooks/coletas.md` — execução da coleta, build e abertura do explorador.
+- `.docs/runbooks/coletas.md` — execução da coleta, build e abertura do explorador.
 
 ## Cuidados para Retomada
 

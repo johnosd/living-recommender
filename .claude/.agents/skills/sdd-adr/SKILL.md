@@ -1,7 +1,17 @@
 ---
 name: sdd-adr
-description: Documenta ou emenda uma decisão arquitetural fundamental do projeto (stack, plataforma, banco de dados, framework) como ADR em sdd/adr/, com contexto, alternativas rejeitadas e consequências assumidas. Use quando o usuário pedir para documentar uma decisão de arquitetura, registrar um ADR, discutir e decidir entre opções técnicas antes de começar a implementar, ou atualizar uma decisão já tomada. Diferente de sdd-specify/sdd-plan/sdd-execute/sdd-converge — não pertence à pipeline de uma feature específica, pode rodar antes de qualquer sdd/specs/ existir. NÃO use para decisões técnicas locais de uma única feature (isso vai em Decisões Invariantes de plan.md, via sdd-plan).
+description: Documenta ou emenda uma decisão arquitetural fundamental do projeto (stack, plataforma, banco de dados, framework) como ADR em .sdd/adr/, com contexto, alternativas rejeitadas e consequências assumidas. Use quando o usuário pedir para documentar uma decisão de arquitetura, registrar um ADR, discutir e decidir entre opções técnicas antes de começar a implementar, ou atualizar uma decisão já tomada. Diferente de sdd-specify/sdd-plan/sdd-execute/sdd-converge — não pertence à pipeline de uma feature específica, pode rodar antes de qualquer .sdd/specs/ existir. NÃO use para decisões técnicas locais de uma única feature (isso vai em Decisões Invariantes de plan.md, via sdd-plan).
 ---
+
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
 
 # sdd-adr
 
@@ -15,7 +25,7 @@ Diferença de escopo pros outros artefatos do sistema:
 | Artefato | Escopo | Natureza |
 |---|---|---|
 | `constitution.md` | Projeto inteiro | Regras `DEVE`, gate formal, terso |
-| ADR (`sdd/adr/`) | Projeto inteiro | Decisão + raciocínio completo + alternativas rejeitadas, permanente |
+| ADR (`.sdd/adr/`) | Projeto inteiro | Decisão + raciocínio completo + alternativas rejeitadas, permanente |
 | `plan.md` → Decisões Invariantes | Uma feature | Local, descartável quando a feature converge |
 
 Uma ADR registra **por que** uma decisão foi tomada e o que foi
@@ -25,7 +35,7 @@ conscientemente rejeitado — não só a conclusão.
 
 ### 1. Confere ADRs existentes
 
-Liste `sdd/adr/` (se existir). Se a discussão que o usuário está
+Liste `.sdd/adr/` (se existir). Se a discussão que o usuário está
 propondo se relaciona a uma ADR já registrada, isso é uma **emenda**, não uma
 ADR nova — vá pro passo 4. Caso contrário, é uma ADR nova — siga normalmente.
 
@@ -93,6 +103,6 @@ promoção pra constitution.
 
 ## Handoff
 
-`sdd-plan` lê `sdd/adr/` durante a exploração de toda feature nova —
+`sdd-plan` lê `.sdd/adr/` durante a exploração de toda feature nova —
 as decisões registradas aqui não devem ser relitigadas silenciosamente
 dentro do planejamento de uma feature específica.

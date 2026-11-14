@@ -6,8 +6,8 @@
 - **Stack:** Python 3.12 + `uv`, `httpx`, `pandas`/`pyarrow`, `openpyxl`, dbt-core + dbt-duckdb, pytest, `moto`, `ruff`. Nenhuma dependência nova.
 - **Próximo comando:** `/sdd-execute 004-correspondencia-freguesias`
 - **Status no backlog:** `Planejada`, 0/41 (o script conta toda caixa `- [ ]`, inclusive as 12 do Checklist de Release; são 29 tasks, T001–T029).
-- **Criado pelo plan em disco:** `pipelines/collectors/parish_crosswalk/{__init__,validate,transform,derive,coverage,handler}.py` (stubs), `tests/contracts/test_parish_crosswalk_contract.py`, `tests/fixtures/parish_crosswalk/{__init__,tables}.py`, `sdd/specs/004-correspondencia-freguesias/*`. **Nada** foi alterado em `config/sources.yml`, `http.py`, `_shared/` ou no dbt.
-- **Também mudou fora desta feature, na mesma sessão:** o commit `246226f` (dataset 845 do Pordata) e a branch `docs/003-convergencia`, ambos já no GitHub. Releia o `git log` e o `git status`.
+- **Criado pelo plan em disco:** `pipelines/collectors/parish_crosswalk/{__init__,validate,transform,derive,coverage,handler}.py` (stubs), `tests/contracts/test_parish_crosswalk_contract.py`, `tests/fixtures/parish_crosswalk/{__init__,tables}.py`, `.sdd/specs/004-correspondencia-freguesias/*`. **Nada** foi alterado em `config/sources.yml`, `http.py`, `_shared/` ou no dbt.
+- **Também mudou fora desta feature, na mesma sessão:** o commit `246226f` (dataset 845 do Pordata) e a branch `.docs/003-convergencia`, ambos já no GitHub. Releia o `git log` e o `git status`.
 
 ## O que a feature entrega
 
@@ -77,5 +77,5 @@
 - `dbt build --select tag:parish_crosswalk` verde sobre a fixture e sobre os dados reais.
 - Coleta real conferida contra os valores de referência de `quickstart.md` §4 (T026) e `unchanged` na repetição.
 - SHA-256 de `dim_parish`, `dim_municipality` e demais saídas inalterado (SC-006).
-- Documentação do Polish (T025): `.docs/fontes_de_dados.md`, `docs/runbooks/coletas.md`, `README.md`.
+- Documentação do Polish (T025): `.docs/fontes_de_dados.md`, `.docs/runbooks/coletas.md`, `README.md`.
 - A passada com os dados reais (T026) é **gate**, não recomendação: o plano só se sustenta se a coleta real reprovar nada e reproduzir os números.

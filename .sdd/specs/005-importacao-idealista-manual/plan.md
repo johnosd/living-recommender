@@ -57,7 +57,7 @@ Sem dependências novas, recurso pago ou custo recorrente externo.
 - analytics/dbt/models/idealista/; analytics/dbt/tests/idealista_*.sql
 - tests/contracts/test_idealista_import_contract.py; tests/unit/test_idealista.py;
   tests/integration/test_idealista_build.py; tests/fixtures/idealista/
-- sdd/specs/005-importacao-idealista-manual/; docs/runbooks/coletas.md
+- .sdd/specs/005-importacao-idealista-manual/; .docs/runbooks/coletas.md
 
 ## Complexity Tracking
 Sem nova decisão arquitetural. Regional com DICO nulo é exceção explícita de
@@ -124,7 +124,7 @@ ambíguos e ilhas; conflito de ID/preço/território; falha dbt/tamper preservan
 
 ## Arquivos Principais
 - pipelines/collectors/idealista/, pipelines/cli/import_idealista_snapshot.py e build_idealista.py.
-- analytics/dbt/models/idealista/, seeds e testes; docs/runbooks/coletas.md.
+- analytics/dbt/models/idealista/, seeds e testes; .docs/runbooks/coletas.md.
 
 ## Cuidados para Retomada
 - Não alterar a origem nem copiar cookies/scripts do projeto legado.

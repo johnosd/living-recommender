@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 # Trava dos testes de contrato de uma feature (sdd-plan escreve, sdd-execute
 # só pode fazer passar, nunca editar). Guarda caminho + SHA256 de cada arquivo
-# de teste de contrato em sdd/specs/<slug>/contract-tests.lock e confere se
+# de teste de contrato em .sdd/specs/<slug>/contract-tests.lock e confere se
 # nada mudou desde que foi travado.
 #
 # Hash é calculado com fim de linha normalizado (CRLF -> LF), pra um

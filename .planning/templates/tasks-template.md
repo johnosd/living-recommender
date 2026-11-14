@@ -4,7 +4,7 @@ description: "Template de lista de tasks para implementação de feature"
 
 # Tasks: [FEATURE NAME]
 
-**Input**: Documentos de design de `sdd/specs/[NNN-feature-slug]/`
+**Input**: Documentos de design de `.sdd/specs/[NNN-feature-slug]/`
 
 **Prerequisites**: plan.md (obrigatório), spec.md (obrigatório para user stories), research.md, data-model.md, contracts/ (condicionais)
 

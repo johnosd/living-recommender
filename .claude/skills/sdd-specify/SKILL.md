@@ -1,7 +1,17 @@
 ---
 name: sdd-specify
-description: Cria spec.md para uma feature nova por entrevista leve e clarificação estruturada. Use para iniciar, especificar ou escopar uma feature e escrever user stories. Produz a spec em sdd/specs/. Para planejar uma spec existente use sdd-plan; para implementar use sdd-execute.
+description: Cria spec.md para uma feature nova por entrevista leve e clarificação estruturada. Use para iniciar, especificar ou escopar uma feature e escrever user stories. Produz a spec em .sdd/specs/. Para planejar uma spec existente use sdd-plan; para implementar use sdd-execute.
 ---
+
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
 
 # sdd-specify
 
@@ -41,7 +51,7 @@ coisa. **Não há teto artificial de perguntas** — o limite é a ambiguidade
 - Edge cases óbvios.
 
 Não pergunte fatos que dá pra descobrir barato no repositório (ex: convenções
-já visíveis em features existentes de `sdd/specs/`, se houver alguma). Não
+já visíveis em features existentes de `.sdd/specs/`, se houver alguma). Não
 pergunte detalhes de arquitetura/stack — isso é do `sdd-plan`.
 
 ### 3. Rascunho em memória
@@ -94,13 +104,13 @@ encontradas — **sem teto artificial**; para uma ideia ambígua, passar de 10
 .\.planning\scripts\powershell\new-feature.ps1 "<descrição da feature>" [-ShortName <slug-curto>] -Json
 ```
 
-Isso cria `sdd/specs/<NNN-slug>/` com `spec.md` semeado do template
+Isso cria `.sdd/specs/<NNN-slug>/` com `spec.md` semeado do template
 (`.planning/templates/spec-template.md`) e retorna o `SLUG` real (com o número
 sequencial).
 
 ### 6. Escreve a spec final
 
-Sobrescreva `sdd/specs/<NNN-slug>/spec.md` com o conteúdo completo do passo 3+4.
+Sobrescreva `.sdd/specs/<NNN-slug>/spec.md` com o conteúdo completo do passo 3+4.
 Headings ficam em inglês (convenção estrutural); o conteúdo preenchido fica em
 português.
 
@@ -123,7 +133,7 @@ spec".
 
 ## Handoff
 
-`sdd-plan` exige que `sdd/specs/<NNN-slug>/spec.md` exista. Marcadores
+`sdd-plan` exige que `.sdd/specs/<NNN-slug>/spec.md` exista. Marcadores
 `[NEEDS CLARIFICATION]` remanescentes são um sinal, não um bloqueio — o
 `sdd-plan` não falha por causa deles, mas o Analyze no fim do `sdd-plan` pode
 sinalizá-los.

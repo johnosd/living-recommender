@@ -1,6 +1,6 @@
 """Verificação de cobertura da correspondência contra a dim_parish (spec 004, FR-012).
 
-Regra em `sdd/specs/004-correspondencia-freguesias/logic/derivacao-correspondencia.md` §4. Roda antes do dbt: em caso
+Regra em `.sdd/specs/004-correspondencia-freguesias/logic/derivacao-correspondencia.md` §4. Roda antes do dbt: em caso
 de erro nada é promovido e a tabela anterior permanece.
 """
 

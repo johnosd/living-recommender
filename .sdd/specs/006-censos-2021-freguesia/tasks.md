@@ -145,7 +145,7 @@
 
 ### Testes da Fase
 
-- [ ] T022 Executar quickstart offline: lint global, suíte completa, 5 contratos verdes e todas as travas 001–006 íntegras, seed e dbt da feature. Registrar saídas no `plan.md`/`tasks.md`; obter evidência do CI remoto quando disponível sem tratá-lo como inferido do local. (FR-013/016/017; SC-001/002/003/004/005/006)
+- [X] T022 Executar quickstart offline: lint global, suíte completa, 5 contratos verdes e todas as travas 001–006 íntegras, seed e dbt da feature. Registrar saídas no `plan.md`/`tasks.md`; obter evidência do CI remoto quando disponível sem tratá-lo como inferido do local. (FR-013/016/017; SC-001/002/003/004/005/006)
 - [X] T023 Executar coleta nacional real após T001 e build em `.data`, sem sobrescrever originais, medir as 19 categorias canônicas, cobertura por país/região/município/freguesia, proveniência, bytes/duração/limites e ausência explicada; repetir coleta e comprovar unchanged. Registrar evidências e licenças no runbook e no plan. Falha de faixa, registros perdidos ou ausência não comprovada impede concluir SC-007. (FR-001 a FR-017; SC-001 a SC-007)
 - [X] T024 Auditar diff e rastreabilidade em `sdd/specs/006-censos-2021-freguesia/plan.md` e `tasks.md`, confirmar nenhum arquivo travado ou trabalho prévio alterado indevidamente, relatório honesto e status adequado no `.planning/backlog.md`. Não marcar convergida antes de sdd-converge. (SC-001 a SC-007)
 
@@ -158,18 +158,18 @@
 - [X] Fase 3: US2 concluída e dois contratos verdes.
 - [X] Fase 4: US3 concluída e contrato verde.
 - [X] Todos os contratos verdes e travas 001–006 íntegras.
-- [ ] Lint, suíte offline completa e dbt censos verdes; CI remoto e scan de segredos com evidência própria.
+- [X] Lint, suíte offline completa e dbt censos verdes; CI remoto e scan de segredos com evidência própria.
 - [X] Quickstart offline e coleta/build nacional reais separados; ausência oficial não esconde falha técnica.
 - [X] Rollback, confinamento dos caminhos, lock/recovery e preservação de tabelas vizinhas demonstrados.
 - [X] Fonte/licença/runbook/README/backlog sincronizados, sem reescrever o trabalho local de 005.
 
 **Registro da Fase**:
 
-- Status: Implementação e provas locais concluídas;fase permanece aberta pelo gate remoto de CI.
-- Feito: T020/T021/T023/T024/T025/T026 concluídas. D2 aprovada e implementada,prova nacional e repetição201/201 unchanged aprovadas;relatórios e22 arquivos vizinhos verificados. Nenhum contrato travado ou helper compartilhado alterado nesta emenda.
-- Contrato: 5/5 verdes na suíte completa; travas 001–006 íntegras.
+- Status: Concluída;implementação,provas locais/nacionais e CI remoto do PR aprovados.
+- Feito: T020–T026 concluídas,incluindo T022 com quality/secrets aprovados no PR7. D2 aprovada e implementada,prova nacional e repetição201/201 unchanged aprovadas;relatórios e22 arquivos vizinhos verificados. Nenhum contrato travado ou helper compartilhado alterado nesta emenda.
+- Contrato: 5/5 verdes na suíte completa local e no CI do PR7;travas001–006 reconferidas e íntegras.
 - Testes executados: `uv run --locked python -m pytest -q --basetemp .data/tmp/censos-batches-full` →411 passed em571,46s;61 da área censos em32,12s e2 regressões adicionais em3,37s; `uv run --locked ruff check pipelines tests` aprovado; seed/build em `.data/ci-censos-batches` aprovado; build real com4 modelos e21 testes dbt aprovados.
-- Pendências: somente T022 e checkbox de CI remoto/scan de segredos. Sem commit/push autorizado;não presumir CI pelo resultado local.
+- Pendências: nenhuma na execução006. Próximo passo sugerido:sdd-converge. PR7 aberto;registros de fechamento ainda locais,sem novo commit/push.
 
 ## Dependencies & Execution Order
 
@@ -219,3 +219,19 @@ Coleta inicial `20261113T231450079026Z-ddf26aad`:201 chamadas/201 respostas,200 
 Build real aprovado:3.259 freguesias,308 municípios,19 categorias canônicas e61.921 observações próprias;0 herdadas,0 ausentes. Bronze123.761 linhas;população total2021 de10.343.066. Cobertura regional completa e18 códigos alfanuméricos preservados. Todas as observações têm fonte,licença,território,run e referências raw verificadas. Vinte e dois arquivos vizinhos permaneceram idênticos. dbt:4 modelos e21 testes aprovados. Relatórios: `.data/lake/silver/census_reports/`. Fonte INE,Censos2021,CC-BY-4.0. O método de reexpressão não foi divulgado pelo publicador nas evidências consultadas;essa limitação permanece registrada,sem estimativa do projeto.
 
 Validação local: `uv run --locked python -m pytest -q --basetemp .data/tmp/censos-batches-full` →411 passed em571,46s;2 regressões adicionais (histórico completo41 itens e repetição por lotes) →2 passed em3,37s,fora da coleta inicial dessa suíte. Área censos →61 passed em32,12s antes dessas2 adições. `uv run --locked ruff check pipelines tests` aprovado. Seed/build de CLI em `.data/ci-censos-batches` aprovado;travas001–006 íntegras;revisão independente sem bug material. O CI remoto e seu scan de segredos seguem pendentes de commit/push/PR autorizado;nenhuma execução em nuvem ou publicação foi demonstrada. Não marcar Implementada/Convergida antes do gate restante.
+
+### Verificação remota após push do usuário
+
+O usuário escolheu realizar commit/push/PR e informou conclusão. Consulta atual ao GitHub confirmou o commit `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1` na branch `feature/005-importacao-idealista-manual` e a execução [Python quality43530606369](https://github.com/johnosd/living-recommender/actions/runs/43530606369),evento push,concluída com success. O SHA do run coincide exatamente com o HEAD local verificado;workspace estava limpo antes deste registro documental.
+
+Job quality aprovado:lint;pytest412 passed,1 skipped (teste exclusivo de prefixo Windows,runner Ubuntu),1 warning não bloqueante em294,35s;builds dbt CAOP31/31,observações17/17,clima23/23,crosswalk25/25,Idealista24/24 eCensos25/25. O warning observado foi SyntaxWarning de17and em tests/unit/test_dataset_catalog_and_manifest.py:70;nenhuma alteração de código foi feita nesta verificação. Log preservado em `.data/receipts/censos-proof/ci-43530606369-quality.log`.
+
+Job secrets ficou skipped,o que não é aprovação do scan. `.github/workflows/python.yml` o condiciona a `github.event_name == 'pull_request'`. `gh pr status` e `gh pr list --state all --head feature/005-importacao-idealista-manual` não encontraram PR para a branch. Foi solicitado ao usuário o link/aviso de abertura. T022 e o checkbox remoto continuam abertos somente pelo scan de segredos no PR. Não marcar Implementada/Convergida nem abrir PR em lugar do usuário sem nova instrução. Provas locais e nacionais anteriores permanecem válidas.
+
+### Fechamento do gate remoto — PR7
+
+O usuário abriu o [PR7](https://github.com/johnosd/living-recommender/pull/7),das specs005/006,base main e head `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`. A execução [Python quality43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543),evento pull_request,passou nos jobs quality e secrets. O head do PR coincide com o commit local verificado. Não se usa o secrets skipped do push anterior como evidência:este PR efetivamente executou o scan do histórico com gitleaks8.30.1,27 commits analisados e no leaks found.
+
+Lint aprovado;pytest412 passed,1 skipped (teste de prefixo específico do Windows no runner Ubuntu),1 warning não bloqueante em219,56s. Os cinco contratos censitários estão incluídos na suíte. Builds dbt:CAOP31/31,observações17/17,clima23/23,crosswalk25/25,Idealista24/24 eCensos25/25. Todas as travas001–006 foram reconferidas localmente e permanecem íntegras. Evidências locais ignoradas pelo Git em `.data/receipts/censos-proof/ci-43533480543.json`, `ci-43533480543-quality.log` e `ci-43533480543-secrets.log`.
+
+T022 e o último checkbox remoto concluídos;35/35 itens da spec006. Estado Implementada,sem alegar Convergida:próximo passo sugerido é sdd-converge. O PR permanece aberto;nenhum merge,novo commit/push,publicação ou operação em nuvem foi realizado nesta verificação. As alterações de fechamento são documentais e locais;as provas remotas referem-se explicitamente ao SHA acima. A coleta nacional real e a repetição unchanged já registradas permanecem válidas.

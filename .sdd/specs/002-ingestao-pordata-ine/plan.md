@@ -1,6 +1,6 @@
 # Implementation Plan: Ingestão Pordata e INE
 
-**Slug**: `002-ingestao-pordata-ine` | **Date**: 2026-11-11 | **Spec**: `sdd/specs/002-ingestao-pordata-ine/spec.md`
+**Slug**: `002-ingestao-pordata-ine` | **Date**: 2026-11-11 | **Spec**: `.sdd/specs/002-ingestao-pordata-ine/spec.md`
 
 ## Summary
 
@@ -58,7 +58,7 @@ Estender o padrão de coleta da CAOP a duas fontes com **vários datasets indepe
 ### Documentation (this feature)
 
 ```text
-sdd/specs/002-ingestao-pordata-ine/
+.sdd/specs/002-ingestao-pordata-ine/
 ├── spec.md
 ├── plan.md                  # este arquivo
 ├── tasks.md
@@ -96,7 +96,7 @@ tests/
   contracts/  test_caop_collection_contract.py (travado 001)
               + test_dataset_ingestion_contract.py (travado 002)
   unit/ integration/ fixtures/caop/                  # + fixtures/pordata/ fixtures/ine/
-docs/runbooks/coletas.md  README.md  .docs/fontes_de_dados.md      # atualizar no Polish
+.docs/runbooks/coletas.md  README.md  .docs/fontes_de_dados.md      # atualizar no Polish
 .github/workflows/python.yml                         # dbt por tag
 ```
 
@@ -208,8 +208,8 @@ Limitação registrada: o verificador de trava não infere a contagem de testes 
 
 <!-- Sobrescrita a cada checkpoint — foco da etapa atual, não a árvore inteira. -->
 
-- `sdd/specs/002-ingestao-pordata-ine/contracts/ingestao-cli.md` e `logic/ingestao-datasets.md` — alinhados ao código.
-- `sdd/specs/002-ingestao-pordata-ine/tasks.md` e `plan.md` — registro da Phase 11.
+- `.sdd/specs/002-ingestao-pordata-ine/contracts/ingestao-cli.md` e `logic/ingestao-datasets.md` — alinhados ao código.
+- `.sdd/specs/002-ingestao-pordata-ine/tasks.md` e `plan.md` — registro da Phase 11.
 
 ## Cuidados para Retomada
 

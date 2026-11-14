@@ -3,6 +3,16 @@ name: sdd-assess
 description: Valida uma ideia antes de comprometer com uma spec — Explora (opcional) → Define → Decide, terminando num veredito go/needs-clarification/kill nunca inflado, com handoff pro sdd-specify só quando for go. Use quando o usuário pedir para avaliar/validar uma ideia, decidir se vale a pena construir algo, ou triar uma ideia do backlog antes de especificar. NÃO use quando já está claro que a feature vai ser construída (aí é direto sdd-specify) nem para decisões de arquitetura (use sdd-adr) nem para bugs (use sdd-bugfix).
 ---
 
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
+
 # sdd-assess
 
 Skill independente, inspirado no extension "assess" (intake→research→define→
@@ -26,8 +36,8 @@ passam por aqui deveria ser descartada ou pedir mais clareza antes do
 | **Define** | Sim — estágio mínimo viável | `problem.md` | Problema, usuários afetados, goals/non-goals, métricas de sucesso |
 | **Decide** | Sim (exige `problem.md`) | `decision.md` | Scorecard + veredito `go`/`needs-clarification`/`kill` |
 
-Os 3 arquivos vivem em `sdd/assessments/<slug>/` — pasta própria na raiz do
-repositório (sem numeração, só o slug), igual a `sdd/bugs/`.
+Os 3 arquivos vivem em `.sdd/assessments/<slug>/` — pasta própria na raiz do
+repositório (sem numeração, só o slug), igual a `.sdd/bugs/`.
 
 ## Fluxo
 
@@ -39,7 +49,7 @@ repositório (sem numeração, só o slug), igual a `sdd/bugs/`.
 .\.planning\scripts\powershell\resolve-assessment.ps1 -Slug <slug> -Json
 ```
 
-Isso cria/resolve `sdd/assessments/<slug>/` e reporta `NEXT_PHASE`
+Isso cria/resolve `.sdd/assessments/<slug>/` e reporta `NEXT_PHASE`
 (`define`/`decide`/`complete`) — `explora` nunca é reportado automaticamente
 porque é opcional; ofereça rodá-la você mesmo se a ideia parecer precisar de
 mais evidência antes do `Define`, mas não trave nisso.
@@ -128,7 +138,7 @@ informação nova) ou está satisfeito.
 ## Guardrails
 
 - Nenhuma fase edita código-fonte — só leem o repositório/web e escrevem
-  dentro de `sdd/assessments/<slug>/`.
+  dentro de `.sdd/assessments/<slug>/`.
 - Evidência nunca é superestimada — afirmação sem fonte é `ASSUMPTION`,
   não fato.
 - Veredito nunca é inflado — `go` tem barra alta (evidência `adequate`+,

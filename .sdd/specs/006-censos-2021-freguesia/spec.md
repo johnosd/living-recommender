@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-13
 
-**Status**: Em Execução
+**Status**: Convergida
 
 **Input**: Censos 2021 por freguesia.
 

@@ -69,6 +69,6 @@ Registrar no `plan.md` (Execution Notes) e em `research.md` (R3, R4):
 
 - [ ] `.env`, chaves e brutos reais **fora do Git** (`.data/` está no `.gitignore`); nenhuma resposta real em `tests/fixtures/`.
 - [ ] CI verde, incluindo o passo do `dbt` do clima e o `gitleaks` no PR.
-- [ ] `config/sources.yml`, `.docs/fontes_de_dados.md`, `docs/runbooks/coletas.md` e `README.md` atualizados (Quality Gate 6).
+- [ ] `config/sources.yml`, `.docs/fontes_de_dados.md`, `.docs/runbooks/coletas.md` e `README.md` atualizados (Quality Gate 6).
 - [ ] Atribuição "Dados meteorológicos: Open-Meteo.com (CC BY 4.0)" presente no catálogo, no manifest e em cada linha do staging; restrição de uso não comercial registrada (R-001).
 - [ ] Nenhum recurso AWS criado; custo recorrente zero.

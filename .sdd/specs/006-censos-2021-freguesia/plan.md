@@ -1,6 +1,6 @@
 # Implementation Plan: Censos 2021 por freguesia
 
-**Slug**: `006-censos-2021-freguesia` | **Date**: 2026-11-13 | **Spec**: `sdd/specs/006-censos-2021-freguesia/spec.md`
+**Slug**: `006-censos-2021-freguesia` | **Date**: 2026-11-13 | **Spec**: `.sdd/specs/006-censos-2021-freguesia/spec.md`
 
 ## Summary
 
@@ -51,14 +51,14 @@ Coletar contagens oficiais de população total e idade, preservá-las com metad
 | VI. Privacidade por padrão | PASS | PASS | Apenas contagens agregadas; sem microdados, visitantes ou rastreamento. Supressão preservada. |
 | VII. Custo como requisito | PASS | PASS | Incremento recorrente zero nesta execução local; métricas reais de armazenamento em T023. |
 
-Quality gates: lint, pytest offline, dbt com testes de unicidade/relationships/faixas, docs/catalog/runbook e verificação de segredos no CI. Ranker, E2E visual, infraestrutura e Terraform não são tocados; não introduzir requisitos desses domínios nesta feature.
+Quality gates: lint, pytest offline, dbt com testes de unicidade/relationships/faixas, .docs/catalog/runbook e verificação de segredos no CI. Ranker, E2E visual, infraestrutura e Terraform não são tocados; não introduzir requisitos desses domínios nesta feature.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-sdd/specs/006-censos-2021-freguesia/
+.sdd/specs/006-censos-2021-freguesia/
   spec.md
   plan.md
   tasks.md
@@ -96,7 +96,7 @@ tests/unit/test_censos_*.py                     a criar
 tests/integration/test_collect_censos.py        a criar
 tests/integration/test_censos_build.py          a criar
 .github/workflows/python.yml                   existente; incluir fixture + dbt censos
-docs/runbooks/coletas.md / .docs/fontes_de_dados.md / README.md  existentes; atualizar
+.docs/runbooks/coletas.md / .docs/fontes_de_dados.md / README.md  existentes; atualizar
 ```
 
 **Structure Decision**: estender as pastas existentes; novos módulos e modelos explícitos para censos. Nenhuma nova aplicação, biblioteca ou infraestrutura. Arquivos marcados a criar não são alegados como existentes na exploração.
@@ -153,7 +153,9 @@ Regressão dirigida executada: testes unitários de validação/fingerprint INE,
 | Coleta nacional | Run20261113T231450079026Z-ddf26aad:201 respostas,200 changed/1 unchanged,32.804.869 bytes em449,406s;nenhuma falha |
 | Build real | Pronto:3.259 freguesias/308 municípios/19 categorias =61.921 próprias,0 herdadas/ausentes;4 modelos e21 testes dbt aprovados;22 arquivos vizinhos intactos |
 | Repetição | Run20261113T232234325869Z-00a1b4a4:201/201 unchanged em449.906s,0 novos raw;hashes/consultas/revisões idênticos |
-| CI remoto | Pendente;sem commit/push autorizado;gate distinto das provas locais |
+| CI remoto de qualidade | Aprovado no SHA `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`;[PR7](https://github.com/johnosd/living-recommender/pull/7),[run43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543);412 passed/1 skip Windows,lint e6 builds dbt verdes |
+| Scan de segredos/PR | Job secrets success no PR7:gitleaks analisou27 commits,sem vazamentos;T022 e checklist concluídos |
+| Status da feature006 | Implementada,35/35;convergência ainda não executada;PR aberto |
 
 ## Riscos e Decisões
 
@@ -164,13 +166,13 @@ Regressão dirigida executada: testes unitários de validação/fingerprint INE,
 
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
-| R-001 | Semântica territorial/termos ainda exigem evidência operacional; robots 403 | Associação indevida ou coleta incompatível | T001 antes de coleta; não estimar método/limites; parar se proibição aplicável. |
-| R-002 | Limite de linhas/timeouts da API | Run incompleto | D2 emendada, lotes de até32, retries limitados; manifest falhado bloqueia build default. |
-| R-003 | Códigos etários diferentes; 85+ não coincide nas fontes | Perfil etário falso | D5, limites por metadado e harmonização com proveniência; testes complementares. |
-| R-004 | Estados por dataset de runs parciais ou mudança de catálogo | Mistura de revisões/configurações | D3 e seleção de manifest completo com snapshots/hashes, sem nova leitura do catálogo para reconstrução. |
-| R-005 | Total próprio e faixas herdadas não têm mesmo território | Denominador falso | D4–D6; validar coerência na origem e registrar proveniência por observação. |
-| R-006 | Workspace com alterações de 005 e arquivos compartilhados | Perda de trabalho/regressão | Não trocar branch/resetar; ler diffs antes de alterar catálogo/dbt/CI/docs; travas 001–005 íntegras. |
-| R-007 | Rename múltiplo não é ACID contra queda de processo | Saída intermediária em interrupção abrupta | Lock e diagnóstico/recovery L4; testes de rollback em falha de promoção; sem promessa de publicação/concorrência. |
+| R-001 | Semântica territorial/termos ainda exigem evidência operacional; robots 403 | Associação indevida ou coleta incompatível | Resolvido: T001 antes de coleta; não estimar método/limites; parar se proibição aplicável. |
+| R-002 | Limite de linhas/timeouts da API | Run incompleto | Resolvido: D2 emendada, lotes de até32, retries limitados; manifest falhado bloqueia build default. |
+| R-003 | Códigos etários diferentes; 85+ não coincide nas fontes | Perfil etário falso | Resolvido: D5, limites por metadado e harmonização com proveniência; testes complementares. |
+| R-004 | Estados por dataset de runs parciais ou mudança de catálogo | Mistura de revisões/configurações | Resolvido: D3 e seleção de manifest completo com snapshots/hashes, sem nova leitura do catálogo para reconstrução. |
+| R-005 | Total próprio e faixas herdadas não têm mesmo território | Denominador falso | Resolvido: D4–D6; validar coerência na origem e registrar proveniência por observação. |
+| R-006 | Workspace com alterações de 005 e arquivos compartilhados | Perda de trabalho/regressão | Resolvido: Não trocar branch/resetar; ler diffs antes de alterar catálogo/dbt/CI/docs; travas 001–005 íntegras. |
+| R-007 | Rename múltiplo não é ACID contra queda de processo | Saída intermediária em interrupção abrupta | Resolvido: Lock e diagnóstico/recovery L4; testes de rollback em falha de promoção; sem promessa de publicação/concorrência. |
 | R-008 | Revisão independente encontrou ausência oficial perdida, soma parcial excessiva, recuperação de run e limpeza pós-promoção | Reprovação indevida ou aceitação inválida | Resolvido: T025, testes de regressão dirigidos verdes e revalidação independente (6 casos); proteção local à006 e helper compartilhado preservado. |
 | R-009 | Consultas nacionais por faixa excederam timeout; piloto de 32 freguesias respondeu | T023 sem prova nacional | Resolvido: D2/T026 aprovadas e implementadas;T023 nacional pronta com3.259 freguesias e repetição201/201 unchanged;contratos preservados. |
 
@@ -195,7 +197,11 @@ Regressão dirigida executada: testes unitários de validação/fingerprint INE,
 
 | 2026-11-13 | Fechamento local D2/T023/T026 | Nacional3.259 freguesias/61.921 próprias,dbt25/25,22 arquivos vizinhos intactos;repetição201/201 unchanged;suíte411 +2 regressões/lint/travas verdes;T024 auditada | T022/CI remoto e scan aguardam commit/push/PR autorizado |
 
-**PRÓXIMO**: obter autorização de commit/push/PR (workspace inclui005 prévia e006) ou aguardar envio pelo usuário,então validar CI remoto/scan antes de marcar Implementada.
+| 2026-11-13 | T022/CI após push do usuário | SHA `b82b8c8` confirmado;quality success com412 testes/1 skip Windows e6 builds dbt verdes;secrets skipped por evento push | PR ainda não localizado;aguardar abertura/link para scan de segredos |
+
+| 2026-11-13 | Fechamento T022/PR7 | CI do PR no SHA `b82b8c8`:quality/secrets success,412 testes/1 skip Windows,gitleaks sem vazamentos e6 builds dbt verdes;travas001–006 íntegras;35/35,Implementada | Sugerir sdd-converge;PR permanece aberto e documentos de fechamento locais |
+
+**PRÓXIMO**: sugerir sdd-converge para006;usuário pode revisar/enviar o fechamento documental local.Não fazer merge/commit/push sem pedido.
 
 ## Arquivos Principais
 
@@ -203,7 +209,7 @@ Regressão dirigida executada: testes unitários de validação/fingerprint INE,
 - `pipelines/collectors/censos2021/` e `pipelines/cli/{collect_censos,build_censos}.py`.
 - `analytics/dbt/models/censos/` e `analytics/dbt/tests/censos_*.sql`.
 - `tests/unit/test_censos_*.py`, `tests/integration/test_*censos*.py` e fixture CI não travada.
-- `docs/runbooks/coletas.md` e relatórios locais `.data/lake/silver/census_reports/`.
+- `.docs/runbooks/coletas.md` e relatórios locais `.data/lake/silver/census_reports/`.
 
 ## Cuidados para Retomada
 
@@ -237,3 +243,72 @@ Coleta inicial `20261113T231450079026Z-ddf26aad`:201 chamadas/201 respostas,200 
 Build real aprovado:3.259 freguesias,308 municípios,19 categorias canônicas e61.921 observações próprias;0 herdadas,0 ausentes. Bronze123.761 linhas;população total2021 de10.343.066. Cobertura regional completa e18 códigos alfanuméricos preservados. Todas as observações têm fonte,licença,território,run e referências raw verificadas. Vinte e dois arquivos vizinhos permaneceram idênticos. dbt:4 modelos e21 testes aprovados. Relatórios: `.data/lake/silver/census_reports/`. Fonte INE,Censos2021,CC-BY-4.0. O método de reexpressão não foi divulgado pelo publicador nas evidências consultadas;essa limitação permanece registrada,sem estimativa do projeto.
 
 Validação local: `uv run --locked python -m pytest -q --basetemp .data/tmp/censos-batches-full` →411 passed em571,46s;2 regressões adicionais (histórico completo41 itens e repetição por lotes) →2 passed em3,37s,fora da coleta inicial dessa suíte. Área censos →61 passed em32,12s antes dessas2 adições. `uv run --locked ruff check pipelines tests` aprovado. Seed/build de CLI em `.data/ci-censos-batches` aprovado;travas001–006 íntegras;revisão independente sem bug material. O CI remoto e seu scan de segredos seguem pendentes de commit/push/PR autorizado;nenhuma execução em nuvem ou publicação foi demonstrada. Não marcar Implementada/Convergida antes do gate restante.
+
+### Verificação remota após push do usuário
+
+O usuário escolheu realizar commit/push/PR e informou conclusão. Consulta atual ao GitHub confirmou o commit `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1` na branch `feature/005-importacao-idealista-manual` e a execução [Python quality43530606369](https://github.com/johnosd/living-recommender/actions/runs/43530606369),evento push,concluída com success. O SHA do run coincide exatamente com o HEAD local verificado;workspace estava limpo antes deste registro documental.
+
+Job quality aprovado:lint;pytest412 passed,1 skipped (teste exclusivo de prefixo Windows,runner Ubuntu),1 warning não bloqueante em294,35s;builds dbt CAOP31/31,observações17/17,clima23/23,crosswalk25/25,Idealista24/24 eCensos25/25. O warning observado foi SyntaxWarning de17and em tests/unit/test_dataset_catalog_and_manifest.py:70;nenhuma alteração de código foi feita nesta verificação. Log preservado em `.data/receipts/censos-proof/ci-43530606369-quality.log`.
+
+Job secrets ficou skipped,o que não é aprovação do scan. `.github/workflows/python.yml` o condiciona a `github.event_name == 'pull_request'`. `gh pr status` e `gh pr list --state all --head feature/005-importacao-idealista-manual` não encontraram PR para a branch. Foi solicitado ao usuário o link/aviso de abertura. T022 e o checkbox remoto continuam abertos somente pelo scan de segredos no PR. Não marcar Implementada/Convergida nem abrir PR em lugar do usuário sem nova instrução. Provas locais e nacionais anteriores permanecem válidas.
+
+### Fechamento do gate remoto — PR7
+
+O usuário abriu o [PR7](https://github.com/johnosd/living-recommender/pull/7),das specs005/006,base main e head `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`. A execução [Python quality43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543),evento pull_request,passou nos jobs quality e secrets. O head do PR coincide com o commit local verificado. Não se usa o secrets skipped do push anterior como evidência:este PR efetivamente executou o scan do histórico com gitleaks8.30.1,27 commits analisados e no leaks found.
+
+Lint aprovado;pytest412 passed,1 skipped (teste de prefixo específico do Windows no runner Ubuntu),1 warning não bloqueante em219,56s. Os cinco contratos censitários estão incluídos na suíte. Builds dbt:CAOP31/31,observações17/17,clima23/23,crosswalk25/25,Idealista24/24 eCensos25/25. Todas as travas001–006 foram reconferidas localmente e permanecem íntegras. Evidências locais ignoradas pelo Git em `.data/receipts/censos-proof/ci-43533480543.json`, `ci-43533480543-quality.log` e `ci-43533480543-secrets.log`.
+
+T022 e o último checkbox remoto concluídos;35/35 itens da spec006. Estado Implementada,sem alegar Convergida:próximo passo sugerido é sdd-converge. O PR permanece aberto;nenhum merge,novo commit/push,publicação ou operação em nuvem foi realizado nesta verificação. As alterações de fechamento são documentais e locais;as provas remotas referem-se explicitamente ao SHA acima. A coleta nacional real e a repetição unchanged já registradas permanecem válidas.
+
+
+## Resultado Final
+
+Convergência da spec006 concluída em2026-11-13 (America/Sao_Paulo),sobre o código do commit `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`. A auditoria comparou FR-001–FR-017, SC-001–SC-007, D1–D8, cenários de aceite e constitution com os coletores, preparo territorial, relatórios, modelos dbt e evidências. Nenhuma lacuna acionável foi encontrada. Status final: **Convergida,35/35 itens**,sem nova fase ou task.
+
+### Convergence Findings
+
+| ID | Tipo de Lacuna | Severidade | Origem | Evidência | Trabalho Restante |
+| --- | --- | --- | --- | --- | --- |
+| — | Nenhuma lacuna acionável | — | FR-001–017;SC-001–007;D1–D8;constitution | Leitura dos módulos e contratos;63 testes locais;auditoria independente dos brutos/Silver;CI e gitleaks do PR7 | Nenhum na spec006 |
+
+### Entrega confirmada
+
+- `config/sources.yml`, `handler.py`, `validate.py` e `collect_censos.py`: fontes INE0014632/0011719 registradas com edição2021,licença CC-BY-4.0,atribuição e seletores explícitos.201 itens (2 metadados,102 lotes2025 e97 legados),no máximo32 freguesias por lote. User-Agent identificado,intervalo mínimo2s,timeout90s,até3 tentativas/backoff. Cada resposta original é preservada separadamente e validada antes de gravar;HTTP200 com erro interno reprova. Snapshot/assinatura e fingerprint semântico sustentam revisão e unchanged sem alterar o período censitário.
+- `prepare.py`, `transform.py` e `territory.py`: um único manifest completo,hashes e snapshots verificáveis,universo exato de cada família,versões territoriais e dependências congeladas. Prioridade oficial por observação;fallback2013→2025 com origem preservada,herança explícita e ausência em relação parcial/ambígua. Zeros e estados oficiais separados;supressão não libera fallback. Bronze nativa preservada;85+ legado só combina idades da mesma origem publicadas. Limites permitem25–39 e65+ sem gerar percentuais,densidade ou ranking.
+- `coverage.py`, `build_censos.py` e dbt: matriz dimensão×categoria,diagnóstico de ausência técnica e relatório de origens órfãs,resumos de cobertura por país/região/município sem somar habitantes herdados. Candidato e lock por raiz,confinamento de caminhos,dbt com testes,presença e comparação de todas as saídas,verificação de dependências e promoção apenas de4 tabelas+census_reports. Falhas testadas preservam a vigente e os lakes vizinhos. Não há alteração de published/current.json.
+
+### Rastreabilidade dos critérios de sucesso
+
+| Critério | Confirmação nesta auditoria |
+| --- | --- |
+| SC-001 | Chaves exatas da dimensão CAOP2025×19 categorias:3.259 freguesias,308 municípios,61.921 observações e cobertura nas3 regiões;4 arquivos Parquet e relatórios presentes. |
+| SC-002 |201 hashes raw e respectivas assinaturas conferidos;nenhum nulo em fonte,território,indicador,licença,raw/checksum/run das61.921 observações aceitas;edição2021 distinta de coleta/revisão. |
+| SC-003 | Categorias canônicas derivadas dos limites oficiais;25_29,30_34,35_39 e65_69 até85_plus disponíveis para todo o universo real;nenhuma categoria exigida perdida. |
+| SC-004 | Testes de prioridade oficial,um-para-muitos,partial_origin mesmo em one_to_one,conflito,supressão,ausência,órfãos,85+ e códigos alfanuméricos verdes;18 códigos alfanuméricos presentes no dado real. |
+| SC-005 | Repetição real201/201 unchanged,mesmos raw/hashes/seletores/revisões e0 novos originais;testes de falha de dbt/relatório/exportação/dependência/promoção/lock preservam a versão anterior.22 arquivos vizinhos conferidos contra o baseline. |
+| SC-006 | Família inteira e cada lote têm chaves verificadas;duplicatas,extras,perda de lote,hash inválido e ausência sem motivo reprovam. As6.351 unidades de origem das duas geografias reconciliaram total com soma etária;nenhum impedimento oculto no resultado real. |
+| SC-007 | Dados oficiais locais revalidados:123.761 observações nativas,61.921 próprias preparadas,0 herdadas/ausentes,ready=true e0 blockers;total populacional2021 de10.343.066. Prova real distinta de fixtures e de CI. |
+
+### Validação executada e evidências
+
+`uv run --locked python -m pytest tests/contracts/test_censos2021_contract.py -q --basetemp .data/tmp/censos-converge-contracts`: **5 passed em1,55s**,trava íntegra. Os módulos foram inspecionados sem encontrar atalhos condicionados a testes ou valores de fixtures.
+
+`uv run --locked python -m pytest tests/contracts/test_censos2021_contract.py tests/unit/test_censos_batches.py tests/unit/test_censos_catalog.py tests/unit/test_censos_validate.py tests/unit/test_censos_transform.py tests/unit/test_censos_territory.py tests/unit/test_censos_coverage.py tests/integration/test_collect_censos.py tests/integration/test_censos_build.py -q --basetemp .data/tmp/censos-converge-area`: **63 passed em27,40s**,incluindo integração com dbt real. `uv run --locked ruff check pipelines tests`:aprovado. Os arquivos de produto não mudaram desde o SHA auditado;por isso a suíte global já executada no CI é evidência válida e não foi repetida integralmente nesta passagem.
+
+O [PR7](https://github.com/johnosd/living-recommender/pull/7) mantém head `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1` e está aberto. O [CI43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543),evento pull_request,tem quality/secrets success:412 testes,1 skip exclusivo de Windows no runner Ubuntu e1 warning não bloqueante,lint e6 builds dbt aprovados (Censos25/25). Gitleaks analisou27 commits,sem vazamentos. O skip de secrets do push anterior não foi usado como prova do scan.
+
+Manifests oficiais revalidados: `20261113T231450079026Z-ddf26aad` e `20261113T232234325869Z-00a1b4a4`;relatórios em `.data/lake/silver/census_reports/`;recibos e logs CI em `.data/receipts/censos-proof/`. Foram conferidos sem nova coleta nem promoção de dados.
+
+### Desvios acumulados e representação final
+
+O plano inicial estimava41 consultas nacionais por idade. A tentativa operacional excedeu timeouts;seu manifest parcial e o raw válido foram preservados. Após pilotos,o usuário aprovou explicitamente reabrir D2 para lotes de32:T026 entregou201 seleções explícitas e novos testes de produto cartesiano/união nacional,sem alterar contratos travados nem fabricar JSON nacional. A reconstrução de snapshots históricos com41 itens continua testada.
+
+T025 registrou os reforços descobertos na revisão:ausência oficial sem fallback,coerência etária parcial,seleção explícita de run,confinamento e limpeza pós-promoção. O helper compartilhado permaneceu intacto. A execução inicial separou411 testes globais de2 regressões adicionais;ambos já estão incluídos no conjunto de413 testes coletado pelo CI (412 aprovados e1 skip Windows).
+
+Na tabela Bronze de categorias,o código nativo é `age_code` e o vínculo do metadado é `metadata_dataset_id`,em vez dos rótulos descritivos `source_age_code`/`dataset_id` usados no esboço do data-model. As versões classificatórias permanecem no JSON oficial referenciado por raw/hash,sem coluna duplicada na tabela. O contrato público mantém os nomes previstos e o código/rótulo/limites/geografia/licença continuam preservados e rastreáveis;essa diferença de representação não altera os requisitos.
+
+### Limitações preservadas e estado documental
+
+R-001–R-007 receberam `Resolvido:` somente como confirmação das mitigações implementadas;as descrições originais permanecem. Robots403 e método oficial de reexpressão não divulgado continuam documentados,sem contorno ou método inventado. O rollback cobre falhas de movimentação;interrupção abrupta e leitura concorrente não receberam promessa ACID. Nova CAOP,universo de códigos ou edição/revisão incompatível exige nova validação;falha permanece explícita.
+
+O escopo continua local:sem implantação em nuvem,publicação,site,indicadores finais ou novo custo recorrente. A spec005 e os dados preexistentes foram preservados. `tasks.md` permanece byte-idêntico à entrada desta convergência,SHA256 `9a27f7ce3fc029889732835bd442aa2c36a5f87a04452a093ea5829db08e23d7`. `spec.md` recebe apenas a alteração de Status;este Resultado Final foi anexado ao plano,sem reescrever seu histórico. O README recebe apenas a atualização visível de Implementada para Convergida na capacidade Censos;backlog sincronizado. Nenhum código ou teste foi editado,nem houve commit,push ou merge automático. As alterações documentais seguem locais para revisão/envio pelo usuário.

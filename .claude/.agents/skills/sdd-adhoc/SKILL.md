@@ -8,11 +8,21 @@ description: >-
   features maiores ou ambíguas use sdd-specify; para arquitetura use sdd-adr.
 ---
 
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
+
 # sdd-adhoc
 
 Skill independente, fora da pipeline `sdd-specify → sdd-plan → sdd-execute
 → sdd-converge` e fora do `sdd-bugfix` — não exige nem cria pasta própria em
-`sdd/`. O único rastro que fica é uma linha na tabela `## Melhorias Ad-hoc`
+`.sdd/`. O único rastro que fica é uma linha na tabela `## Melhorias Ad-hoc`
 de `.planning/backlog.md`, que já existia informalmente antes deste skill
 (era preenchida à mão, sem processo definido).
 
@@ -26,9 +36,9 @@ spec/plan/tasks, sem pasta própria.
 
 | Skill | Quando usar | Rastro deixado |
 |---|---|---|
-| `sdd-bugfix` | Algo está **quebrado** — comportamento incorreto, com sintoma reproduzível ou fundamentado em código | `sdd/bugs/<slug>/` (assessment/fix/test) |
-| `sdd-assess` | Nada quebrado, mas não está claro se **vale a pena** fazer — falta evidência, é só uma hipótese/ideia trazida por comparação com outro app, ou o valor é discutível | `sdd/assessments/<slug>/` (explora/problem/decision) |
-| `sdd-specify` (+ plan/execute/converge) | Já está claro que vale a pena, mas o pedido é grande ou tem ambiguidade real de escopo — precisa de user stories/critérios de aceite explícitos | `sdd/specs/<NNN-slug>/` |
+| `sdd-bugfix` | Algo está **quebrado** — comportamento incorreto, com sintoma reproduzível ou fundamentado em código | `.sdd/bugs/<slug>/` (assessment/fix/test) |
+| `sdd-assess` | Nada quebrado, mas não está claro se **vale a pena** fazer — falta evidência, é só uma hipótese/ideia trazida por comparação com outro app, ou o valor é discutível | `.sdd/assessments/<slug>/` (explora/problem/decision) |
+| `sdd-specify` (+ plan/execute/converge) | Já está claro que vale a pena, mas o pedido é grande ou tem ambiguidade real de escopo — precisa de user stories/critérios de aceite explícitos | `.sdd/specs/<NNN-slug>/` |
 | `sdd-adhoc` | Nada quebrado, óbvio que vale a pena, escopo pequeno e sem ambiguidade real | 1 linha em `.planning/backlog.md` → `## Melhorias Ad-hoc` |
 
 ## Fluxo
@@ -98,7 +108,7 @@ Se o projeto usa .planning/backlog.md, anexe uma linha nova na tabela Melhorias 
 ## Melhorias Ad-hoc
 
 Pequenos ajustes de performance/UX feitos direto (sem passar pelo fluxo
-sdd-specify/plan — baixo risco, sem arquivo em `sdd/specs/` ou `sdd/bugs/`).
+sdd-specify/plan — baixo risco, sem arquivo em `.sdd/specs/` ou `.sdd/bugs/`).
 
 | Data | Área | Resumo |
 | --- | --- | --- |
@@ -128,7 +138,7 @@ sozinho**.
 - Nunca deixa de registrar a linha no backlog, mesmo quando o ajuste
   parece trivial demais pra "merecer" — é exatamente esse tipo de mudança
   que costuma sumir sem rastro se não for anotada aqui.
-- Nunca cria pasta em `sdd/specs/` ou `sdd/bugs/` — se sentir necessidade
+- Nunca cria pasta em `.sdd/specs/` ou `.sdd/bugs/` — se sentir necessidade
   de criar uma, é sinal de que o pedido não cabia neste skill (volte pro
   passo 1).
 

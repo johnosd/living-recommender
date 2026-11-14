@@ -2,7 +2,7 @@
 
 Plataforma web que recomenda **onde morar em Portugal**, município a município e, dentro de cada município, freguesia a freguesia. A recomendação se baseia no orçamento de aluguel e nas preferências de cada pessoa.
 
-> **Status:** implementação em andamento. A coleta da CAOP (em disco local ou em um bucket S3), as dimensões territoriais Bronze/Silver e a coleta do Pordata e do INE, com o staging de observações municipais e o relatório de cobertura, já estão disponíveis; veja como executar e visualizar a base no [guia de coletas](docs/runbooks/coletas.md). A arquitetura e o roteiro estão em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md).
+> **Status:** implementação em andamento. A coleta da CAOP (em disco local ou em um bucket S3), as dimensões territoriais Bronze/Silver e a coleta do Pordata e do INE, com o staging de observações municipais e o relatório de cobertura, já estão disponíveis; veja como executar e visualizar a base no [guia de coletas](.docs/runbooks/coletas.md). A arquitetura e o roteiro estão em [.docs/plano_plataforma_recomendacao_portugal.md](.docs/plano_plataforma_recomendacao_portugal.md).
 
 *English summary: a public, anonymous, bilingual (PT-BR/EN) web app that ranks Portuguese municipalities (and their parishes) according to each user's rent budget and weighted preferences. Data is processed monthly on AWS, and recommendations are computed in the browser and rendered as an infographic. Status: implementation in progress; CAOP, Pordata and INE collection (local or S3) and municipal staging are available.*
 
@@ -50,7 +50,7 @@ flowchart LR
 | Frontend | React (exportação estática), MapLibre GL, i18n PT-BR/EN |
 | Recomendador | Biblioteca TypeScript pura, guiada por um catálogo de critérios |
 | Infraestrutura | Terraform; GitHub Actions com OIDC |
-| Laboratório | Databricks Free Edition (exploração, Spark e ML, fora da produção — ver [ADR-001](sdd/adr/ADR-001-duckdb-producao-databricks-laboratorio.md)) |
+| Laboratório | Databricks Free Edition (exploração, Spark e ML, fora da produção — ver [ADR-001](.sdd/adr/ADR-001-duckdb-producao-databricks-laboratorio.md)) |
 
 Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plano_plataforma_recomendacao_portugal.md).
 
@@ -69,11 +69,11 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 
 Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência, até a integração com a API oficial do Idealista, já solicitada. Nenhum anúncio individual é publicado. Licenças e regras de uso de cada fonte estão nas seções 3.4 e 5 do plano.
 
-**Atribuições:** CAOP: Fonte: Direção-Geral do Território (DGT), CAOP2025, licença CC-BY-4.0. INE: Instituto Nacional de Estatística, IP – Portugal, licença CC BY 4.0 (cite o indicador e o período). Pordata: os Termos Legais não concedem licença de reutilização; a coleta é um risco aceito pelo autor e nenhum dado dessa fonte é redistribuído (detalhes em [guia de coletas](docs/runbooks/coletas.md)). O catálogo de fontes, com URLs, versão e licença, é o [config/sources.yml](config/sources.yml).
+**Atribuições:** CAOP: Fonte: Direção-Geral do Território (DGT), CAOP2025, licença CC-BY-4.0. INE: Instituto Nacional de Estatística, IP – Portugal, licença CC BY 4.0 (cite o indicador e o período). Pordata: os Termos Legais não concedem licença de reutilização; a coleta é um risco aceito pelo autor e nenhum dado dessa fonte é redistribuído (detalhes em [guia de coletas](.docs/runbooks/coletas.md)). O catálogo de fontes, com URLs, versão e licença, é o [config/sources.yml](config/sources.yml).
 
-Para executar as coletas disponíveis (CAOP, Pordata e INE) e o staging de observações, consulte o [guia de coletas](docs/runbooks/coletas.md).
+Para executar as coletas disponíveis (CAOP, Pordata e INE) e o staging de observações, consulte o [guia de coletas](.docs/runbooks/coletas.md).
 
-A ingestão climática da spec 003 oferece `collect_open_meteo` (308 municípios, retomada por cota, sem chave) e `build_climate` (staging diário, cobertura de lacunas e divergência dos pontos). São 13 variáveis de 2024-11-01 a 2026-10-31, preservando nulos e o dia local. O plano gratuito é restrito a uso não comercial, risco aceito pelo autor; atribuição Open-Meteo/ERA5 acompanha os registros. A verificação local, a coleta real e o CI remoto são registrados separadamente no [guia de coletas](docs/runbooks/coletas.md).
+A ingestão climática da spec 003 oferece `collect_open_meteo` (308 municípios, retomada por cota, sem chave) e `build_climate` (staging diário, cobertura de lacunas e divergência dos pontos). São 13 variáveis de 2024-11-01 a 2026-10-31, preservando nulos e o dia local. O plano gratuito é restrito a uso não comercial, risco aceito pelo autor; atribuição Open-Meteo/ERA5 acompanha os registros. A verificação local, a coleta real e o CI remoto são registrados separadamente no [guia de coletas](.docs/runbooks/coletas.md).
 
 Para coletar sem intervenção nas renovações de cota: `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. Esse modo salva checkpoints a cada 10 municípios, aguarda o prazo do servidor e repete falhas temporárias com espera exponencial. Ctrl+C encerra com progresso salvo; erros permanentes exigem correção. Ao concluir, rode `uv run --locked python -m pipelines.cli.build_climate --local`.
 
@@ -81,7 +81,7 @@ O comando mantém a configuração do catálogo lida no início. Alterações de
 
 A coleta real e o build locais foram concluídos: **308/308 municípios, 2.922.920 observações e nenhuma lacuna nas 13 variáveis**. Alertas dos pontos e evidências de validação estão no guia de coletas; os dados reais permanecem fora do Git.
 
-A spec 004 entrega a **correspondência de freguesias 2013→2025**, necessária para qualquer indicador por freguesia do Censos 2021. `collect_parish_crosswalk` baixa as duas planilhas oficiais do INE (antes de 2013 → 2013, e antes de 2013 → as 302 freguesias repostas em 2025) e `build_parish_crosswalk` as encadeia numa tabela de pares com a natureza da relação (um-para-um, um-para-muitos, muitos-para-um, muitos-para-muitos) e os sinais de herança, origem parcial, nome e município alterados. **Não há repartição de valores**: a herança é só um sinal. Um gate reprova a promoção se a `dim_parish` não for coberta por inteiro. Os comandos e o que fazer numa reprovação estão no [guia de coletas](docs/runbooks/coletas.md); a licença das planilhas ainda precisa de confirmação.
+A spec 004 entrega a **correspondência de freguesias 2013→2025**, necessária para qualquer indicador por freguesia do Censos 2021. `collect_parish_crosswalk` baixa as duas planilhas oficiais do INE (antes de 2013 → 2013, e antes de 2013 → as 302 freguesias repostas em 2025) e `build_parish_crosswalk` as encadeia numa tabela de pares com a natureza da relação (um-para-um, um-para-muitos, muitos-para-um, muitos-para-muitos) e os sinais de herança, origem parcial, nome e município alterados. **Não há repartição de valores**: a herança é só um sinal. Um gate reprova a promoção se a `dim_parish` não for coberta por inteiro. Os comandos e o que fazer numa reprovação estão no [guia de coletas](.docs/runbooks/coletas.md); a licença das planilhas ainda precisa de confirmação.
 
 A spec 005 entrega a **importação de snapshots manuais do Idealista**. A coleta
 permanece no `IdealistaScraper`; `import_idealista_snapshot` copia a pasta indicada
@@ -91,7 +91,7 @@ O snapshot **2025-08** foi importado e construído localmente: 324 JSON, 17.472
 ocorrências, 16.117 IDs únicos, amostra em 255 municípios e 189 anúncios regionais
 das ilhas, preservados sem município inventado. Não são preços atuais. Os dados
 individuais ficam em `.data/`, fora do Git e sem publicação. Comandos, regras e
-limites de evidência estão no [guia de coletas](docs/runbooks/coletas.md#idealista-importar-extração-manual-spec-005).
+limites de evidência estão no [guia de coletas](.docs/runbooks/coletas.md#idealista-importar-extração-manual-spec-005).
 
 Na auditoria de 2026-11-13, a extração externa foi localizada em
 `C:/Users/johns/Documents/Projetos/IdealistaScraper/.data/202508`, com os mesmos
@@ -120,12 +120,12 @@ Estado atual:
 .docs/                   plano de arquitetura e implementação
 .planning/               fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
 .agents/                 skills do agente de desenvolvimento
-sdd/                     ADRs (adr/) e specs das features (specs/)
+.sdd/                     ADRs (adr/) e specs das features (specs/)
 config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual)
 pipelines/               coletores (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual), storage local/S3 e CLIs (collect, load, build, view)
 analytics/dbt/           modelos Bronze/Silver, seed de sinônimos de município e testes de qualidade
 tests/                   unitários, integração, contrato e fixtures sintéticas
-docs/runbooks/           guias de operação (coletas)
+.docs/runbooks/           guias de operação (coletas)
 ```
 
 Dados gerados ficam em `.data/`, ignorada pelo Git. O lake segue `raw/` imutável → `lake/bronze/` → `lake/silver/`; ainda não há `lake/gold/` nem `published/`.
@@ -141,15 +141,15 @@ analytics/dbt/            modelos, seeds e testes
 databricks/               laboratório Spark/ML, fora da produção (ADR-001)
 infrastructure/terraform/ infraestrutura
 config/sources.yml        catálogo de fontes
-docs/runbooks/            operação (ADRs ficam em sdd/adr/)
+.docs/runbooks/            operação (ADRs ficam em .sdd/adr/)
 ```
 
 ## Como contribuir
 
 O desenvolvimento segue um fluxo de *Spec-Driven Development* descrito em [.planning/README.md](.planning/README.md):
 
-1. Decisões de arquitetura → ADR em `sdd/adr/`.
-2. Cada funcionalidade → `spec.md` → `plan.md` + `tasks.md` → implementação → convergência, em `sdd/specs/`.
+1. Decisões de arquitetura → ADR em `.sdd/adr/`.
+2. Cada funcionalidade → `spec.md` → `plan.md` + `tasks.md` → implementação → convergência, em `.sdd/specs/`.
 3. Ideias e bugs → [.planning/backlog.md](.planning/backlog.md).
 
 **Ambiente local (Python).** Requer [uv](https://docs.astral.sh/uv/); o projeto usa Python 3.12 (`.python-version`). Na raiz do repositório:
@@ -160,7 +160,7 @@ uv run --locked ruff check pipelines tests
 uv run --locked python -m pytest -q --basetemp .pytest_tmp
 ```
 
-Os testes não usam rede nem conta AWS; o S3 é simulado com moto. A coleta, o build e a visualização estão no [guia de coletas](docs/runbooks/coletas.md). As instruções de Node e Terraform serão adicionadas quando esses componentes existirem.
+Os testes não usam rede nem conta AWS; o S3 é simulado com moto. A coleta, o build e a visualização estão no [guia de coletas](.docs/runbooks/coletas.md). As instruções de Node e Terraform serão adicionadas quando esses componentes existirem.
 
 **Regras básicas:**
 
@@ -184,6 +184,6 @@ A definir.
 
 ### Preparação dos Censos 2021 por freguesia
 
-A spec 006 acrescenta coleta auditável de população total e faixas etárias, com prioridade para dados oficiais compatíveis com a CAOP2025. Bronze preserva contagens/metadados nativos e Silver distingue dado próprio, herdado ou ausente por observação. A cobertura inclui todas as freguesias da dimensão vigente; falhas técnicas impedem promoção. O [guia de coletas](docs/runbooks/coletas.md) descreve os comandos e a recuperação. Percentuais, densidade e site ficam para as etapas seguintes; o resultado de aceite real está registrado no plano da feature.
+A spec 006 acrescenta coleta auditável de população total e faixas etárias, com prioridade para dados oficiais compatíveis com a CAOP2025. Bronze preserva contagens/metadados nativos e Silver distingue dado próprio, herdado ou ausente por observação. A cobertura inclui todas as freguesias da dimensão vigente; falhas técnicas impedem promoção. O [guia de coletas](.docs/runbooks/coletas.md) descreve os comandos e a recuperação. Percentuais, densidade e site ficam para as etapas seguintes; o resultado de aceite real está registrado no plano da feature.
 
-Prova local real da spec006:3.259 freguesias,308 municípios e61.921 observações próprias (total+18 faixas),sem ausências;repetição201/201 unchanged,sem novos originais. CI remoto permanece pendente. Evidências e relatórios estão no [plano006](sdd/specs/006-censos-2021-freguesia/plan.md) e no [guia de coletas](docs/runbooks/coletas.md).
+Prova local real da spec006:3.259 freguesias,308 municípios e61.921 observações próprias (total+18 faixas),sem ausências;repetição201/201 unchanged,sem novos originais. Spec006 Convergida:35/35 itens,CI de qualidade e scan de segredos aprovados no [PR7](https://github.com/johnosd/living-recommender/pull/7) ([run43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543),commit b82b8c8). Evidências e relatórios estão no [plano006](.sdd/specs/006-censos-2021-freguesia/plan.md) e no [guia de coletas](.docs/runbooks/coletas.md).

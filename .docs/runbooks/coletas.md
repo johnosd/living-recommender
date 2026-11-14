@@ -1,6 +1,6 @@
 # Coletas de dados
 
-Este guia descreve a coleta da CAOP (local ou em S3), a construção das dimensões territoriais, a coleta do Pordata e do INE com o staging de observações e como visualizar os resultados. O contexto está na [spec de ingestão CAOP](../../sdd/specs/001-ingestao-caop/spec.md).
+Este guia descreve a coleta da CAOP (local ou em S3), a construção das dimensões territoriais, a coleta do Pordata e do INE com o staging de observações e como visualizar os resultados. O contexto está na [spec de ingestão CAOP](../../.sdd/specs/001-ingestao-caop/spec.md).
 
 ## Pré-requisitos
 
@@ -112,7 +112,7 @@ Os dados são arquivos Parquet locais, não um servidor de banco de dados. O exp
 
 ## Pordata, INE e observações municipais
 
-A spec [002-ingestao-pordata-ine](../../sdd/specs/002-ingestao-pordata-ine/spec.md) acrescenta quatro comandos. **Antes do `build_observations`, rode o `build_caop`**: o staging resolve cada município contra a dimensão `lake/silver/dim_municipality`.
+A spec [002-ingestao-pordata-ine](../../.sdd/specs/002-ingestao-pordata-ine/spec.md) acrescenta quatro comandos. **Antes do `build_observations`, rode o `build_caop`**: o staging resolve cada município contra a dimensão `lake/silver/dim_municipality`.
 
 ### Coletar o Pordata (17 CSV)
 
@@ -208,7 +208,7 @@ Ctrl+C preserva os municípios concluídos e marca o atual e os seguintes como p
 
 Licença e atribuição: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF. O plano gratuito da API permite uso não comercial: risco aceito R-001; migrar para plano comercial é gate da futura fase comercial. Nenhum bruto real entra no Git.
 
-O [quickstart da 003](../../sdd/specs/003-ingestao-clima-open-meteo/quickstart.md) descreve o cenário offline. Para fixtures, use o catálogo gerado explicitamente: `build_climate --local --root .data/ci-climate --catalog .data/ci-climate/catalog.yml`.
+O [quickstart da 003](../../.sdd/specs/003-ingestao-clima-open-meteo/quickstart.md) descreve o cenário offline. Para fixtures, use o catálogo gerado explicitamente: `build_climate --local --root .data/ci-climate --catalog .data/ci-climate/catalog.yml`.
 
 ## Correspondência de freguesias 2013→2025 (spec 004)
 
@@ -238,7 +238,7 @@ O **CSV do relatório** (`parish_crosswalk_report.csv`, `;`, UTF-8 com BOM) é a
 
 Licença e atribuição: Instituto Nacional de Estatística, IP – Portugal. A licença específica das duas planilhas é **assumida** `CC-BY-4.0`, como a da fonte `ine`, e ainda precisa ser confirmada nos termos do INE (plan R-002). Nenhuma planilha real entra no Git.
 
-O [quickstart da 004](../../sdd/specs/004-correspondencia-freguesias/quickstart.md) descreve o cenário offline com a fixture (`tests.fixtures.parish_crosswalk.ci_seed`).
+O [quickstart da 004](../../.sdd/specs/004-correspondencia-freguesias/quickstart.md) descreve o cenário offline com a fixture (`tests.fixtures.parish_crosswalk.ci_seed`).
 
 ## Estado da verificação
 
@@ -386,3 +386,7 @@ Coleta inicial `20261113T231450079026Z-ddf26aad`:201 chamadas/201 respostas,200 
 Build real aprovado:3.259 freguesias,308 municípios,19 categorias canônicas e61.921 observações próprias;0 herdadas,0 ausentes. Bronze123.761 linhas;população total2021 de10.343.066. Cobertura regional completa e18 códigos alfanuméricos preservados. Todas as observações têm fonte,licença,território,run e referências raw verificadas. Vinte e dois arquivos vizinhos permaneceram idênticos. dbt:4 modelos e21 testes aprovados. Relatórios: `.data/lake/silver/census_reports/`. Fonte INE,Censos2021,CC-BY-4.0. O método de reexpressão não foi divulgado pelo publicador nas evidências consultadas;essa limitação permanece registrada,sem estimativa do projeto.
 
 Validação local: `uv run --locked python -m pytest -q --basetemp .data/tmp/censos-batches-full` →411 passed em571,46s;2 regressões adicionais (histórico completo41 itens e repetição por lotes) →2 passed em3,37s,fora da coleta inicial dessa suíte. Área censos →61 passed em32,12s antes dessas2 adições. `uv run --locked ruff check pipelines tests` aprovado. Seed/build de CLI em `.data/ci-censos-batches` aprovado;travas001–006 íntegras;revisão independente sem bug material. O CI remoto e seu scan de segredos seguem pendentes de commit/push/PR autorizado;nenhuma execução em nuvem ou publicação foi demonstrada. Não marcar Implementada/Convergida antes do gate restante.
+
+### Gate remoto da spec006 concluído
+
+[PR7](https://github.com/johnosd/living-recommender/pull/7),head `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`:[CI43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543) aprovado nos jobs quality e secrets;412 testes/1 skip Windows,lint e6 builds dbt verdes,gitleaks sem vazamentos em27 commits.Spec006 Implementada,35/35 itens;convergência ainda não executada.PR aberto,sem merge automático.Resultados referem-se ao SHA indicado;fechamento documental local ainda não commitado.

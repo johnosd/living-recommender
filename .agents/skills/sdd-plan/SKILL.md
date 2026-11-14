@@ -1,7 +1,17 @@
 ---
 name: sdd-plan
-description: Transforma uma spec existente em plan.md e tasks.md, com checagem contra a constitution do projeto. Use para planejar uma feature, desenhar sua arquitetura ou dividir a spec em tasks. Exige spec.md em sdd/specs/; para criar a spec use sdd-specify, e para implementar use sdd-execute.
+description: Transforma uma spec existente em plan.md e tasks.md, com checagem contra a constitution do projeto. Use para planejar uma feature, desenhar sua arquitetura ou dividir a spec em tasks. Exige spec.md em .sdd/specs/; para criar a spec use sdd-specify, e para implementar use sdd-execute.
 ---
+
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
 
 # sdd-plan
 
@@ -81,7 +91,7 @@ Prefira buscas focadas de arquivos e texto a um dump do diretório inteiro. Leia
 existentes da mesma área, se houver, pra entender o padrão de teste do
 projeto.
 
-Se `sdd/adr/` existir, liste os títulos das ADRs lá dentro e leia por
+Se `.sdd/adr/` existir, liste os títulos das ADRs lá dentro e leia por
 inteiro qualquer uma cujo tema se relacione com esta feature (stack, banco de
 dados, framework tocados). São decisões de arquitetura já tomadas e
 justificadas — **não as relitigue silenciosamente**; a Technical Context e as
@@ -302,7 +312,7 @@ O `sdd-execute` costuma rodar em outra sessão (às vezes noutro modelo), sem
 nada desta conversa. Ao concluir, **sempre** escreva um resumo de handoff
 autossuficiente, em português, e:
 
-1. grave-o em `sdd/specs/<NNN-slug>/handoff.md` (sobrescreve o anterior, se
+1. grave-o em `.sdd/specs/<NNN-slug>/handoff.md` (sobrescreve o anterior, se
    houver — o `sdd-plan` pode rodar de novo na mesma feature);
 2. mostre o mesmo conteúdo no chat, como fechamento do relato do passo 13.
 

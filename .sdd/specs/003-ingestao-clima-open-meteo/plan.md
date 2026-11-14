@@ -1,6 +1,6 @@
 # Implementation Plan: Ingestão de clima Open-Meteo
 
-**Slug**: `003-ingestao-clima-open-meteo` | **Date**: 2026-11-11 | **Spec**: `sdd/specs/003-ingestao-clima-open-meteo/spec.md`
+**Slug**: `003-ingestao-clima-open-meteo` | **Date**: 2026-11-11 | **Spec**: `.sdd/specs/003-ingestao-clima-open-meteo/spec.md`
 
 ## Summary
 
@@ -64,7 +64,7 @@ Como o plano gratuito comporta ~100 a 140 municípios por dia, a coleta é **ret
 ### Documentation (this feature)
 
 ```text
-sdd/specs/003-ingestao-clima-open-meteo/
+.sdd/specs/003-ingestao-clima-open-meteo/
 ├── spec.md
 ├── plan.md                  # este arquivo
 ├── tasks.md
@@ -108,7 +108,7 @@ tests/
               + open_meteo/ (responses.py travado) + climate/ci_seed.py
   unit/ integration/                                  # + testes novos (ver tasks.md)
 .github/workflows/python.yml                          # ~ + passo dbt do clima
-docs/runbooks/coletas.md  README.md  .docs/fontes_de_dados.md   # ~ atualizar no Polish
+.docs/runbooks/coletas.md  README.md  .docs/fontes_de_dados.md   # ~ atualizar no Polish
 ```
 
 **Structure Decision:** seguir `pipelines/collectors/<fonte>/` e as CLIs `collect_*`/`build_*` das specs 001 e 002. A lógica comum fica em `_shared/` (só `datasets.py`, `dataset_manifest.py` e `catalog.py` mudam, de forma retrocompatível). A promoção usa `_promote.py` e o `dbt` roda por tag, como na spec 002.
@@ -235,7 +235,7 @@ Não coberto pelos contratos (fica nos testes de fase e no `quickstart.md`): val
 
 - `pipelines/cli/collect_open_meteo.py`
 - `tests/integration/test_open_meteo_catalog_snapshot.py`
-- `sdd/specs/003-ingestao-clima-open-meteo/{tasks,spec,quickstart,research}.md`
+- `.sdd/specs/003-ingestao-clima-open-meteo/{tasks,spec,quickstart,research}.md`
 - `.github/workflows/python.yml`, `README.md`
 
 ## Cuidados para Retomada

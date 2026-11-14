@@ -1,7 +1,17 @@
 ---
 name: sdd-execute
-description: Implementa uma feature já especificada e planejada, seguindo tasks.md e atualizando a documentação a cada fase. Use para construir, retomar ou continuar uma feature com plan.md e tasks.md em sdd/specs/. Para criar o plano, use sdd-plan.
+description: Implementa uma feature já especificada e planejada, seguindo tasks.md e atualizando a documentação a cada fase. Use para construir, retomar ou continuar uma feature com plan.md e tasks.md em .sdd/specs/. Para criar o plano, use sdd-plan.
 ---
+
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
 
 # sdd-execute
 
@@ -230,7 +240,7 @@ cobertura, menos idas e vindas.
 ### 8. Arquivamento
 
 Se a tabela de `## Execution Notes` já tiver mais de ~40 linhas, mova todas
-exceto as ~10 mais recentes para `sdd/specs/<slug>/history.md` (crie o arquivo se
+exceto as ~10 mais recentes para `.sdd/specs/<slug>/history.md` (crie o arquivo se
 não existir, sempre por anexação — nunca reescreva o que já está lá),
 substituindo-as em `plan.md` por uma linha de resumo consolidado. Cheque isso
 a cada checkpoint, não só quando o arquivo já estiver enorme.

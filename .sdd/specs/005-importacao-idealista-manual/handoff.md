@@ -12,7 +12,7 @@ US3: CAOP, seeds explícitas e cobertura; ilhas regionais sem DICO inventado.
 
 ## Leitura obrigatória
 spec.md, plan.md (estado, riscos e evidência final), tasks.md, data-model.md,
-contracts/idealista-cli.md, quickstart.md e docs/runbooks/coletas.md.
+contracts/idealista-cli.md, quickstart.md e .docs/runbooks/coletas.md.
 
 ## Testes de contrato
 Cinco casos em tests/contracts/test_idealista_import_contract.py, travados e verdes.
