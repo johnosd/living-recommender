@@ -1,0 +1,12 @@
+{
+    "feature":  "007-idealista-formato-atual-relatorio",
+    "lockedAt":  "2026-11-17 12:40",
+    "total":  null,
+    "files":  [
+                  {
+                      "path":  "tests/contracts/test_idealista_current_contract.py",
+                      "sha256":  "3bb8f60c5eefc84a0fb097c59e12efb45628042cccf215b4abebb5a29d69af8a",
+                      "tests":  "unknown"
+                  }
+              ]
+}

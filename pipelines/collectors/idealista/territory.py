@@ -39,6 +39,13 @@ class TerritoryResolver:
             if key in self.file_localities:
                 raise IdealistaError("seed de arquivos repete região/localidade")
             self.file_localities[key] = row
+        # Seed exclusiva do metadado novo: não muda a interpretação histórica dos títulos.
+        self.metadata_synonyms = {}
+        for row in read_seed("idealista_metadata_parish_synonyms.csv"):
+            key = (row["dico"], normalize_name(row["source_name"]))
+            if key in self.metadata_synonyms:
+                raise IdealistaError("seed de metadados repete município/freguesia")
+            self.metadata_synonyms[key] = row["dicofre"]
 
     def resolve_file(self, relative: str) -> dict:
         path = PurePosixPath(relative)
@@ -77,3 +84,35 @@ class TerritoryResolver:
         if len(matches) == 1:
             result.update(dicofre=next(iter(matches)), parish_match_method="titulo_exato_ou_sinonimo")
         return result
+
+    def resolve_metadata(self, row: dict) -> dict:
+        """A hierarquia da captura nunca transforma distrito/ilha em município homônimo."""
+        municipality = (row.get("Município") or "").strip()
+        subregion = (row.get("Sub-região") or "").strip()
+        region = (row.get("Região") or "").strip()
+        parish = (row.get("Freguesia") or "").strip()
+        if not municipality:
+            if not (subregion or region):
+                raise IdealistaError("metadados territoriais sem município nem região declarada")
+            return {"dico": None, "dicofre": None, "locality_level": "regiao",
+                    "locality_raw": subregion or region, "source_region": row.get("Região"),
+                    "parish_match_method": "nao_resolvido"}
+        # Reutiliza seeds explícitas: a origem nova é plana e não tem região no caminho.
+        result = self.resolve_file(municipality + ".json")
+        result["source_region"] = row.get("Região")
+        if result["dicofre"]:
+            result["parish_match_method"] = "metadado_seed"
+            return result
+        if parish:
+            matches = self.by_parish_name.get((result["dico"], normalize_name(parish)), set())
+            if len(matches) == 1:
+                result.update(dicofre=next(iter(matches)), parish_match_method="metadado_exato_ou_sinonimo")
+            elif not matches:
+                alias = self.metadata_synonyms.get((result["dico"], normalize_name(parish)))
+                if alias:
+                    # Confere na dimensão usada no build, inclusive quando for uma fixture parcial.
+                    if self.parishes.get(alias) != result["dico"]:
+                        raise IdealistaError("sinônimo de metadado aponta para código CAOP inválido")
+                    result.update(dicofre=alias, parish_match_method="metadado_seed")
+            return result
+        return self.resolve_listing(result, row.get("Titulo"))

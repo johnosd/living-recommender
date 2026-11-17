@@ -294,3 +294,25 @@ Validação local: `uv run --locked python -m pytest -q --basetemp .data/tmp/cen
 ### Gate remoto da spec006 concluído
 
 [PR7](https://github.com/johnosd/living-recommender/pull/7),head `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`:[CI43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543) aprovado nos jobs quality e secrets;412 testes/1 skip Windows,lint e6 builds dbt verdes,gitleaks sem vazamentos em27 commits.Spec006 Implementada,35/35 itens;convergência ainda não executada.PR aberto,sem merge automático.Resultados referem-se ao SHA indicado;fechamento documental local ainda não commitado.
+
+
+### Atualização Idealista — 2026-11-17 (spec 007)
+
+A importação aceita o novo conjunto textual/anulável Região/Sub-região/Município/
+Freguesia, além do formato legado. Município nulo significa contexto regional:
+arquivos de distritos homônimos não são atribuídos à cidade. CAOP e seeds explícitas
+resolvem as freguesias; equivalências da escrita nova ficam em
+`analytics/dbt/seeds/idealista_metadata_parish_synonyms.csv`, sem alterar o legado.
+Metadados representam contexto de captura e não comprovam o endereço do imóvel.
+
+Lote 2026-11: 74 arquivos, 19.531.665 bytes, 18.059 anúncios únicos e nenhuma
+repetição de ID. Há amostra atribuída a 54/308 municípios e 6.371 regionais;
+42 municípios têm pelo menos 10 preços elegíveis. O relatório agora inclui
+estatística descritiva local por município, município/tipologia e grupos regionais,
+sem publicação ou Gold. Mediana/P25/P75 só com n elegível ≥ 10; preço conflitante
+ou inválido é excluído. O relatório do lote e suas limitações estão em
+[reports/idealista-2026-11.md](reports/idealista-2026-11.md).
+
+A licença continua não concedida; risco registrado no ADR-002 D4. Importação
+offline não certifica o método de coleta da extensão externa. O horário individual
+de coleta e a completude da oferta não são comprovados.

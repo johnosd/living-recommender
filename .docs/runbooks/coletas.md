@@ -270,8 +270,8 @@ precisa de API ou chave. Os arquivos da origem não são alterados nem movidos.
 Na raiz do living-recommender:
 
 ```powershell
-uv run --locked python -m pipelines.cli.import_idealista_snapshot --local --directory "C:/Users/johns/Documents/Projetos/IdealistaScraper/Bases/202508" --snapshot-month 2025-08
-uv run --locked python -m pipelines.cli.build_idealista --local --snapshot-month 2025-08
+uv run --locked python -m pipelines.cli.import_idealista_snapshot --local --directory "J:/IdealistaScraper/.data/municipios/202611" --snapshot-month 2026-11
+uv run --locked python -m pipelines.cli.build_idealista --local --snapshot-month 2026-11
 ```
 
 Para outra extração, indicar a nova pasta e seu mês `YYYY-MM`. O período deve
@@ -390,3 +390,29 @@ Validação local: `uv run --locked python -m pytest -q --basetemp .data/tmp/cen
 ### Gate remoto da spec006 concluído
 
 [PR7](https://github.com/johnosd/living-recommender/pull/7),head `b82b8c86f9bf5860f72d7a07f2fed9ba72b774e1`:[CI43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543) aprovado nos jobs quality e secrets;412 testes/1 skip Windows,lint e6 builds dbt verdes,gitleaks sem vazamentos em27 commits.Spec006 Implementada,35/35 itens;convergência ainda não executada.PR aberto,sem merge automático.Resultados referem-se ao SHA indicado;fechamento documental local ainda não commitado.
+
+
+## Idealista: formato atualizado e relatório (spec 007)
+
+O lote novo está em `J:/IdealistaScraper/.data/municipios/202611`; não apontar o
+importador para `.data` inteira, pois há meses e JSON de links que não são anúncios.
+Os comandos da seção Idealista acima agora exemplificam novembro/2026.
+
+Com o conjunto completo Região/Sub-região/Município/Freguesia, a hierarquia
+explícita prevalece sobre o nome do arquivo. Município nulo mantém região/distrito/ilha.
+Freguesia explícita usa CAOP e a seed `idealista_metadata_parish_synonyms.csv`,
+com equivalências revisáveis apenas do formato novo. Nome desconhecido fica nulo;
+município declarado desconhecido reprova. Metadado parcial ou não textual reprova
+na importação. No formato antigo continua valendo a regra de arquivo/título.
+
+O build promove também `report.md`, `statistics.json`, `municipality_stats.csv`,
+`municipality_typology_stats.csv` e `regional_stats.csv`, junto das saídas anteriores,
+após os testes dbt. Em `.data/lake/bronze/idealista_reports/`, `duplicates.csv`
+é individual e privado; os demais relatórios analíticos novos são agregados.
+Quartis/mediana só aparecem com n elegível ≥ 10. Preços conflitantes ou inválidos
+são excluídos. Não há publicação automática, inferência nacional ou comparação
+causal com o histórico.
+
+A evidência desta execução e o backup das saídas de agosto estão em
+`.data/idealista-review-202611/`. O relatório agregado entregue está em
+[reports/idealista-2026-11.md](../reports/idealista-2026-11.md).

@@ -10,6 +10,7 @@ sources:
     collection_method: manual_extension
     frequency: monthly_manual
     territorial_level: municipality_parish_or_region
+    territorial_resolution: explicit_metadata_or_legacy_filename
     input_format: json
 
   caop:
