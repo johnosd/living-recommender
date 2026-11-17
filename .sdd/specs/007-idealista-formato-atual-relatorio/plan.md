@@ -61,10 +61,10 @@ E2E de UI/dispositivo não aplicável: esta feature altera importação, prepara
 ## Riscos e Decisões
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
-| R-001 | Distritos homônimos e ilhas | Cobertura falsa | Metadado explícito nulo mantém região |
-| R-002 | Metadados do exportador são contexto | Não prova endereço | Limitação explícita no relatório |
-| R-004 | 58 variações de escrita de freguesia | Precisão perdida apesar de nome equivalente | Seed exclusiva do formato novo; código só faz lookup exato por município; legado não muda |
-| R-003 | Coleta parcial/limites de páginas | Viés da amostra | Sem inferência nacional/temporal |
+| R-001 | Distritos homônimos e ilhas | Cobertura falsa | Resolvido: mitigação confirmada nesta auditoria. Metadado explícito nulo mantém região |
+| R-002 | Metadados do exportador são contexto | Não prova endereço | Resolvido: mitigação confirmada nesta auditoria. Limitação explícita no relatório |
+| R-004 | 58 variações de escrita de freguesia | Precisão perdida apesar de nome equivalente | Resolvido: mitigação confirmada nesta auditoria. Seed exclusiva do formato novo; código só faz lookup exato por município; legado não muda |
+| R-003 | Coleta parcial/limites de páginas | Viés da amostra | Resolvido: mitigação confirmada nesta auditoria. Sem inferência nacional/temporal |
 | R-005 | Emenda de estilo no contrato 007 | Lint I001/PIE804 bloqueava fechamento | Resolvido: autor respondeu "autorizado"; imports separados e keyword equivalente, sem alterar asserts; trava regravada; 41 testes e lint geral aprovados |
 | R-006 | CF-001: recortes incompletos no JSON/Markdown | FR-005 parcialmente atendido | Resolvido: dois arrays municipais no JSON e 225 grupos município/tipologia no Markdown; dois testes adicionais, integração estendida e reconciliação real nos três formatos; contratos preservados |
 | R-007 | CF-002: evidência de CI ausente para a revisão final | Gate 1 da constitution | Resolvido: autor autorizou branch/commit/push/PR; CI 44141146329 do SHA 0f8972feb079861bd521c0776ade79c3b3ad3920 aprovou quality/secrets; 436 passed/1 skip/1 warning, seis builds dbt verdes; evidências em ci-validation.md; sem uso de CI antigo |
@@ -104,3 +104,20 @@ E2E de UI/dispositivo não aplicável: esta feature altera importação, prepara
 
 ### Fechamento autorizado
 O autor respondeu "autorizado" para os dois ajustes de estilo e a atualização do hash. Foram alterados somente a formatação dos imports e o unpack de um keyword literal no contrato 007. Nenhuma asserção, dado, código de produção ou estatística mudou. Suíte geral anterior preservada como evidência (434 testes); revalidação proporcional após esta mudança: 41 testes Idealista aprovados em 25,52 s, ruff geral limpo, sete travas íntegras e git diff --check aprovado.
+
+
+## Resultado Final
+
+**Convergência limpa em 2026-11-17. Status: Convergida; 17/17 itens.**
+
+A implementação cumpre FR-001–FR-007, SC-001–SC-004 e as duas stories P1 no escopo documentado: importação offline imutável do formato atual e legado, resolução territorial por CAOP/seeds explícitas, preservação de metadados, deduplicação determinística e relatório descritivo local Markdown/JSON/CSV. Município nulo permanece regional; freguesia explícita prevalece sobre o título, e valores desconhecidos não recebem códigos por aproximação. Relatórios municipais e município/tipologia incluem n total/elegível; preços ausentes, inválidos ou conflitantes ficam fora dos quartis, que são suprimidos com n elegível <10.
+
+Lote real: 74 JSON, 19.531.665 bytes e 18.059 anúncios únicos; 54/308 municípios com amostra, 42 com n elegível >=10 e 6.371 regionais; 10.751 com freguesia e 937 municipais sem freguesia. Nesta auditoria foram novamente reconciliados os 308 registros municipais e 225 grupos município/tipologia nos três formatos e conferidos os hashes de 501 arquivos protegidos. Os quatro extratos entregues coincidem com as saídas operacionais; o Markdown entregue contém todos os grupos. Os 24 resultados dbt reais existentes foram conferidos; não houve novo build no lake vigente.
+
+Desvios e ajustes registrados: a descoberta T010 acrescentou 58 sinônimos exclusivos do metadado novo, validados por DICO/DICOFRE, preservando o legado. A emenda de estilo do contrato foi autorizada e registrada em R-005; nenhum contrato foi alterado nesta convergência. A auditoria anterior identificou CF-001 (recortes JSON/Markdown incompletos) e CF-002 (CI ausente); T011–T013 corrigiram ambos. Os arrays municipality_stats e municipality_typology_stats e a tabela Markdown completam FR-005; dois testes adicionais e a integração verificam os formatos e a promoção. Não houve mudança arquitetural nem nova dependência; limitações territoriais, licença não concedida, horário de coleta desconhecido e não comparabilidade temporal continuam explícitos.
+
+Validação desta passada: `uv run --locked python -m pytest tests/contracts/test_idealista_current_contract.py tests/contracts/test_idealista_import_contract.py tests/unit/test_idealista.py tests/unit/test_idealista_report.py tests/integration/test_idealista_build.py tests/integration/test_idealista_import.py -q --basetemp .data/pytest-007-converge-clean` — 43 passed em 33,99 s; ruff geral aprovado e sete travas íntegras. A leitura do código não encontrou atalhos condicionados a teste ou valores das fixtures. A suíte local geral anterior permanece registrada como 437 passed/493,04 s; não foi repetida nesta auditoria, pois não houve mudança de código após sua execução e o CI integral da revisão atual foi confirmado.
+
+Evidência remota atual consultada nesta auditoria: PR [#8](https://github.com/johnosd/living-recommender/pull/8), HEAD 555f67e23ee0b98fed3e312119d2ad1fe115a329. [CI do PR 44142662361](https://github.com/johnosd/living-recommender/actions/runs/44142662361) e [CI de push 44142652092](https://github.com/johnosd/living-recommender/actions/runs/44142652092) concluídos com sucesso no mesmo SHA; quality/secrets aprovados no PR. Resultado remoto: 436 passed, 1 skip específico de Windows e 1 warning preexistente; seis builds dbt aprovados; gitleaks sem vazamentos em 30 commits. O commit 0f8972f contém a implementação; 555f67e é seu fechamento documental. Este resultado final é sincronização documental local posterior ao SHA auditado, sem novo commit/push nesta passada.
+
+O README já descreve a hierarquia, o suporte legado, os números do lote e o relatório; ficou byte-idêntico. tasks.md ficou byte-idêntico; nenhuma fase foi acrescentada. spec.md recebe somente a linha de status, backlog é sincronizado pelo script e a memória do projeto registra a conclusão. A avaliação geográfica e sua ideia preexistente de backlog permanecem preservadas e fora do escopo. O PR continua aberto, sem merge; não houve publicação, AWS, coleta externa ou alteração de dados individuais.

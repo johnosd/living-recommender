@@ -1,0 +1,108 @@
+{
+  "kind": "Exploratory offline matching; no geocoder and no accepted territorial assignments",
+  "snapshot_month": "2026-11",
+  "source_run_id": "20261117T151513906158Z-d5bd7111",
+  "snapshot_sha256": "3d57043b54e30e3ab1143d8e0ddeccd9a2097a566833f2fb1edf7e41b705e0a4",
+  "raw_hashes_verified": 74,
+  "counts": {
+    "total": 18059,
+    "street_mention": 13336,
+    "postal_code_mention": 24,
+    "regional": 6371,
+    "regional_street_mention": 4682,
+    "unique_municipality_candidate": 2792,
+    "unique_parish_candidate": 2563,
+    "no_exact_candidate": 3569,
+    "ambiguous_candidates": 10
+  },
+  "regional_candidate_municipalities": 196,
+  "regional_distinct_title_contexts": 5756,
+  "by_district": {
+    "Aveiro": {
+      "unique_municipality_candidate": 267,
+      "no_exact_candidate": 299,
+      "ambiguous_candidates": 2
+    },
+    "Beja": {
+      "unique_municipality_candidate": 81,
+      "no_exact_candidate": 24
+    },
+    "Braga": {
+      "no_exact_candidate": 612,
+      "unique_municipality_candidate": 261
+    },
+    "Bragança": {
+      "no_exact_candidate": 43,
+      "unique_municipality_candidate": 15
+    },
+    "Castelo Branco": {
+      "no_exact_candidate": 141,
+      "unique_municipality_candidate": 52
+    },
+    "Coimbra": {
+      "unique_municipality_candidate": 339,
+      "no_exact_candidate": 269
+    },
+    "Guarda": {
+      "unique_municipality_candidate": 38,
+      "no_exact_candidate": 31
+    },
+    "Leiria": {
+      "no_exact_candidate": 270,
+      "unique_municipality_candidate": 368
+    },
+    "Madeira (Ilha)": {
+      "unique_municipality_candidate": 219,
+      "no_exact_candidate": 103
+    },
+    "Portalegre": {
+      "no_exact_candidate": 53,
+      "unique_municipality_candidate": 25
+    },
+    "Porto Santo (Ilha)": {
+      "unique_municipality_candidate": 5,
+      "no_exact_candidate": 1
+    },
+    "Santarém": {
+      "no_exact_candidate": 178,
+      "unique_municipality_candidate": 130,
+      "ambiguous_candidates": 1
+    },
+    "Setúbal": {
+      "no_exact_candidate": 1146,
+      "unique_municipality_candidate": 579
+    },
+    "São Miguel (Ilha dos Açores)": {
+      "unique_municipality_candidate": 29,
+      "no_exact_candidate": 42,
+      "ambiguous_candidates": 2
+    },
+    "Terceira (Ilha dos Açores)": {
+      "unique_municipality_candidate": 8,
+      "no_exact_candidate": 7
+    },
+    "Viana do Castelo": {
+      "no_exact_candidate": 181,
+      "unique_municipality_candidate": 137
+    },
+    "Vila Real": {
+      "unique_municipality_candidate": 43,
+      "no_exact_candidate": 39
+    },
+    "Viseu": {
+      "unique_municipality_candidate": 139,
+      "no_exact_candidate": 69,
+      "ambiguous_candidates": 5
+    },
+    "Évora": {
+      "no_exact_candidate": 61,
+      "unique_municipality_candidate": 57
+    }
+  },
+  "limitations": [
+    "Street mention is not a complete address.",
+    "A unique name candidate has not been manually validated.",
+    "No source/lake changes or external geocoding calls.",
+    "Provider accuracy and actual recovered coverage remain unmeasured."
+  ]
+}

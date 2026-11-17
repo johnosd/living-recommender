@@ -6,6 +6,8 @@ update-bug-status.ps1.
 
 ## Ideias Futuras
 
+- **2026-11-17 — Enriquecimento geográfico posterior dos anúncios Idealista:** recuperar município/freguesia combinando nomes e contexto territorial com a CAOP; geocodificar endereços parciais dos títulos quando necessário, preservando proveniência e precisão. A exploração encontrou 2.792 candidatos municipais únicos entre 6.371 anúncios regionais, ainda sem validação ou promoção ao lake. Próximo passo: definir um piloto de 100 anúncios para medir acurácia, ganho de cobertura e custo; escolher provedor e verificar licença/persistência (OpenCage como candidato; Google condicionado ao enquadramento contratual; não depender do Nominatim público para lotes recorrentes). Provedor, orçamento e implementação permanecem pendentes de decisão. [Avaliação e diagnóstico](../.sdd/assessments/enriquecimento-geogrfico-posterior-dos-anncios-idealista/explora.md).
+
 ## Features
 
 | Slug | Título | Status | Progresso | Última Atualização |
@@ -16,7 +18,7 @@ update-bug-status.ps1.
 | 004-correspondencia-freguesias | Correspondência de freguesias 2013→2025 — coleta das tabelas do INE e tabela de correspondência | Convergida | 46/46 tasks | 2026-11-12 |
 | 005-importacao-idealista-manual | Importação de snapshots manuais do Idealista | Convergida | 12/12 tasks | 2026-11-13 |
 | 006-censos-2021-freguesia | Censos 2021 por freguesia — coleta e preparação de população e faixas etárias | Convergida | 35/35 tasks | 2026-11-13 |
-| 007-idealista-formato-atual-relatorio | Idealista atual e relatório descritivo | Implementada | 17/17 tasks | 2026-11-17 |
+| 007-idealista-formato-atual-relatorio | Idealista atual e relatório descritivo | Convergida | 17/17 tasks | 2026-11-17 |
 
 ## Melhorias Ad-hoc
 

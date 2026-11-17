@@ -2,7 +2,7 @@
 
 **Slug**: `007-idealista-formato-atual-relatorio`
 **Created**: 2026-11-17
-**Status**: Implementada
+**Status**: Convergida
 
 ## Scope
 Revisitar a implementação 005, importar o lote atualizado de `J:/IdealistaScraper/.data/municipios/202611` e produzir relatório local reproduzível. Inclui hierarquia territorial nova, compatibilidade antiga, estatísticas descritivas e auditoria real. Fora: alterar/coletar no scraper, rede, nuvem, publicação, ranking, Gold e comparação temporal de preços entre amostras distintas.
