@@ -47,3 +47,8 @@ autorizado. Revisão concreta em `delivery-review.md` da feature; preservar
 commit/push automático. A suíte geral desta retomada passou: 437 testes em
 493,04 s; ruff geral e sete travas aprovados. Progresso final local: 16/17;
 T013 continua aberta. Consultar `plan.md`/Registro da Phase 4 para os comandos.
+
+
+## Entrega autorizada e gate remoto — 2026-11-17
+
+Autor autorizou branch/commit/push/PR. PR #8 aberto sobre feature/005-importacao-idealista-manual; SHA final da implementação 0f8972feb079861bd521c0776ade79c3b3ad3920. CI PR 44141146329 e push 44141132271 aprovados; quality/secrets verdes, 436 passed/1 skip/1 warning, seis builds dbt verdes, gitleaks sem vazamentos em 29 commits. Evidências rastreáveis em ci-validation.md da feature e nos checks do PR. T013 concluída; Implementada, 17/17 itens. O checkpoint documental não altera código; acompanhar também seus checks no PR. Nova convergência ainda não executada. Sem merge ou publicação. A avaliação geográfica e sua ideia no backlog permanecem fora do commit.

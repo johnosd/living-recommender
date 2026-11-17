@@ -20,3 +20,8 @@ pelo fluxo autorizado. Ver `idealista-007-convergencia.md` e `plan.md` da 007.
 Validação desta retomada: suíte geral 437 passed/493,04 s; regressão dirigida
 43 passed/26,46 s; ruff geral e sete travas íntegros. Nenhum commit/push ou
 publicação nesta execução.
+
+
+## Entrega autorizada e gate remoto — 2026-11-17
+
+Autor autorizou branch/commit/push/PR. PR #8 aberto sobre feature/005-importacao-idealista-manual; SHA final da implementação 0f8972feb079861bd521c0776ade79c3b3ad3920. CI PR 44141146329 e push 44141132271 aprovados; quality/secrets verdes, 436 passed/1 skip/1 warning, seis builds dbt verdes, gitleaks sem vazamentos em 29 commits. Evidências rastreáveis em ci-validation.md da feature e nos checks do PR. T013 concluída; Implementada, 17/17 itens. O checkpoint documental não altera código; acompanhar também seus checks no PR. Nova convergência ainda não executada. Sem merge ou publicação. A avaliação geográfica e sua ideia no backlog permanecem fora do commit.

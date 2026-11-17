@@ -16,7 +16,7 @@ update-bug-status.ps1.
 | 004-correspondencia-freguesias | Correspondência de freguesias 2013→2025 — coleta das tabelas do INE e tabela de correspondência | Convergida | 46/46 tasks | 2026-11-12 |
 | 005-importacao-idealista-manual | Importação de snapshots manuais do Idealista | Convergida | 12/12 tasks | 2026-11-13 |
 | 006-censos-2021-freguesia | Censos 2021 por freguesia — coleta e preparação de população e faixas etárias | Convergida | 35/35 tasks | 2026-11-13 |
-| 007-idealista-formato-atual-relatorio | Idealista atual e relatório descritivo | Convergência Pendente | 16/17 tasks | 2026-11-17 |
+| 007-idealista-formato-atual-relatorio | Idealista atual e relatório descritivo | Implementada | 17/17 tasks | 2026-11-17 |
 
 ## Melhorias Ad-hoc
 

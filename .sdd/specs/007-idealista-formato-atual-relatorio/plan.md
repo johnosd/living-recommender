@@ -55,7 +55,8 @@ E2E de UI/dispositivo não aplicável: esta feature altera importação, prepara
 | Dados | 18.059 únicos; 54 municípios/42 com n>=10; 6.371 regionais; 10.751 com freguesia/937 sem freguesia municipal |
 | Suíte geral | Phase 4: 437 passed em 493,04 s; contratos verdes na suíte completa |
 | Lint | `uv run --locked ruff check pipelines tests` aprovado |
-| Fechamento | 16/17 itens: T011/T012 concluídas; T013 pendente de fluxo autorizado de commit/push e evidência CI do SHA final |
+| CI remoto | PR #8, SHA 0f8972feb079861bd521c0776ade79c3b3ad3920; quality/secrets aprovados, 436 passed/1 skip/1 warning; seis builds dbt verdes |
+| Fechamento | 17/17 itens; T013 concluída com evidência remota em ci-validation.md; Implementada, aguardando nova convergência |
 
 ## Riscos e Decisões
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
@@ -66,7 +67,7 @@ E2E de UI/dispositivo não aplicável: esta feature altera importação, prepara
 | R-003 | Coleta parcial/limites de páginas | Viés da amostra | Sem inferência nacional/temporal |
 | R-005 | Emenda de estilo no contrato 007 | Lint I001/PIE804 bloqueava fechamento | Resolvido: autor respondeu "autorizado"; imports separados e keyword equivalente, sem alterar asserts; trava regravada; 41 testes e lint geral aprovados |
 | R-006 | CF-001: recortes incompletos no JSON/Markdown | FR-005 parcialmente atendido | Resolvido: dois arrays municipais no JSON e 225 grupos município/tipologia no Markdown; dois testes adicionais, integração estendida e reconciliação real nos três formatos; contratos preservados |
-| R-007 | CF-002: evidência de CI ausente para a revisão final | Gate 1 da constitution ainda aberto | Preparar revisão local e obter autorização explícita para commit/push pelo fluxo de entrega; registrar SHA e jobs da revisão final antes de fechar T013; não substituir por CI antigo |
+| R-007 | CF-002: evidência de CI ausente para a revisão final | Gate 1 da constitution | Resolvido: autor autorizou branch/commit/push/PR; CI 44141146329 do SHA 0f8972feb079861bd521c0776ade79c3b3ad3920 aprovou quality/secrets; 436 passed/1 skip/1 warning, seis builds dbt verdes; evidências em ci-validation.md; sem uso de CI antigo |
 
 ## Execution Notes
 | Data | Fase/Story | Resumo | Pendência Principal |
@@ -79,8 +80,9 @@ E2E de UI/dispositivo não aplicável: esta feature altera importação, prepara
 | 2026-11-17 | Phase 4 / T011 | Dois testes adicionais vermelhos por arrays ausentes; recortes implementados, regressão 43 passed/26,46 s; ruff e trava 007 aprovados | T012 e validação geral |
 | 2026-11-17 | Phase 4 / T012 | Backup anterior a execução; dbt real 24/24, 501 hashes protegidos, 308 municípios e 225 grupos conciliados; CSV municipais e estatísticas anteriores idênticos; entrega regenerada | Suíte geral em execução; T013 requer fluxo remoto autorizado |
 | 2026-11-17 | Phase 4 / checkpoint local | Suíte geral 437 passed/493,04 s; ruff geral e sete travas aprovados; revisão concreta em delivery-review.md; T011/T012 concluídas | T013: autorização de commit/push e CI do SHA final |
+| 2026-11-17 | Phase 4 / T013 | Autorização recebida; commit 0f8972f e PR #8 criados; CI PR 44141146329 e push 44141132271 aprovados, quality/secrets verdes; 17/17 itens | Conferir CI do checkpoint documental e executar sdd-converge posteriormente; PR sem merge |
 
-**PRÓXIMO**: autorização explícita recebida em 2026-11-17; enviar a branch 007 e abrir PR sobre feature/005-importacao-idealista-manual (PR #7 ainda aberto), registrar SHA e CI aprovado para T013 e então solicitar nova convergência. Validação local concluída; sem merge ou publicação.
+**PRÓXIMO**: conferir os checks do checkpoint documental no PR #8 e executar sdd-converge posteriormente. T013 concluída com CI da implementação final documentado; PR aberto sobre feature/005-importacao-idealista-manual, sem merge ou publicação.
 
 ## Arquivos Principais
 - pipelines/collectors/idealista/report.py; tests/unit/test_idealista_report.py; tests/integration/test_idealista_build.py

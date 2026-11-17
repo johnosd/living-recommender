@@ -60,3 +60,12 @@ O autor respondeu "autorizo" para branch, commit, push e PR da 007. Branch nova:
 ainda está aberto. Assim o novo PR contém somente as mudanças adicionais da 007.
 Preservar a avaliação geográfica e sua ideia de backlog fora do commit. Merge e
 publicação continuam fora desta autorização.
+
+## Resultado da entrega autorizada
+
+PR [#8](https://github.com/johnosd/living-recommender/pull/8) aberto; commit da
+implementação `0f8972feb079861bd521c0776ade79c3b3ad3920`. CI de PR e push
+aprovados, incluindo quality e secrets. T013 concluída, 17/17 itens; detalhes
+em [ci-validation.md](ci-validation.md). O fechamento é documental e preserva
+código, contratos e dados. Validar seus checks no PR antes de encerrar a entrega.
+Nova convergência ainda não executada; sem merge ou publicação.
