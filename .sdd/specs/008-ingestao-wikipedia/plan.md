@@ -239,8 +239,9 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | Nacional | 308 valid, 7.028 seções, 248.931 blocos, 6.699.736 caracteres; 308 introduções/QIDs/ligações inglesas |
 | Repetição | 308 unchanged; 616 raw antes/depois; build unchanged; lake idêntico |
 | Preservação | 616 referências verificadas; 1.319 arquivos anteriores intactos, incluindo 308 TXT e notebook |
-| Release formal | 41/43 checkboxes; T035 e checklist remoto pendentes; Em Execução |
-| Entrega Git | Nenhuma branch/commit/push/PR criada; base atual feature/007 em 42a5f59 |
+| Release formal | 43/43 checkboxes; T035 e checklist remoto aprovados; Implementada |
+| Entrega Git | Branch feature/008-ingestao-wikipedia publicada; PR #9 sobre feature/007 (42a5f59); implementação 5f8c72f aprovada no run 44809254508 |
+| CI remoto | Quality e secrets aprovados: 542 passed/1 skipped no Linux, Ruff e sete builds isolados; CI do fechamento documental consultável nos checks do head final do PR |
 
 ## Riscos e Decisões
 
@@ -259,7 +260,7 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | R-006 | Licença/atribuição adicional ignorada | Alto | rightsinfo e termos verificados; preservar avisos e metadados; mídia/publicação fora. |
 | R-007 | Queda do processo entre trocas/lock preso no Windows | Alto | Journal, backups/hashes, destinos confinados, inspeção PID e recuperação antes de novo build. |
 | R-008 | Reuso genérico aceita estados API incorretos | Alto | Validador/estado/fetcher próprios; preservar contratos das fontes antigas. |
-| R-009 | CI remoto exige autorização para entrega Git | Gate de release | Autorização explícita do autor em 2026-11-20 para branch, commit, push e PR sobre feature/007. Entrega em andamento; confirmar quality/secrets do SHA enviado antes de concluir o gate. |
+| R-009 | CI remoto exige autorização para entrega Git | Gate de release | Resolvido: autorização explícita do autor em 2026-11-20; branch 008, commit/push e PR #9 sobre feature/007; quality/secrets aprovados no run 44809254508 para 5f8c72f. Checks do fechamento documental ficam no head final do PR. |
 | R-010 | Script de trava não conta Python | Médio | Hash do script + contagem real pytest de cinco casos + auditoria AST sem skip/xfail. |
 | R-011 | load_catalog validava qualquer fonte nova como CAOP | Integração | Resolvido: despacho explícito para o validador próprio Wikipedia; métodos/semânticas das fontes antigas preservados; 34 testes compartilhados verdes. |
 | R-012 | Espaços inseridos por markup e citações quebravam evidências curatoriais | Identidade | Resolvido: normalização específica de pontuação/parênteses e marcadores de referência; palavras alteradas continuam reprovando. Raw e texto editorial conservam referências; 308 identidades revalidadas. |
@@ -286,8 +287,10 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | 2026-11-20 | Fase 1 | Catálogo restrito, dependência e validação de correspondências implementados. | Curadoria nacional e coleta/build ainda não executados. |
 | 2026-11-20 | Fase 7 parcial | 543 testes, Ruff, 8 travas e builds dbt aprovados; auditoria nacional 308/308 sem perda; nenhuma entrega Git realizada | Repetição real e CI remoto autorizado |
 | 2026-11-20 | Fase 7 local concluída | 308 unchanged, zero novos raw; build unchanged; 616 referências e 1.319 arquivos preservados. Runs 20261120T185614436452Z-061ad950 / 20261120T190030045538Z-077e4eb3. Handoff e docs atualizados | T035/CI remoto e scan do SHA final, dependentes de autorização Git |
+| 2026-11-20 | Entrega Git autorizada | Autor autorizou branch, commit, push e PR; branch 008 publicada em 5f8c72f, PR #9 sobre feature/007; oito travas reconferidas íntegras | CI quality e secrets no PR antes de concluir T035 |
+| 2026-11-20 | Fase 7 concluída | Quality e secrets do PR #9 aprovados para 5f8c72f no run 44809254508; 542 testes/1 skip Linux e sete builds verdes; T035/release concluídos, 43/43 | Publicar fechamento documental e reconferir checks do head; próxima etapa sdd-converge |
 
-**PRÓXIMO**: Executar entrega Git autorizada pelo autor em 2026-11-20: branch feature/008-ingestao-wikipedia e PR sobre feature/007. Confirmar quality/secrets do SHA enviado, concluir T035/checklist e atualizar status. Depois, sdd-converge.
+**PRÓXIMO**: sdd-converge, mediante solicitação do autor. Implementação concluída; o resultado do CI do fechamento documental fica nos checks do head final do PR #9.
 
 ## Arquivos Principais
 
@@ -334,5 +337,19 @@ Validação local final: `uv run --locked python -m pytest -q --basetemp .data/t
 Área Wikipedia: 101 testes adicionais aprovados. Fixture dbt isolada aprovada.
 Os cenários controlados cobrem alteração renderizada na mesma revisão, erro,
 espera/limite, SIGINT, corrupção e morte de subprocesso com recuperação.
-O autor autorizou branch, commit, push e PR em 2026-11-20. O CI remoto e o scan
-de segredos permanecem pendentes da execução dessa entrega autorizada.
+### Entrega e evidência remota — 2026-11-20
+
+O autor autorizou branch, commit, push e PR. A implementação foi publicada em
+`feature/008-ingestao-wikipedia`, commit `5f8c72f6307d66c12afa4c2315aa86e6b16f91e7`, no
+[PR #9](https://github.com/johnosd/living-recommender/pull/9), com base em
+`feature/007-idealista-formato-atual-relatorio` (`42a5f59`), preservando a pilha existente.
+
+O [run 44809254508](https://github.com/johnosd/living-recommender/actions/runs/44809254508)
+aprovou quality e secrets para esse SHA: Ruff, 542 testes verdes/1 skip no Linux
+em 331,31 s, os sete builds isolados (incluindo Wikipedia com prontidão aprovada)
+e gitleaks sem segredos encontrados. Recibo privado: `ci-implementation.json`
+em `.data/receipts/wikipedia-proof/`. Oito travas foram reconferidas íntegras.
+
+T035 e checklist concluídos; 43/43 checkboxes, status Implementada. O resultado
+do CI do fechamento documental fica nos checks do head final do mesmo PR,
+conferidos antes de encerrar a entrega. Dados reais/recibos não foram versionados.

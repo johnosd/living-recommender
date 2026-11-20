@@ -207,7 +207,7 @@ Todos os cinco: `uv run --locked python -m pytest tests/contracts/test_wikipedia
 - [X] T030 Atualizar `.docs/fontes_de_dados.md`, `.docs/runbooks/coletas.md` e README.md com comandos reais, estados, atribuição/exceção, ausência/abrangência, legado fora e distinção de narrativa/indicador. FR-002, FR-029, FR-030, FR-031; SC-007.
 - [X] T031 Acrescentar fixture/build dbt Wikipedia em `.github/workflows/python.yml`, isolando paths/banco/target/logs e mantendo lint/testes/secrets existentes. FR-023; Constitution Quality Gates 1–3.
 - [X] T033 Executar prova nacional e repetição conforme `quickstart.md`, registrando em `.data/receipts/wikipedia-proof/` runs, raw hashes, cobertura, versões/ausências e preservação dos arquivos anteriores. FR-001–031; SC-001, SC-002, SC-004, SC-006, SC-007. Revisão real mudou? Registrar changed sem forçar unchanged; provar idempotência também em origem controlada.
-- [ ] T035 Confirmar CI remoto e scan de segredos do SHA final no fluxo de entrega autorizado; não fazer commit/push/PR sem autorização específica. Registrar evidência em checkpoint do `plan.md`. Constitution Quality Gate 1; SC-007.
+- [X] T035 Confirmar CI remoto e scan de segredos do SHA final no fluxo de entrega autorizado; não fazer commit/push/PR sem autorização específica. Registrar evidência em checkpoint do `plan.md`. Constitution Quality Gate 1; SC-007.
 - [X] T036 Fechar checkpoint e status de execução em `plan.md`/`tasks.md`/backlog apenas com gates comprovados; preservar análises históricas e encaminhar para sdd-converge. SC-001–007.
 
 ### Testes da Fase
@@ -223,17 +223,18 @@ Todos os cinco: `uv run --locked python -m pytest tests/contracts/test_wikipedia
 - [X] Ruff, suíte completa, modelos/testes dbt e fixture isolada aprovados.
 - [X] Quickstart real, repetição e cenários de falha comprovados; dados existentes preservados.
 - [X] Cobertura dos 308 contabilizada sem falhas técnicas/identidades pendentes; ausências justificadas.
-- [ ] Docs e catálogo refletem a entrega; CI remoto do SHA final e secrets aprovados no fluxo autorizado.
+- [X] Docs e catálogo refletem a entrega; CI remoto do SHA final e secrets aprovados no fluxo autorizado.
 
 **Critério de Conclusão**: cinco contratos verdes e trava íntegra, todos os itens acima comprovados; estado local não substitui CI nem ausência editorial substitui erro técnico. Nenhum hardware, browser, AWS ou provedor pago é gate.
 
 **Registro da Fase**:
 
-- Status: implementação e aceite locais concluídos; release formal aguarda T035/CI remoto autorizado.
+- Status: concluída; implementação, aceite local e gate remoto aprovados; 43/43 checkboxes.
 - Feito: documentação/CI configurados, 308 valid; repetição 308 unchanged sem novo raw nem mudança do lake; 616 referências verificadas e 1.319 arquivos anteriores preservados; auditoria reconstruiu 308 textos completos; handoff atualizado.
 - Contrato: `uv run --locked python -m pytest tests/contracts/test_wikipedia_contract.py -q --basetemp .data/tmp/wiki-contracts-final` → 5/5 verdes; oito travas íntegras; AST sem decorators/skip/xfail.
 - Testes executados: `uv run --locked python -m pytest -q --basetemp .data/tmp/wiki-final` → 543 passed/433,90 s; `uv run --locked ruff check pipelines tests` aprovado; área Wikipedia → 101 passed/7,75 s; dbt real da fixture e nacional → 5 modelos + 30 testes verdes. Testes controlados incluem erro/revisão/limite/Retry-After/SIGINT e morte real de subprocesso com recuperação de lock/journal.
-- Pendências: T035 e último item de release: branch/commit/push/PR autorizados para CI e scan do SHA final. Status permanece Em Execução. Handoff disponível para retomada/sdd-converge; não marcar Implementada antes do gate remoto.
+- Entrega remota: autor autorizou branch/commit/push/PR em 2026-11-20. PR #9 sobre feature/007, implementação 5f8c72f6307d66c12afa4c2315aa86e6b16f91e7, run 44809254508: quality e secrets aprovados; 542 passed/1 skipped/331,31 s no Linux; sete builds isolados aprovados, incluindo Wikipedia. Recibo privado: `.data/receipts/wikipedia-proof/ci-implementation.json`.
+- Pendências: nenhuma de implementação; próxima etapa SDD: sdd-converge. O resultado do CI do fechamento documental fica nos checks do head final do PR #9.
 
 ## Dependencies & Execution Order
 

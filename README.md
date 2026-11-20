@@ -210,5 +210,8 @@ A prova local da Wikipedia (spec 008) cobriu **308/308 municípios**, com 7.028
 seções e 248.931 blocos. A repetição verificou a fonte e retornou 308 unchanged,
 sem novo bruto nem alteração do lake; os dados anteriores e o legado foram
 preservados. Validação: 543 testes, Ruff, cinco contratos, oito travas e dbt
-aprovados. CI remoto/scan do SHA final aguardam entrega autorizada. Evidências
+aprovados. A spec 008 está Implementada, com 43/43 itens; quality e scan de segredos
+aprovados no [PR #9](https://github.com/johnosd/living-recommender/pull/9),
+[run 44809254508](https://github.com/johnosd/living-recommender/actions/runs/44809254508),
+implementação `5f8c72f` (542 testes verdes/1 skip no Linux e sete builds isolados). Evidências
 no [plano 008](.sdd/specs/008-ingestao-wikipedia/plan.md) e no guia de coletas.

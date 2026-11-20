@@ -545,5 +545,14 @@ Validação local final: `uv run --locked python -m pytest -q --basetemp .data/t
 Área Wikipedia: 101 testes adicionais aprovados. Fixture dbt isolada aprovada.
 Os cenários controlados cobrem alteração renderizada na mesma revisão, erro,
 espera/limite, SIGINT, corrupção e morte de subprocesso com recuperação.
-O CI remoto e o scan de segredos do SHA final permanecem pendentes de entrega
-autorizada; nenhuma branch nova, commit, push ou PR foi feito nesta execução.
+### Entrega remota da Wikipedia — 2026-11-20
+
+O autor autorizou branch/commit/push/PR. A branch `feature/008-ingestao-wikipedia`
+foi publicada no [PR #9](https://github.com/johnosd/living-recommender/pull/9),
+com base em feature/007 para preservar as dependências existentes.
+O [run 44809254508](https://github.com/johnosd/living-recommender/actions/runs/44809254508)
+aprovou quality e secrets da implementação `5f8c72f`: 542 testes verdes/1 skip
+no Linux em 331,31 s, Ruff e sete builds isolados, incluindo a Wikipedia.
+O gitleaks não encontrou segredos. T035/release concluídos: spec 008 Implementada,
+43/43 itens. O CI do fechamento documental fica nos checks do head final do PR.
+Dados reais e recibos continuam privados em `.data/`; legado preservado.

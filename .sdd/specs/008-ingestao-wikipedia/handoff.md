@@ -103,14 +103,17 @@ fixture/nacional aprovados. Coleta `20261120T185614436452Z-061ad950` e repetiç�
 308 valid; 308 unchanged na repetição; zero novos raw e lake idêntico.
 616 referências conferidas; 1.319 arquivos anteriores preservados.
 
-Tarefas: 41/43 checkboxes; restam T035 e o item de release que exige CI remoto
-e secrets do SHA final. O status permanece Em Execução. O autor autorizou
-branch/commit/push/PR em 2026-11-20. A entrega parte de feature/007, HEAD
-42a5f59, também presente no remoto; ela contém dependências de Censos/Idealista
-ainda à frente de origin/main. Entrega autorizada: branch própria 008 e PR
-com base em feature/007, preservando a pilha e os commits existentes.
+Tarefas: 43/43 checkboxes; T035 e checklist concluídos, status Implementada.
+O autor autorizou branch/commit/push/PR em 2026-11-20. A branch
+`feature/008-ingestao-wikipedia` está publicada no
+[PR #9](https://github.com/johnosd/living-recommender/pull/9), baseado em
+feature/007 (`42a5f59`), preservando as dependências de Censos/Idealista.
 
-Executar a entrega autorizada e conferir quality/secrets do SHA final;
-então marcar T035/checklist e atualizar status. sdd-converge pode auditar a
-feature com esse checkpoint. Os contratos travados continuam sem alteração.
+Implementação `5f8c72f6307d66c12afa4c2315aa86e6b16f91e7` aprovada no
+[run 44809254508](https://github.com/johnosd/living-recommender/actions/runs/44809254508):
+quality e secrets verdes, 542 testes/1 skip específico de Windows no Linux,
+Ruff e sete builds isolados aprovados, gitleaks sem segredos encontrados.
+O CI do fechamento documental fica nos checks do head final do PR.
+Próxima etapa: sdd-converge, mediante solicitação. Os contratos travados
+continuam sem alteração; oito travas reconferidas íntegras após a entrega.
 Recibos privados e números finais: `.data/receipts/wikipedia-proof/` e plan.md.

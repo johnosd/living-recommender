@@ -1,4 +1,4 @@
-# Wikipedia 008 — execução local (2026-11-20)
+# Wikipedia 008 — execução e entrega (2026-11-20)
 
 - Implementados catálogo/CSV, HTTP serial identificado, raw/manifests próprios,
   coleta/retomada e build offline com cinco modelos dbt, cobertura, lock/journal.
@@ -22,11 +22,15 @@
 - Builds fixam hashes de inputs/código/SQL. Edição durante a execução bloqueia
   promoção; primeiro candidato nacional demonstrou esse gate. Não editar durante provas.
 - Gates locais: 543 pytest/433,90 s; Ruff; 5 contratos/8 travas; 5 modelos + 30
-  testes dbt. CI remoto/secrets do SHA enviado permanecem pendentes (T035).
-- Status Em Execução; 41/43 checkboxes. Autor autorizou branch/commit/push/PR em
-  2026-11-20; entrega em andamento em branch própria 008, com PR sobre feature/007.
-  Base atual feature/007 em 42a5f59 já remoto, com commits anteriores à frente de main.
-  Entrega proposta: feature/008-ingestao-wikipedia com PR sobre feature/007.
+  testes dbt. Autor autorizou branch/commit/push/PR em 2026-11-20.
+- Entrega: feature/008-ingestao-wikipedia, PR #9 sobre feature/007 em 42a5f59,
+  preservando dependências anteriores. Implementação 5f8c72f6307d66c12afa4c2315aa86e6b16f91e7.
+  Run 44809254508 aprovou quality/secrets, 542 testes/1 skip específico do
+  Windows no Linux em 331,31 s, Ruff e sete builds isolados. Gitleaks sem segredos.
+  https://github.com/johnosd/living-recommender/actions/runs/44809254508
+- Status Implementada; 43/43 checkboxes, T035/release concluídos. CI do
+  fechamento documental consultável nos checks do head final no PR. Recibo privado
+  ci-implementation.json em .data/receipts/wikipedia-proof/. Próximo: sdd-converge.
 
 Referências: .sdd/specs/008-ingestao-wikipedia/{plan,tasks,handoff}.md,
 .docs/runbooks/coletas.md, config/wikipedia_articles.csv.
