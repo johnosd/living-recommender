@@ -27,7 +27,7 @@ from pipelines.collectors.wikipedia.manifest import (
 )
 from pipelines.collectors.wikipedia.state import fingerprint
 
-SCHEMA_VERSION = "wikipedia-parquet-1"
+SCHEMA_VERSION = "wikipedia-parquet-2"
 TABLES = {"wikipedia_revision": "bronze", "wikipedia_article": "silver", "wikipedia_section": "silver",
           "wikipedia_block": "silver", "wikipedia_coverage": "silver"}
 
@@ -50,7 +50,7 @@ SCHEMAS = {
         ("section_order", "level"), ("empty",)),
     "wikipedia_block": schema(("dico", "block_id", "section_id", "parent_block_id", "kind", "text", "links_json",
         "context_json", "processing_signature"), ("block_order",)),
-    "wikipedia_coverage": schema(("dico", "status", "reason", "error", "absence_evidence_json", "checked_at_utc",
+    "wikipedia_coverage": schema(("dico", "official_name", "status", "reason", "error", "absence_evidence_json", "checked_at_utc",
         "source_run_id", "processing_signature", "canonical_title", "scope", "permanent_url", "revision_at_utc",
         "wikidata_id", "english_url"), ("page_id", "revision_id", "previous_valid_revision_id", "section_count", "block_count",
         "introduction_characters", "full_text_characters"),
@@ -107,13 +107,14 @@ def prepare_wikipedia(storage, manifest, candidate, dimension_path):
     if manifest["status"] not in {"changed", "unchanged"}:
         inputs.append(f"tentativa incompleta: {manifest['status']}")
     by_code = {a["dico"]: a for a in mapping}
+    official_names = {m["dico"]: m["official_name"] for m in municipalities}
     dependencies = {**code_dependencies, str(Path(dimension_path).resolve()): manifest["territory_hash"]}
     section_inventory = []
     for entry in manifest["entries"]:
         code = entry["dico"]
         status = entry["status"]
         cov = {**{k: entry.get(k) for k in ("page_id", "canonical_title", "scope", "permanent_url", "revision_at_utc", "wikidata_id", "english_url")},
-               "dico": code, "status": status, "identity_validated": False,
+               "dico": code, "official_name": official_names.get(code), "status": status, "identity_validated": False,
                "extraction_complete": False, "has_introduction": False, "section_count": 0, "block_count": 0,
                "introduction_characters": None, "full_text_characters": None,
                "has_wikidata": bool(entry.get("wikidata_id")), "has_english": bool(entry.get("english_url")),

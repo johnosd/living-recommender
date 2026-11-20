@@ -249,3 +249,38 @@ não apenas ordenação numérica.
 MVP de US1 coleta originais verificáveis sem depender das saídas textuais;
 aceite final da feature exige as quatro stories. Checkpoints não autorizam
 commits/publicação nem pausas opcionais quando houver execução contínua autorizada.
+
+## Phase 8: Convergence
+
+**Origem**: auditoria sdd-converge de 2026-11-20 sobre o SHA
+`87903e94f54a7abae367cdf521466492491e58f2`, PR #9. As fases 1–7 acima
+permanecem como histórico da execução; os achados abaixo reabrem o aceite.
+
+### Correções pendentes, por prioridade
+
+- [X] T037 [Convergence C-001 / HIGH / partial] Corrigir a exclusão mútua na recuperação de lock órfão em `pipelines/collectors/wikipedia/local.py:58–66`. Dois chamadores podem ler o mesmo lock morto; após A removê-lo e adquirir outro, B remove o lock ativo de A e também entra. Origem: FR-024; plan D12; `logic/coleta-e-texto.md` (single writer). Garantir um único proprietário durante aquisição, recuperação e liberação, sem apagar lock de outro proprietário nem depender apenas da checagem anterior do PID. Adicionar regressão determinística em teste não travado com concorrentes disputando o mesmo lock órfão; enquanto A estiver na região protegida, B deve falhar/aguardar e nunca entrar simultaneamente. Revalidar lock ativo, morte real de processo, recuperação do journal e preservação dos vizinhos. Não editar contratos/fixtures travados.
+- [X] T038 [Convergence C-002 / MEDIUM / missing] Incluir o nome oficial do município da dimensão CAOP congelada no modelo e no CSV de cobertura em `pipelines/collectors/wikipedia/prepare.py:53,115,185`, com tipos/testes dbt e documentação operacional aplicáveis. Origem: US4/AC1; FR-025; T027. O relatório real contém 308 DICO e títulos de artigos, mas não contém `official_name`; título do artigo não substitui nome municipal. Propagar o nome por DICO para todos os estados, inclusive ausência, pendência e falha, sem inferência pelo título. Adicionar regressões em arquivos não travados e validar preparo/build offline, relatório legível e cobertura nacional após a alteração.
+- [X] T039 [Convergence C-003 / LOW / contradicts] Alinhar as falhas de estrutura/revisão de `extract_article` ao tipo público `WikipediaError`, conforme `contracts/wikipedia-cli.md:70–71`, preservando a compatibilidade como subclasse de `ValueError`. Origem: plan: contrato público da interface offline; T015; FR-014. Atualmente `extract.py:25` e demais validações lançam `ValueError`, e capturar `WikipediaError` não captura essas falhas. Regressão controlada com revisão divergente confirmou `type(error).__name__ == 'ValueError'` e `isinstance(error, WikipediaError) == False`. Adicionar testes não travados para revisão divergente, raiz ausente, índice incompatível e estrutura não suportada, sem afrouxar diagnósticos nem modificar os cinco contratos existentes.
+
+### Evidência da auditoria
+
+- Pré-requisito converge aprovado; cinco contratos verdes em 0,36 s; oito travas íntegras; nenhuma implementação condicionada aos valores das fixtures encontrada.
+- `uv run --locked python -m pytest tests/unit tests/integration -k wikipedia -q --basetemp .data/tmp/wiki-converge-area-20261120` → 101 passed, 403 deselected, 8,66 s.
+- `uv run --locked ruff check pipelines tests` → aprovado.
+- CI do SHA auditado confirmado no run 44810598252: quality e secrets aprovados; 542 testes/1 skip específico do Windows no Linux; sete builds isolados aprovados.
+- Última coleta real `20261120T190030045538Z-077e4eb3`: 308 unchanged; 616 referências raw reconferidas por bytes/SHA-256; lake com 308 DICO únicos e 308 artigos valid.
+- C-001 reproduzido em raiz temporária isolada: dois chamadores leem o lock órfão; B só conclui a checagem do PID morto após A adquirir o novo lock. Ambos entram na região protegida. O colaborador `process_alive` teve apenas o interleaving controlado; `source_lock` executou seu código real. Nenhum dado real foi alterado.
+- C-002 confirmado no cabeçalho do CSV real e em `SCHEMAS['wikipedia_coverage']`; C-003 confirmado por chamada real a `extract_article` com revisão divergente.
+
+**Status**: Convergência Pendente. Executar T037–T039 por sdd-execute e repetir
+sdd-converge. Esta auditoria não corrige código, não modifica os contratos e
+não substitui as evidências anteriores de coleta/build.
+
+### Registro da Fase 8 — execução
+
+- Status: correções T037–T039 concluídas localmente; gates finais em andamento, status Em Execução.
+- Feito: guard persistente do SO protege recuperação/liberação do lock; official_name da CAOP em todos os estados da cobertura; WikipediaError compartilhado e capturável pela interface pública.
+- Contrato: `uv run --locked python -m pytest tests/contracts/test_wikipedia_contract.py -q --basetemp .data/tmp/wiki-phase8-contracts-before` → 5/5 verdes antes das alterações (baseline já implementada); cinco contratos seguem verdes junto com as regressões; oito travas íntegras.
+- Testes executados: regressão concorrente primeiro falhou com dois processos adquirindo o lock; após correção, lock/build → 14 passed/5,20 s. Nomes: cinco vermelhos por official_name ausente, depois nomes/build/cobertura → 31 passed/4,41 s. Exceções: cinco vermelhos pelo tipo incorreto, depois extração/contratos → 20 passed/0,47 s. `uv run --locked python -m pytest tests/unit tests/integration -k wikipedia -q --basetemp .data/tmp/wiki-phase8-area` → 112 passed/10,70 s; Ruff aprovado.
+- Prova nacional: build `20261120T225853282336Z-1a5fa083` promoted/118,476 s; 308 valid, 308 nomes CAOP conferidos em Parquet/CSV e 308 textos idênticos à preparação anterior; 1.938 arquivos protegidos intactos. Fixture real dbt: cinco modelos + 31 testes, 36 resultados aprovados.
+- Pendências: suíte completa, repetição real do build e CI/scan do SHA corrigido no PR #9. Nenhuma trava regravada; nenhuma nova coleta foi necessária.

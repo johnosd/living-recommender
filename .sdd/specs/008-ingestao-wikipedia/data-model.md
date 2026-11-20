@@ -1,6 +1,7 @@
 # Data Model — Wikipedia
 
-Modelo local versionado; não é contrato de publicação. Tipos Parquet explícitos,
+Modelo local versionado; schema `wikipedia-parquet-2` inclui official_name na cobertura.
+Não é contrato de publicação. Tipos Parquet explícitos,
 inclusive para tabelas vazias. DICO é string de quatro caracteres, nunca inteiro.
 
 ## Catálogo e correspondências
@@ -89,7 +90,7 @@ voláteis. Nova renderização da mesma revisão pode ser changed.
 | wikipedia_article | `lake/silver/wikipedia_article/data.parquet` | DICO, page ID, revisão, scope, introdução, full_text, QID/inglês, licença/atribuição, origem e processing_signature |
 | wikipedia_section | `lake/silver/wikipedia_section/data.parquet` | `(dico, section_id)`, pai, ordem, título original, nível, anchor, vazio explícito; seção sintética lead |
 | wikipedia_block | `lake/silver/wikipedia_block/data.parquet` | `(dico, block_id)`, section_id, pai, ordem, kind, text e links_json; containers sem duplicação de texto |
-| wikipedia_coverage | `lake/silver/wikipedia_coverage/data.parquet` | Uma linha por DICO, status de preparo, identidade, motivo, contagens, disponibilidade de introdução/temas e origem |
+| wikipedia_coverage | `lake/silver/wikipedia_coverage/data.parquet` | Uma linha por DICO, official_name da dimensão congelada, status de preparo, identidade, motivo, contagens, disponibilidade de introdução/temas e origem |
 
 Essas cinco tabelas recebem tipos, chaves e relacionamentos dbt; nenhuma
 unidade herda texto de vizinha. Estados da cobertura: `valid`, `absent`,
@@ -133,6 +134,12 @@ exportação/qualidade verificadas antes de promover somente os seis caminhos
 Wikipedia (cinco tabelas + relatórios). Journal por transação lista destinos,
 backups e hashes: recuperação concluída ou rollback antes de aceitar outro build.
 `promote_paths` sozinho não garante transação contra morte do processo.
+
+O arquivo persistente `.locks/wikipedia.guard` recebe exclusão não bloqueante
+do SO (msvcrt no Windows; flock no Linux). Ele protege também a recuperação e
+a liberação de `.locks/wikipedia.json`, que mantém PID/token para diagnóstico.
+O SO libera a exclusão quando o processo morre; nunca apagar o guard, pois
+outros processos podem manter o arquivo aberto. Journal continua separado.
 
 Destinos/junctions/candidatos precisam permanecer sob a raiz autorizada.
 Falha de limpeza após commit só é manutenção se todos os hashes promoveram;

@@ -234,14 +234,14 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 
 | Área | Estado |
 | --- | --- |
-| Implementação | Setup, fundação e quatro stories concluídos; aceite local completo |
-| Testes locais | 543 pytest/433,90 s; Ruff; 5 contratos/8 travas; dbt fixture e nacional: 5 modelos + 30 testes |
-| Nacional | 308 valid, 7.028 seções, 248.931 blocos, 6.699.736 caracteres; 308 introduções/QIDs/ligações inglesas |
-| Repetição | 308 unchanged; 616 raw antes/depois; build unchanged; lake idêntico |
-| Preservação | 616 referências verificadas; 1.319 arquivos anteriores intactos, incluindo 308 TXT e notebook |
-| Release formal | 43/43 checkboxes; T035 e checklist remoto aprovados; Implementada |
-| Entrega Git | Branch feature/008-ingestao-wikipedia publicada; PR #9 sobre feature/007 (42a5f59); implementação 5f8c72f aprovada no run 44809254508 |
-| CI remoto | Quality e secrets aprovados: 542 passed/1 skipped no Linux, Ruff e sete builds isolados; CI do fechamento documental consultável nos checks do head final do PR |
+| Implementação | T037–T039 concluídas; 46/46 checkboxes; gates finais em andamento |
+| Testes locais | Área Wikipedia: 112 passed/10,70 s; Ruff e cinco contratos verdes; oito travas íntegras; dbt fixture: 5 modelos + 31 testes; suíte completa em andamento |
+| Nacional | Build 20261120T225853282336Z-1a5fa083 promoted/118,476 s; 308 valid, nomes oficiais conferidos em Parquet/CSV; textos idênticos aos anteriores |
+| Repetição | Prova anterior: 308 unchanged, 616 raw e lake idêntico; repetir build após a nova versão do schema |
+| Preservação | Baseline da fase 8: 1.938 arquivos protegidos, incluindo raw/manifests, outras fontes e legado; hashes anteriores conferidos |
+| Release formal | 46/46 checkboxes; Em Execução até conclusão de suíte/repetição e CI da correção |
+| Entrega Git | Branch feature/008-ingestao-wikipedia; PR #9 sobre feature/007; HEAD anterior 87903e9 |
+| CI remoto | 87903e9 aprovado no run 44810598252; correções da fase 8 ainda aguardam envio/verificação |
 
 ## Riscos e Decisões
 
@@ -268,6 +268,9 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | R-014 | Mudanças de código/SQL durante build poderiam misturar regras | Integridade | Resolvido: dependências incluem módulos/SQL e são conferidas após preparo/dbt e na promoção. Primeiro build nacional foi bloqueado ao detectar edição concorrente; candidato não promovido. |
 | R-015 | Teste unitário antigo enumerava exatamente sete fontes | Regressão | Resolvido: enumerar as oito fontes reais mantendo igualdade estrita. Arquivo unitário não travado; contratos e locks não alterados. |
 | R-016 | Tabelas de layout/blockquote abrangem várias seções em quatro artigos reais | Consumo do modelo | Folhas pertencem à seção atual; containers conservam a seção de abertura e texto nulo. Documentado em logic/coleta-e-texto.md; 308 textos reconstruídos exatamente. Não impor igualdade de seção entre todo pai/filho do DOM. |
+| R-017 | Recuperação concorrente de lock órfão apagava proprietário novo (C-001) | Alto | Guard persistente do sistema operacional cobre aquisição, recuperação e liberação do JSON. Regressão com dois processos reais primeiro reproduziu a corrida e depois passou; recuperação após morte do processo preservada. Windows validado; Linux será conferido no CI. |
+| R-018 | Relatório não trazia nome CAOP exigido por US4/AC1 (C-002) | Cobertura | Resolvido: official_name vem do snapshot territorial por DICO, inclusive em falhas/ausências; schema wikipedia-parquet-2 e gate dbt conferem o nome. Cinco regressões, fixture e 308 nomes nacionais em Parquet/CSV aprovados. |
+| R-019 | Exceção da extração divergia do contrato público (C-003) | Interface | Resolvido: classe compartilhada em errors.py, reexportada pelo handler; wrapper público converte falhas de entrada/estrutura em WikipediaError preservando a causa e compatibilidade ValueError. Cinco regressões e contratos aprovados. |
 
 ## Execution Notes
 
@@ -289,16 +292,17 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | 2026-11-20 | Fase 7 local concluída | 308 unchanged, zero novos raw; build unchanged; 616 referências e 1.319 arquivos preservados. Runs 20261120T185614436452Z-061ad950 / 20261120T190030045538Z-077e4eb3. Handoff e docs atualizados | T035/CI remoto e scan do SHA final, dependentes de autorização Git |
 | 2026-11-20 | Entrega Git autorizada | Autor autorizou branch, commit, push e PR; branch 008 publicada em 5f8c72f, PR #9 sobre feature/007; oito travas reconferidas íntegras | CI quality e secrets no PR antes de concluir T035 |
 | 2026-11-20 | Fase 7 concluída | Quality e secrets do PR #9 aprovados para 5f8c72f no run 44809254508; 542 testes/1 skip Linux e sete builds verdes; T035/release concluídos, 43/43 | Publicar fechamento documental e reconferir checks do head; próxima etapa sdd-converge |
+| 2026-11-20 | Fase 8 parcial | Retomados C-001–003; guard por SO, official_name no preparo/CSV e WikipediaError compartilhado implementados; regressões com vermelho confirmado, Ruff/contratos/fixture aprovados | Suíte completa, reprocessamento nacional e repetição; envio e CI do SHA corrigido |
 
-**PRÓXIMO**: sdd-converge, mediante solicitação do autor. Implementação concluída; o resultado do CI do fechamento documental fica nos checks do head final do PR #9.
+**PRÓXIMO**: Concluir validação nacional de T038 e suíte completa; registrar preservação/repetição, publicar correções no PR #9 já autorizado e confirmar quality/secrets do SHA corrigido. Depois, nova sdd-converge.
 
 ## Arquivos Principais
 
-- `pipelines/collectors/wikipedia/`
-- `pipelines/cli/collect_wikipedia.py`, `pipelines/cli/build_wikipedia.py`
-- `config/wikipedia_articles.csv`
-- `analytics/dbt/models/wikipedia/`
-- `.data/receipts/wikipedia-proof/proof-summary.json` (privado)
+- `pipelines/collectors/wikipedia/local.py`, `errors.py`, `extract.py`, `handler.py`, `prepare.py`
+- `tests/integration/test_wikipedia_lock.py`, `test_wikipedia_coverage_names.py`
+- `tests/unit/test_wikipedia_extract.py`
+- `analytics/dbt/models/wikipedia/schema.yml`, `analytics/dbt/tests/wikipedia_coverage.sql`
+- `.data/receipts/wikipedia-proof/phase8-*.json` (privados)
 
 ## Cuidados para Retomada
 
@@ -307,6 +311,8 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 - Não modificar código/SQL durante a prova: os hashes bloqueiam a promoção.
 - Evidência curatorial normaliza espaços de markup/citações; nunca remover palavras para fazê-la caber.
 - Provas nacionais/locks e status estão nos recibos; não tratar CI local como remoto.
+- O guard .locks/wikipedia.guard é persistente e não deve ser removido. O SO detém a exclusão; o JSON mantém PID/token para diagnóstico e compatibilidade com locks anteriores.
+- No Windows, o launcher do ambiente virtual pode ter PID diferente do intérprete filho. A regressão obtém o PID por os.getpid() no próprio trabalhador, sem supor Popen.pid.
 
 ### Evidência final local
 

@@ -51,6 +51,12 @@ por fonte, PID e journal. Na morte do processo, não excluir lock cegamente;
 verificar PID, journal e manifests. Core público aceita dependências injetadas,
 enquanto a CLI garante single writer e snapshots físicos estáveis.
 
+A exclusão usa `.locks/wikipedia.guard`, arquivo persistente bloqueado pelo
+SO durante toda a região crítica, incluindo recuperação/liberação do JSON.
+Não remover o guard: apagar um arquivo aberto permitiria proprietários em
+arquivos distintos. O JSON conserva PID/token; retomada após processo morto
+mantém a inspeção do journal antes de novo build.
+
 ## Estrutura editorial e normalização
 
 Extrair apenas da raiz `.mw-parser-output`. Remover scripts/styles e controles
@@ -132,3 +138,7 @@ hash/revisão inválida e input_errors são blockers. Ausência legítima de
 introdução/tema não é falha. Recontar do universo; não aceitar apenas o
 tamanho da lista como prova de cobertura. Zero artigos com 308 ausências
 não se presume aceitável sem evidência individual suficiente.
+
+Cada linha do preparo e do CSV inclui official_name, obtido por DICO da
+dimensão congelada para qualquer estado. canonical_title permanece separado
+como identidade editorial; dbt verifica presença e igualdade do nome CAOP.

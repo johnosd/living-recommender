@@ -117,3 +117,17 @@ O CI do fechamento documental fica nos checks do head final do PR.
 Próxima etapa: sdd-converge, mediante solicitação. Os contratos travados
 continuam sem alteração; oito travas reconferidas íntegras após a entrega.
 Recibos privados e números finais: `.data/receipts/wikipedia-proof/` e plan.md.
+
+## Retomada após auditoria — fase 8
+
+O checkpoint 43/43 acima é histórico. A convergência sobre 87903e9 anexou
+T037–T039: corrida no lock órfão, nome CAOP ausente da cobertura e exceção
+pública divergente. As três correções estão implementadas; 46/46 checkboxes,
+Em Execução enquanto suíte completa/repetição/CI da correção não terminarem.
+
+Área: 112 testes; cinco contratos e oito travas íntegros; Ruff; fixture dbt
+com 36 resultados aprovados. Build nacional 20261120T225853282336Z-1a5fa083:
+308 valid, nomes CAOP verificados em Parquet/CSV, textos preservados e 1.938
+arquivos protegidos idênticos. Guard persistente do SO em .locks/wikipedia.guard;
+não remover. Recibos phase8-*.json, plan.md e Registro da Fase 8 são o contexto
+atual. Concluir gates, publicar no PR #9 já autorizado e repetir sdd-converge.

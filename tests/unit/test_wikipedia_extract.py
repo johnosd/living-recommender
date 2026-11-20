@@ -3,6 +3,7 @@ from copy import deepcopy
 import pytest
 
 from pipelines.collectors.wikipedia.extract import extract_article
+from pipelines.collectors.wikipedia.handler import WikipediaError
 from tests.fixtures.wikipedia.responses import documents
 
 
@@ -75,3 +76,23 @@ def test_wikipedia_does_not_modify_documents():
     original = deepcopy((meta, parsed))
     extract_article(meta, parsed)
     assert original == (meta, parsed)
+
+
+@pytest.mark.parametrize("case,message", [("revision", "revisão"), ("root", "raiz"),
+    ("index", "índice"), ("unsupported", "não suportado"), ("missing_field", "parse")])
+def test_wikipedia_public_extraction_errors_are_catchable_by_documented_type(case, message):
+    meta, parsed = documents()
+    if case == "revision":
+        parsed["parse"]["revid"] = -1
+    elif case == "root":
+        parsed["parse"]["text"] = "<p>Sem raiz editorial.</p>"
+    elif case == "index":
+        parsed["parse"]["sections"] = []
+    elif case == "unsupported":
+        parsed["parse"]["text"] = '<div class="mw-parser-output"><mystery>Texto substantivo</mystery></div>'
+        parsed["parse"]["sections"] = []
+    else:
+        parsed.pop("parse")
+    with pytest.raises(WikipediaError, match=message) as captured:
+        extract_article(meta, parsed)
+    assert isinstance(captured.value, ValueError)

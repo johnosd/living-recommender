@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from pipelines.collectors.wikipedia.catalog import wikipedia_source
+from pipelines.collectors.wikipedia.errors import WikipediaError
 from pipelines.collectors.wikipedia.fetch import PendingFetch, SourceBlocked
 from pipelines.collectors.wikipedia.identity import (
     validate_associations,
@@ -27,10 +28,6 @@ from pipelines.collectors.wikipedia.state import (
     indexes,
     store_roles,
 )
-
-
-class WikipediaError(ValueError):
-    """Configuração, identidade, revisão ou conteúdo Wikipedia não utilizável."""
 
 
 def collect_wikipedia(

@@ -3,6 +3,10 @@ with issues as (
   select 'missing_municipality' as issue from {{ source('caop_silver', 'dim_municipality') }} d
     left join {{ ref('wikipedia_coverage') }} c using(dico) where c.dico is null
   union all
+  select 'municipality_name_mismatch' from {{ ref('wikipedia_coverage') }} c
+    join {{ source('caop_silver', 'dim_municipality') }} d using(dico)
+    where c.official_name is null or c.official_name <> d.official_name
+  union all
   select 'unready' from {{ ref('wikipedia_coverage') }} where status not in ('valid','absent')
     or (status = 'valid' and (not identity_validated or not extraction_complete or revision_id is null))
     or (status = 'absent' and (reason is null or absence_evidence_json is null or absence_evidence_json = 'null'))

@@ -4,6 +4,7 @@ from urllib.parse import urljoin, urlsplit
 
 from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 
+from pipelines.collectors.wikipedia.errors import WikipediaError
 from pipelines.collectors.wikipedia.identity import normalized
 
 EXTRACTOR_VERSION = "wikipedia-dom-1"
@@ -19,6 +20,14 @@ NON_NARRATIVE = {"hatnote", "ambox", "ombox", "imbox", "tmbox", "fmbox", "coordi
 
 
 def extract_article(metadata: dict, parsed: dict) -> dict:
+    """Valida a entrada pública e preserva o diagnóstico como WikipediaError."""
+    try:
+        return _extract_article(metadata, parsed)
+    except (ValueError, KeyError, TypeError, IndexError) as error:
+        raise WikipediaError(str(error)) from error
+
+
+def _extract_article(metadata: dict, parsed: dict) -> dict:
     page = metadata["query"]["pages"][0]
     content = parsed["parse"]
     if page["pageid"] != content["pageid"] or page["revisions"][0]["revid"] != content["revid"]:

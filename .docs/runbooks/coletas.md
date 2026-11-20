@@ -556,3 +556,24 @@ no Linux em 331,31 s, Ruff e sete builds isolados, incluindo a Wikipedia.
 O gitleaks não encontrou segredos. T035/release concluídos: spec 008 Implementada,
 43/43 itens. O CI do fechamento documental fica nos checks do head final do PR.
 Dados reais e recibos continuam privados em `.data/`; legado preservado.
+
+### Correções da auditoria Wikipedia — fase 8
+
+A cobertura preparada e `coverage.csv` incluem `official_name`, retirado da
+dimensão CAOP congelada por DICO em todos os estados. `canonical_title`
+continua identificando o artigo e pode ser diferente do nome municipal.
+O schema de preparo passa a `wikipedia-parquet-2`; execute novamente
+`uv run --locked python -m pipelines.cli.build_wikipedia --local --root .data`
+para preparar os brutos existentes com a nova regra, sem recoleta.
+
+O coletor/build mantém `.locks/wikipedia.guard` como arquivo persistente de
+exclusão do sistema operacional. Não apague esse guard, mesmo quando estiver
+vazio: o SO libera o bloqueio após a morte do processo. O JSON conserva
+PID/token para diagnóstico; o próximo build inspeciona/recupera o journal.
+A interface de extração usa WikipediaError, compatível com ValueError,
+também em falhas de estrutura ou revisão.
+
+Validação local desta correção: 112 testes da área, Ruff, cinco contratos e
+oito travas; fixture com cinco modelos e 31 testes dbt. O build nacional
+`20261120T225853282336Z-1a5fa083` conferiu 308 nomes e conservou os textos.
+Estado da suíte completa, repetição e CI da fase 8: checkpoint vigente do plano.

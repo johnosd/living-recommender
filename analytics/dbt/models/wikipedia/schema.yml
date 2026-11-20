@@ -70,6 +70,9 @@ models:
         data_tests: [not_null]
   - name: wikipedia_coverage
     columns:
+      - name: official_name
+        description: Nome oficial municipal da dimensão CAOP congelada, independente do título do artigo.
+        data_tests: [not_null]
       - name: dico
         data_tests:
           - not_null
