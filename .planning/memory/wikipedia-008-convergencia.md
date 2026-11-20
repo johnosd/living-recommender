@@ -57,3 +57,20 @@ CI do código corrigido: run 44833850654, SHA
 e 1 skip Windows no Linux/229,68 s, sete builds isolados, nenhum segredo.
 CI do fechamento documental acompanha o head final do PR. Próximo: nova
 sdd-converge para auditar as correções; não foi executada automaticamente.
+
+## Segunda convergência — limpa
+
+Auditoria de 2026-11-20 no SHA 19666659bc151e2b64803207fec4462e8466088f:
+C-001/T037, C-002/T038 e C-003/T039 resolvidas, sem novas lacunas. Spec/backlog
+Convergida, 46/46; tasks.md preservado byte a byte (SHA-256
+0fdcbc1a37947bbed3acF4bd39d2eecA3aedc43938a1cb2ebe33869da517bfcf).
+Resultado Final anexado ao plano; README atualizado cirurgicamente.
+
+Verificação nova: 39 testes direcionados, Ruff, cinco contratos sem skips e
+oito travas íntegras. CI exato run 44834787238 quality/secrets aprovado,
+553 testes/um skip Windows no Linux, sete builds e gitleaks sem segredos.
+Reconferidos 308 textos por folhas/seções, 308 nomes oficiais Parquet/CSV,
+616 referências brutas e 1.938 arquivos protegidos. Assinatura vigente igual
+à do código auditado. Nenhuma recoleta ou alteração de código/dados/legado.
+O PR #9 permanece sobre feature/007, sem merge; os checks do novo fechamento
+documental devem ser conferidos no SHA final, sem substituir a prova do código.

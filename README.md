@@ -211,9 +211,9 @@ seções e 248.931 blocos. A repetição verificou a fonte e retornou 308 unchan
 sem novo bruto nem alteração do lake; os dados anteriores e o legado foram
 preservados. Após a auditoria, a cobertura também inclui o nome oficial CAOP;
 lock concorrente e exceções públicas foram corrigidos. Validação: 554 testes,
-Ruff, cinco contratos, oito travas e dbt aprovados. A spec 008 está Implementada,
+Ruff, cinco contratos, oito travas e dbt aprovados. A spec 008 está Convergida,
 com 46/46 itens; quality e scan de segredos
 aprovados no [PR #9](https://github.com/johnosd/living-recommender/pull/9),
-[run 44833850654](https://github.com/johnosd/living-recommender/actions/runs/44833850654),
-correção `3574232` (553 testes verdes/1 skip no Linux e sete builds isolados). Evidências
+[run 44834787238](https://github.com/johnosd/living-recommender/actions/runs/44834787238),
+SHA auditado `1966665` (553 testes verdes/1 skip no Linux e sete builds isolados). Evidências
 no [plano 008](.sdd/specs/008-ingestao-wikipedia/plan.md) e no guia de coletas.

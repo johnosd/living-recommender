@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-20
 
-**Status**: Implementada
+**Status**: Convergida
 
 **Input**: "vamos especificar wikipedia"; analisar o notebook e os TXT de `J:/MPAlugueisLisboa`, avaliar oportunidades além do legado e seguir com `sdd-specify` após as clarificações de conteúdo, idioma, operação e histórico.
 

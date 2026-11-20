@@ -252,22 +252,22 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
-| R-001 | API oficial sob regra geral Disallow:/w/ do robots | Gate IV | Autor autorizou explicitamente exceção específica em 2026-11-20, resposta estruturada; só query/parse, read-only, identificação, série/limite e sem contorno. Revalidar se mudar endpoint/política. |
-| R-002 | Curadoria nacional não pronta; artigo cidade/município ambíguo | Alto | Resolvido localmente: 308 associações curadas por agente e confirmadas na coleta; nenhuma ausência presumida. T010 revisa 308 associações; trecho/evidência/escopo verificáveis; ausência não pode mascarar trabalho pendente. |
-| R-003 | Mesma revisão renderiza dependências diferentes | Alto | Reconsultar parse, fingerprint do conteúdo e originais; build offline a partir de bytes fixados. |
-| R-004 | DOM/índice ou parser muda e perde texto | Alto | tocdata atual, fixtures sections compatíveis, auditoria de nós/headings e falha de completude; versionar regras/parser. |
-| R-005 | Estado anterior esconde falha atual | Alto | Última tentativa separada do conteúdo válido, default reprova parcial, fallback só por run explícito e sinalizado. |
-| R-006 | Licença/atribuição adicional ignorada | Alto | rightsinfo e termos verificados; preservar avisos e metadados; mídia/publicação fora. |
-| R-007 | Queda do processo entre trocas/lock preso no Windows | Alto | Journal, backups/hashes, destinos confinados, inspeção PID e recuperação antes de novo build. |
-| R-008 | Reuso genérico aceita estados API incorretos | Alto | Validador/estado/fetcher próprios; preservar contratos das fontes antigas. |
+| R-001 | API oficial sob regra geral Disallow:/w/ do robots | Gate IV | Resolvido: Autor autorizou explicitamente exceção específica em 2026-11-20, resposta estruturada; só query/parse, read-only, identificação, série/limite e sem contorno. Revalidar se mudar endpoint/política. |
+| R-002 | Curadoria nacional não pronta; artigo cidade/município ambíguo | Alto | Resolvido: 308 associações curadas por agente e confirmadas na coleta; nenhuma ausência presumida. T010 revisa 308 associações; trecho/evidência/escopo verificáveis; ausência não pode mascarar trabalho pendente. |
+| R-003 | Mesma revisão renderiza dependências diferentes | Alto | Resolvido: Reconsultar parse, fingerprint do conteúdo e originais; build offline a partir de bytes fixados. |
+| R-004 | DOM/índice ou parser muda e perde texto | Alto | Resolvido: tocdata atual, fixtures sections compatíveis, auditoria de nós/headings e falha de completude; versionar regras/parser. |
+| R-005 | Estado anterior esconde falha atual | Alto | Resolvido: Última tentativa separada do conteúdo válido, default reprova parcial, fallback só por run explícito e sinalizado. |
+| R-006 | Licença/atribuição adicional ignorada | Alto | Resolvido: rightsinfo e termos verificados; preservar avisos e metadados; mídia/publicação fora. |
+| R-007 | Queda do processo entre trocas/lock preso no Windows | Alto | Resolvido: Journal, backups/hashes, destinos confinados, inspeção PID e recuperação antes de novo build. |
+| R-008 | Reuso genérico aceita estados API incorretos | Alto | Resolvido: Validador/estado/fetcher próprios; preservar contratos das fontes antigas. |
 | R-009 | CI remoto exige autorização para entrega Git | Gate de release | Resolvido: autorização explícita do autor em 2026-11-20; branch 008, commit/push e PR #9 sobre feature/007; quality/secrets aprovados no run 44809254508 para 5f8c72f. Checks do fechamento documental ficam no head final do PR. |
-| R-010 | Script de trava não conta Python | Médio | Hash do script + contagem real pytest de cinco casos + auditoria AST sem skip/xfail. |
+| R-010 | Script de trava não conta Python | Médio | Resolvido: Hash do script + contagem real pytest de cinco casos + auditoria AST sem skip/xfail. |
 | R-011 | load_catalog validava qualquer fonte nova como CAOP | Integração | Resolvido: despacho explícito para o validador próprio Wikipedia; métodos/semânticas das fontes antigas preservados; 34 testes compartilhados verdes. |
 | R-012 | Espaços inseridos por markup e citações quebravam evidências curatoriais | Identidade | Resolvido: normalização específica de pontuação/parênteses e marcadores de referência; palavras alteradas continuam reprovando. Raw e texto editorial conservam referências; 308 identidades revalidadas. |
 | R-013 | Windows pode manter handle de processo já encerrado | Recuperação | Resolvido: consultar GetExitCodeProcess/STILL_ACTIVE; teste encerra subprocesso abruptamente e recupera lock/journal sem apagar vizinhos. |
 | R-014 | Mudanças de código/SQL durante build poderiam misturar regras | Integridade | Resolvido: dependências incluem módulos/SQL e são conferidas após preparo/dbt e na promoção. Primeiro build nacional foi bloqueado ao detectar edição concorrente; candidato não promovido. |
 | R-015 | Teste unitário antigo enumerava exatamente sete fontes | Regressão | Resolvido: enumerar as oito fontes reais mantendo igualdade estrita. Arquivo unitário não travado; contratos e locks não alterados. |
-| R-016 | Tabelas de layout/blockquote abrangem várias seções em quatro artigos reais | Consumo do modelo | Folhas pertencem à seção atual; containers conservam a seção de abertura e texto nulo. Documentado em logic/coleta-e-texto.md; 308 textos reconstruídos exatamente. Não impor igualdade de seção entre todo pai/filho do DOM. |
+| R-016 | Tabelas de layout/blockquote abrangem várias seções em quatro artigos reais | Consumo do modelo | Resolvido: Folhas pertencem à seção atual; containers conservam a seção de abertura e texto nulo. Documentado em logic/coleta-e-texto.md; 308 textos reconstruídos exatamente. Não impor igualdade de seção entre todo pai/filho do DOM. |
 | R-017 | Recuperação concorrente de lock órfão apagava proprietário novo (C-001) | Alto | Resolvido: guard persistente do sistema operacional cobre aquisição, recuperação e liberação do JSON. Regressão com dois processos reais primeiro reproduziu a corrida e depois passou; recuperação após morte do processo preservada. Windows local e Linux no CI validados. |
 | R-018 | Relatório não trazia nome CAOP exigido por US4/AC1 (C-002) | Cobertura | Resolvido: official_name vem do snapshot territorial por DICO, inclusive em falhas/ausências; schema wikipedia-parquet-2 e gate dbt conferem o nome. Cinco regressões, fixture e 308 nomes nacionais em Parquet/CSV aprovados. |
 | R-019 | Exceção da extração divergia do contrato público (C-003) | Interface | Resolvido: classe compartilhada em errors.py, reexportada pelo handler; wrapper público converte falhas de entrada/estrutura em WikipediaError preservando a causa e compatibilidade ValueError. Cinco regressões e contratos aprovados. |
@@ -383,3 +383,47 @@ aprovou quality/secrets do código corrigido no PR #9: 553 testes/1 skip
 Windows no Linux em 229,68 s, Ruff e sete builds isolados. Gitleaks sem segredos.
 Fechamento documental no mesmo PR, com checks reconferidos no head final.
 Status Implementada, 46/46; próxima etapa: nova convergência.
+
+## Resultado Final
+
+Convergência limpa em 2026-11-20: 46/46 tarefas concluídas, sem nova lacuna
+acionável na segunda auditoria. C-001, C-002 e C-003 foram confirmadas como
+resolvidas; tasks.md permaneceu byte a byte idêntico.
+
+Foram entregues coleta local identificada e limitada pela API oficial e build
+offline recuperável para os 308 municípios CAOP. A associação curada registra
+identidade, abrangência e evidência; os originais imutáveis conservam revisão,
+licença e proveniência. O preparo gera cinco tabelas, texto por seções/blocos,
+introdução e relatório de cobertura, incluindo nome oficial CAOP. Inglês e QID
+são metadados; agendamento, publicação, indicadores e consumo no site continuam
+fora desta feature. Os TXT e o notebook antigos foram preservados.
+
+As Execution Notes registram ajustes necessários ao dado real: despacho do
+catálogo para validação própria, normalização conservadora da evidência,
+tocdata e auditoria do DOM, containers que atravessam seções, verificação de
+dependências durante o build e identificação de processos Windows. A fase 8
+acrescentou guard persistente do SO na recuperação concorrente do lock,
+official_name em todos os estados da cobertura (schema wikipedia-parquet-2)
+e WikipediaError compartilhado, compatível com ValueError e causa preservada.
+Esses ajustes mantêm o escopo e os contratos protegidos. Resolvido em R-001
+significa mitigação confirmada dentro da exceção pontual já autorizada para
+query/parse; não altera a constitution nem autoriza outros endpoints.
+
+Evidência real reconferida: 308 DICO únicos/308 valid, 7.028 seções, 248.931
+blocos e reconstrução exata dos 308 textos; nomes oficiais corretos no Parquet
+e CSV. Foram verificados bytes/SHA-256 de 616 referências brutas e preservados
+1.938 arquivos protegidos. A assinatura do processamento vigente corresponde
+ao código auditado. Coleta repetida: 308 unchanged/zero novos originais.
+Build nacional corrigido: promoted; repetição: unchanged, mantendo bytes e
+mtime dos 11 arquivos vigentes. Não houve nova coleta nesta auditoria.
+
+Validação desta convergência: 39 testes direcionados, Ruff, oito travas íntegras
+e cinco contratos sem skips/xfail. Evidências da execução no mesmo código:
+554 testes locais completos e 112 da área; fixture e nacional com cinco modelos
+e 31 testes dbt aprovados. CI do SHA auditado
+19666659bc151e2b64803207fec4462e8466088f: quality/secrets aprovados no
+[run 44834787238](https://github.com/johnosd/living-recommender/actions/runs/44834787238),
+553 testes aprovados e um específico de Windows dispensado no Linux,
+sete builds isolados e gitleaks sem segredos. O fechamento documental segue no
+[PR #9](https://github.com/johnosd/living-recommender/pull/9), sem merge.
+Recibos privados permanecem em .data/receipts/wikipedia-proof/.
