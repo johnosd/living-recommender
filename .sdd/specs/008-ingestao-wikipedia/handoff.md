@@ -123,11 +123,17 @@ Recibos privados e números finais: `.data/receipts/wikipedia-proof/` e plan.md.
 O checkpoint 43/43 acima é histórico. A convergência sobre 87903e9 anexou
 T037–T039: corrida no lock órfão, nome CAOP ausente da cobertura e exceção
 pública divergente. As três correções estão implementadas; 46/46 checkboxes,
-Em Execução enquanto suíte completa/repetição/CI da correção não terminarem.
+Implementada após aprovação da suíte completa, repetição e CI do código corrigido.
 
 Área: 112 testes; cinco contratos e oito travas íntegros; Ruff; fixture dbt
 com 36 resultados aprovados. Build nacional 20261120T225853282336Z-1a5fa083:
 308 valid, nomes CAOP verificados em Parquet/CSV, textos preservados e 1.938
 arquivos protegidos idênticos. Guard persistente do SO em .locks/wikipedia.guard;
 não remover. Recibos phase8-*.json, plan.md e Registro da Fase 8 são o contexto
-atual. Concluir gates, publicar no PR #9 já autorizado e repetir sdd-converge.
+atual. O PR #9 recebeu o código corrigido; nova sdd-converge é a próxima etapa.
+
+Gates concluídos: 554 testes locais/473,34 s; repetição do build
+20261120T230129034273Z-909ab812 unchanged/107,599 s, bytes/mtime vigentes iguais.
+Código 3574232 aprovado no run 44833850654: quality/secrets, 553 testes/1 skip
+Windows no Linux e sete builds isolados. O fechamento documental segue no
+mesmo PR, com checks do head final. Próximo: nova sdd-converge.

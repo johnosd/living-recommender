@@ -573,7 +573,13 @@ PID/token para diagnóstico; o próximo build inspeciona/recupera o journal.
 A interface de extração usa WikipediaError, compatível com ValueError,
 também em falhas de estrutura ou revisão.
 
-Validação local desta correção: 112 testes da área, Ruff, cinco contratos e
-oito travas; fixture com cinco modelos e 31 testes dbt. O build nacional
+Validação local desta correção: 554 testes completos/473,34 s, 112 testes da
+área, Ruff, cinco contratos e oito travas; fixture com cinco modelos e 31 testes dbt. O build nacional
 `20261120T225853282336Z-1a5fa083` conferiu 308 nomes e conservou os textos.
-Estado da suíte completa, repetição e CI da fase 8: checkpoint vigente do plano.
+Repetição `20261120T230129034273Z-909ab812` unchanged/107,599 s, com bytes/mtime
+dos 11 arquivos vigentes idênticos; 1.938 arquivos protegidos e 616 raw preservados.
+O [run 44833850654](https://github.com/johnosd/living-recommender/actions/runs/44833850654)
+aprovou quality/secrets do código corrigido `3574232`: 553 testes/1 skip
+Windows no Linux, Ruff e sete builds isolados; gitleaks sem segredos.
+Fase 8 concluída, spec 008 Implementada/46 de 46 itens; nova convergência é a
+próxima etapa. CI do fechamento documental nos checks do head final do PR #9.

@@ -209,9 +209,11 @@ Prova local real da spec006:3.259 freguesias,308 municípios e61.921 observaçõ
 A prova local da Wikipedia (spec 008) cobriu **308/308 municípios**, com 7.028
 seções e 248.931 blocos. A repetição verificou a fonte e retornou 308 unchanged,
 sem novo bruto nem alteração do lake; os dados anteriores e o legado foram
-preservados. Validação: 543 testes, Ruff, cinco contratos, oito travas e dbt
-aprovados. A spec 008 está Implementada, com 43/43 itens; quality e scan de segredos
+preservados. Após a auditoria, a cobertura também inclui o nome oficial CAOP;
+lock concorrente e exceções públicas foram corrigidos. Validação: 554 testes,
+Ruff, cinco contratos, oito travas e dbt aprovados. A spec 008 está Implementada,
+com 46/46 itens; quality e scan de segredos
 aprovados no [PR #9](https://github.com/johnosd/living-recommender/pull/9),
-[run 44809254508](https://github.com/johnosd/living-recommender/actions/runs/44809254508),
-implementação `5f8c72f` (542 testes verdes/1 skip no Linux e sete builds isolados). Evidências
+[run 44833850654](https://github.com/johnosd/living-recommender/actions/runs/44833850654),
+correção `3574232` (553 testes verdes/1 skip no Linux e sete builds isolados). Evidências
 no [plano 008](.sdd/specs/008-ingestao-wikipedia/plan.md) e no guia de coletas.

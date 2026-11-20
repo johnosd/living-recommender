@@ -234,14 +234,14 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 
 | Área | Estado |
 | --- | --- |
-| Implementação | T037–T039 concluídas; 46/46 checkboxes; gates finais em andamento |
-| Testes locais | Área Wikipedia: 112 passed/10,70 s; Ruff e cinco contratos verdes; oito travas íntegras; dbt fixture: 5 modelos + 31 testes; suíte completa em andamento |
+| Implementação | T037–T039 concluídas; 46/46 checkboxes; Implementada |
+| Testes locais | 554 passed/473,34 s; área Wikipedia: 112 passed/10,70 s; Ruff, 5 contratos e 8 travas; dbt fixture/nacional: 5 modelos + 31 testes |
 | Nacional | Build 20261120T225853282336Z-1a5fa083 promoted/118,476 s; 308 valid, nomes oficiais conferidos em Parquet/CSV; textos idênticos aos anteriores |
-| Repetição | Prova anterior: 308 unchanged, 616 raw e lake idêntico; repetir build após a nova versão do schema |
-| Preservação | Baseline da fase 8: 1.938 arquivos protegidos, incluindo raw/manifests, outras fontes e legado; hashes anteriores conferidos |
-| Release formal | 46/46 checkboxes; Em Execução até conclusão de suíte/repetição e CI da correção |
-| Entrega Git | Branch feature/008-ingestao-wikipedia; PR #9 sobre feature/007; HEAD anterior 87903e9 |
-| CI remoto | 87903e9 aprovado no run 44810598252; correções da fase 8 ainda aguardam envio/verificação |
+| Repetição | Build 20261120T230129034273Z-909ab812 unchanged/107,599 s; 11 arquivos vigentes idênticos em bytes e mtime; 616 raw preservados |
+| Preservação | 1.938 arquivos protegidos conferidos, incluindo raw/manifests, outras fontes e legado; 308 introduções/textos idênticos à versão anterior |
+| Release formal | 46/46 checkboxes; suíte, repetição e CI do código corrigido aprovados; Implementada |
+| Entrega Git | Branch feature/008-ingestao-wikipedia; PR #9 sobre feature/007; correção 3574232 aprovada no run 44833850654 |
+| CI remoto | 553 testes/1 skip Windows no Linux, Ruff, sete builds e secrets aprovados; CI do fechamento documental acompanha o head final do PR |
 
 ## Riscos e Decisões
 
@@ -268,7 +268,7 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | R-014 | Mudanças de código/SQL durante build poderiam misturar regras | Integridade | Resolvido: dependências incluem módulos/SQL e são conferidas após preparo/dbt e na promoção. Primeiro build nacional foi bloqueado ao detectar edição concorrente; candidato não promovido. |
 | R-015 | Teste unitário antigo enumerava exatamente sete fontes | Regressão | Resolvido: enumerar as oito fontes reais mantendo igualdade estrita. Arquivo unitário não travado; contratos e locks não alterados. |
 | R-016 | Tabelas de layout/blockquote abrangem várias seções em quatro artigos reais | Consumo do modelo | Folhas pertencem à seção atual; containers conservam a seção de abertura e texto nulo. Documentado em logic/coleta-e-texto.md; 308 textos reconstruídos exatamente. Não impor igualdade de seção entre todo pai/filho do DOM. |
-| R-017 | Recuperação concorrente de lock órfão apagava proprietário novo (C-001) | Alto | Guard persistente do sistema operacional cobre aquisição, recuperação e liberação do JSON. Regressão com dois processos reais primeiro reproduziu a corrida e depois passou; recuperação após morte do processo preservada. Windows validado; Linux será conferido no CI. |
+| R-017 | Recuperação concorrente de lock órfão apagava proprietário novo (C-001) | Alto | Resolvido: guard persistente do sistema operacional cobre aquisição, recuperação e liberação do JSON. Regressão com dois processos reais primeiro reproduziu a corrida e depois passou; recuperação após morte do processo preservada. Windows local e Linux no CI validados. |
 | R-018 | Relatório não trazia nome CAOP exigido por US4/AC1 (C-002) | Cobertura | Resolvido: official_name vem do snapshot territorial por DICO, inclusive em falhas/ausências; schema wikipedia-parquet-2 e gate dbt conferem o nome. Cinco regressões, fixture e 308 nomes nacionais em Parquet/CSV aprovados. |
 | R-019 | Exceção da extração divergia do contrato público (C-003) | Interface | Resolvido: classe compartilhada em errors.py, reexportada pelo handler; wrapper público converte falhas de entrada/estrutura em WikipediaError preservando a causa e compatibilidade ValueError. Cinco regressões e contratos aprovados. |
 
@@ -293,8 +293,9 @@ mock da própria unidade, lógica de fixture ou supressão de NotImplementedErro
 | 2026-11-20 | Entrega Git autorizada | Autor autorizou branch, commit, push e PR; branch 008 publicada em 5f8c72f, PR #9 sobre feature/007; oito travas reconferidas íntegras | CI quality e secrets no PR antes de concluir T035 |
 | 2026-11-20 | Fase 7 concluída | Quality e secrets do PR #9 aprovados para 5f8c72f no run 44809254508; 542 testes/1 skip Linux e sete builds verdes; T035/release concluídos, 43/43 | Publicar fechamento documental e reconferir checks do head; próxima etapa sdd-converge |
 | 2026-11-20 | Fase 8 parcial | Retomados C-001–003; guard por SO, official_name no preparo/CSV e WikipediaError compartilhado implementados; regressões com vermelho confirmado, Ruff/contratos/fixture aprovados | Suíte completa, reprocessamento nacional e repetição; envio e CI do SHA corrigido |
+| 2026-11-20 | Fase 8 concluída | T037–T039 corrigidas; 554 testes locais, 112 da área, Ruff/contratos/travas e 36 resultados dbt; 308 nomes corretos, textos preservados, repetição unchanged e 1.938 arquivos intactos; código 3574232 aprovado no run 44833850654 | Nova sdd-converge; CI do fechamento documental acompanha o head do PR #9 |
 
-**PRÓXIMO**: Concluir validação nacional de T038 e suíte completa; registrar preservação/repetição, publicar correções no PR #9 já autorizado e confirmar quality/secrets do SHA corrigido. Depois, nova sdd-converge.
+**PRÓXIMO**: Nova sdd-converge para auditar T037–T039 corrigidas. Implementada, 46/46; resultado do CI do fechamento documental nos checks do head final do PR #9.
 
 ## Arquivos Principais
 
@@ -359,3 +360,26 @@ em `.data/receipts/wikipedia-proof/`. Oito travas foram reconferidas íntegras.
 T035 e checklist concluídos; 43/43 checkboxes, status Implementada. O resultado
 do CI do fechamento documental fica nos checks do head final do mesmo PR,
 conferidos antes de encerrar a entrega. Dados reais/recibos não foram versionados.
+
+### Correções de convergência — fase 8
+
+T037–T039 resolvidas no commit `35742325ea4e62751d30063f796ac9dd9ae73bcb`.
+Guard persistente do SO protege também a recuperação do JSON; nome CAOP por
+DICO acompanha toda a cobertura; WikipediaError compartilhado preserva o
+contrato e a causa das falhas de entrada/estrutura. Nenhum contrato travado foi alterado.
+
+`uv run --locked python -m pytest -q --basetemp .data/tmp/wiki-phase8-full`
+→ 554 passed/473,34 s. Área → 112 passed/10,70 s; Ruff, cinco contratos e
+oito travas aprovados. Fixture e nacional: cinco modelos + 31 testes dbt.
+
+Build nacional `20261120T225853282336Z-1a5fa083` promoted/118,476 s;
+308 valid, 308 nomes CAOP em Parquet/CSV, 308 textos idênticos à versão anterior.
+Repetição `20261120T230129034273Z-909ab812` unchanged/107,599 s: bytes/mtime
+dos 11 arquivos vigentes idênticos. Todos os 1.938 arquivos protegidos
+conferem; 616 raw preservados, sem recoleta. Recibos privados `phase8-*.json`.
+
+O [run 44833850654](https://github.com/johnosd/living-recommender/actions/runs/44833850654)
+aprovou quality/secrets do código corrigido no PR #9: 553 testes/1 skip
+Windows no Linux em 229,68 s, Ruff e sete builds isolados. Gitleaks sem segredos.
+Fechamento documental no mesmo PR, com checks reconferidos no head final.
+Status Implementada, 46/46; próxima etapa: nova convergência.

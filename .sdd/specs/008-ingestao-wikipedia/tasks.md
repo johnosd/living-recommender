@@ -278,9 +278,10 @@ não substitui as evidências anteriores de coleta/build.
 
 ### Registro da Fase 8 — execução
 
-- Status: correções T037–T039 concluídas localmente; gates finais em andamento, status Em Execução.
+- Status: concluída; T037–T039 e gates finais aprovados, 46/46 checkboxes, Implementada.
 - Feito: guard persistente do SO protege recuperação/liberação do lock; official_name da CAOP em todos os estados da cobertura; WikipediaError compartilhado e capturável pela interface pública.
 - Contrato: `uv run --locked python -m pytest tests/contracts/test_wikipedia_contract.py -q --basetemp .data/tmp/wiki-phase8-contracts-before` → 5/5 verdes antes das alterações (baseline já implementada); cinco contratos seguem verdes junto com as regressões; oito travas íntegras.
 - Testes executados: regressão concorrente primeiro falhou com dois processos adquirindo o lock; após correção, lock/build → 14 passed/5,20 s. Nomes: cinco vermelhos por official_name ausente, depois nomes/build/cobertura → 31 passed/4,41 s. Exceções: cinco vermelhos pelo tipo incorreto, depois extração/contratos → 20 passed/0,47 s. `uv run --locked python -m pytest tests/unit tests/integration -k wikipedia -q --basetemp .data/tmp/wiki-phase8-area` → 112 passed/10,70 s; Ruff aprovado.
 - Prova nacional: build `20261120T225853282336Z-1a5fa083` promoted/118,476 s; 308 valid, 308 nomes CAOP conferidos em Parquet/CSV e 308 textos idênticos à preparação anterior; 1.938 arquivos protegidos intactos. Fixture real dbt: cinco modelos + 31 testes, 36 resultados aprovados.
-- Pendências: suíte completa, repetição real do build e CI/scan do SHA corrigido no PR #9. Nenhuma trava regravada; nenhuma nova coleta foi necessária.
+- Gate final: `uv run --locked python -m pytest -q --basetemp .data/tmp/wiki-phase8-full` → 554 passed/473,34 s. Build repetido `20261120T230129034273Z-909ab812` unchanged/107,599 s; bytes/mtime dos 11 arquivos vigentes iguais; 1.938 arquivos protegidos e 616 raw preservados. CI 44833850654 aprovou quality/secrets de 3574232: 553 testes/1 skip Windows no Linux e sete builds isolados. Nenhuma trava regravada; nenhuma nova coleta necessária.
+- Pendências: nenhuma de implementação. Nova sdd-converge para auditar as correções; CI do fechamento documental consultável nos checks do head final do PR #9.

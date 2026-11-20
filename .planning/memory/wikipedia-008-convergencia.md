@@ -31,3 +31,29 @@ Próximo passo: sdd-execute para T037–T039, seguido de nova convergência.
 As fases 1–7 e plan.md permanecem como histórico da execução anterior;
 status vigente em spec/backlog: Convergência Pendente. Não declarar convergida
 com base apenas nos testes/CI verdes anteriores a essas regressões.
+
+## Execução posterior — T037–T039 corrigidas
+
+O veredito pendente acima é histórico. Código corrigido em 3574232 no mesmo
+PR #9; spec/backlog Implementada, 46/46. Guard persistente do SO protege a
+recuperação/liberação do JSON; não remover .locks/wikipedia.guard. Regressão
+com dois processos reais validada no Windows e no Linux. No Windows, obter o
+PID por os.getpid() no trabalhador: Popen.pid pode ser o launcher do ambiente.
+
+Cobertura Parquet/CSV contém official_name da dimensão congelada por DICO,
+incluindo ausência/pendência/falha. Schema wikipedia-parquet-2; dbt confere nome.
+WikipediaError vem de errors.py e continua disponível pelo handler, subclasse
+de ValueError; erros de entrada/estrutura conservam a causa original.
+
+Evidências novas: 554 testes completos/473,34 s; área 112/10,70 s; Ruff,
+cinco contratos e oito travas; dbt fixture/nacional: 5 modelos + 31 testes.
+Build 20261120T225853282336Z-1a5fa083 promoted/118,476 s, 308 nomes corretos
+e textos idênticos; repetição 20261120T230129034273Z-909ab812 unchanged/107,599 s,
+bytes/mtime dos 11 arquivos vigentes iguais. Preservados 1.938 arquivos e
+616 raw, sem nova coleta. Recibos phase8-*.json na pasta privada de provas.
+
+CI do código corrigido: run 44833850654, SHA
+35742325ea4e62751d30063f796ac9dd9ae73bcb, quality/secrets verdes, 553 testes
+e 1 skip Windows no Linux/229,68 s, sete builds isolados, nenhum segredo.
+CI do fechamento documental acompanha o head final do PR. Próximo: nova
+sdd-converge para auditar as correções; não foi executada automaticamente.
