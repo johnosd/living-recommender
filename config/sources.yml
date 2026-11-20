@@ -1,4 +1,27 @@
 sources:
+  wikipedia:
+    id: wikipedia
+    publisher: Wikipedia em português
+    responsible_party: living-recommender
+    source_page: https://pt.wikipedia.org/
+    api_url: https://pt.wikipedia.org/w/api.php
+    license_id: CC-BY-SA-4.0
+    license_url: https://creativecommons.org/licenses/by-sa/4.0/deed.pt
+    attribution: Contribuidores da Wikipedia; texto normalizado; consultar histórico da revisão
+    collection_method: api_json
+    frequency: monthly
+    territorial_level: municipality
+    expected_municipalities: 308
+    language: pt
+    contact: https://github.com/johnosd/living-recommender
+    user_agent: living-recommender/0.1 (+https://github.com/johnosd/living-recommender)
+    robots_exception: 008-R-001-authorized-2026-11-20
+    min_interval_seconds: 1.0
+    maxlag: 5
+    timeout_seconds: 30
+    max_attempts: 3
+    backoff_seconds: 2
+
   idealista:
     id: idealista
     publisher: Idealista

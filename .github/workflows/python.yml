@@ -78,6 +78,11 @@ jobs:
           DBT_LOG_PATH: .data/ci-censos/dbt-logs
         run: uv run --locked dbt build --project-dir analytics/dbt --profiles-dir analytics/dbt --target local --select tag:censos
 
+      - name: Prepare Wikipedia fixture
+        run: uv run --locked python -m tests.fixtures.wikipedia.ci_seed --root .data/ci-wikipedia
+      - name: Build Wikipedia offline with dbt and readiness gate
+        run: uv run --locked python -m pipelines.cli.build_wikipedia --local --root .data/ci-wikipedia
+
   secrets:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

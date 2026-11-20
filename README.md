@@ -73,6 +73,15 @@ Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência
 
 Para executar as coletas disponíveis (CAOP, Pordata e INE) e o staging de observações, consulte o [guia de coletas](.docs/runbooks/coletas.md).
 
+A spec 008 acrescenta os comandos locais `collect_wikipedia` e `build_wikipedia`:
+artigos em português para os 308 municípios, com correspondência curada por DICO,
+revisão e originais imutáveis, introdução, seções, tabelas e referências. A ligação
+inglesa e o QID são metadados. O preparo é offline e exige cobertura sem falhas;
+uma tentativa recente incompleta continua visível mesmo havendo base anterior.
+Os textos têm licença CC-BY-SA-4.0 e atribuição aos contribuidores; fornecem contexto
+enciclopédico e não substituem indicadores oficiais. Comandos, retomada e níveis de
+prova estão no [guia de coletas](.docs/runbooks/coletas.md#wikipedia-textos-municipais-spec-008).
+
 A ingestão climática da spec 003 oferece `collect_open_meteo` (308 municípios, retomada por cota, sem chave) e `build_climate` (staging diário, cobertura de lacunas e divergência dos pontos). São 13 variáveis de 2024-11-01 a 2026-10-31, preservando nulos e o dia local. O plano gratuito é restrito a uso não comercial, risco aceito pelo autor; atribuição Open-Meteo/ERA5 acompanha os registros. A verificação local, a coleta real e o CI remoto são registrados separadamente no [guia de coletas](.docs/runbooks/coletas.md).
 
 Para coletar sem intervenção nas renovações de cota: `uv run --locked python -m pipelines.cli.collect_open_meteo --local --continuous`. Esse modo salva checkpoints a cada 10 municípios, aguarda o prazo do servidor e repete falhas temporárias com espera exponencial. Ctrl+C encerra com progresso salvo; erros permanentes exigem correção. Ao concluir, rode `uv run --locked python -m pipelines.cli.build_climate --local`.
@@ -196,3 +205,10 @@ A definir.
 A spec 006 acrescenta coleta auditável de população total e faixas etárias, com prioridade para dados oficiais compatíveis com a CAOP2025. Bronze preserva contagens/metadados nativos e Silver distingue dado próprio, herdado ou ausente por observação. A cobertura inclui todas as freguesias da dimensão vigente; falhas técnicas impedem promoção. O [guia de coletas](.docs/runbooks/coletas.md) descreve os comandos e a recuperação. Percentuais, densidade e site ficam para as etapas seguintes; o resultado de aceite real está registrado no plano da feature.
 
 Prova local real da spec006:3.259 freguesias,308 municípios e61.921 observações próprias (total+18 faixas),sem ausências;repetição201/201 unchanged,sem novos originais. Spec006 Convergida:35/35 itens,CI de qualidade e scan de segredos aprovados no [PR7](https://github.com/johnosd/living-recommender/pull/7) ([run43533480543](https://github.com/johnosd/living-recommender/actions/runs/43533480543),commit b82b8c8). Evidências e relatórios estão no [plano006](.sdd/specs/006-censos-2021-freguesia/plan.md) e no [guia de coletas](.docs/runbooks/coletas.md).
+
+A prova local da Wikipedia (spec 008) cobriu **308/308 municípios**, com 7.028
+seções e 248.931 blocos. A repetição verificou a fonte e retornou 308 unchanged,
+sem novo bruto nem alteração do lake; os dados anteriores e o legado foram
+preservados. Validação: 543 testes, Ruff, cinco contratos, oito travas e dbt
+aprovados. CI remoto/scan do SHA final aguardam entrega autorizada. Evidências
+no [plano 008](.sdd/specs/008-ingestao-wikipedia/plan.md) e no guia de coletas.

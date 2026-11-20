@@ -416,3 +416,134 @@ causal com o histórico.
 A evidência desta execução e o backup das saídas de agosto estão em
 `.data/idealista-review-202611/`. O relatório agregado entregue está em
 [reports/idealista-2026-11.md](../reports/idealista-2026-11.md).
+
+## Wikipedia: textos municipais (spec 008)
+
+A coleta usa somente GET `query`/`parse` em `https://pt.wikipedia.org/w/api.php`,
+em português. O autor aceitou em 2026-11-20 a exceção pontual à regra geral
+`Disallow: /w/` do robots (plano 008, R-001). Isso permite a API oficial de
+leitura identificada e limitada; bloqueios reais continuam sendo respeitados.
+Não há scraping de páginas, proxies, mídia, texto inglês, consultas a declarações
+Wikidata, publicação ou agendamento nesta entrega.
+
+O catálogo contém licença, atribuição e contato público do projeto, substituível
+por `--contact <URL-HTTPS-ou-email>`. Requisições são seriais, com intervalo mínimo
+de 1 segundo, timeout de até 30 segundos, até três tentativas e `maxlag=5`.
+HTTP 403 encerra os pedidos da execução. 429/503/maxlag respeitam `Retry-After`;
+espera acima de 60 segundos vira pendência com `retry_at`, sem antecipar consulta.
+
+Na raiz do projeto, com `uv sync --locked` e a dimensão CAOP preparada:
+
+```powershell
+uv run --locked python -m pipelines.cli.collect_wikipedia --local --root .data --max-municipalities 5
+uv run --locked python -m pipelines.cli.collect_wikipedia --local --root .data --resume-run-id <run-retornado>
+uv run --locked python -m pipelines.cli.build_wikipedia --local --root .data
+```
+
+Uma coleta sem limite verifica novamente todos os artigos, incluindo o HTML
+renderizado da mesma revisão. A retomada cria outro run do mesmo ciclo e consulta
+só falhas/pendências, preservando a data dos sucessos. Não combinar retomada e
+limite. Mudanças de catálogo, dimensão ou CSV exigem um ciclo novo. `--catalog`,
+`--associations` e `--silver` permitem selecionar explicitamente outras entradas;
+o universo da configuração sempre precisa coincidir com a dimensão.
+
+Saídas da coleta: 0 para completo changed/unchanged; 1 para configuração,
+identidade ou falha permanente; 2 para limite, interrupção ou espera retomável.
+O JSON impresso fornece run, manifest, contagens, erros e prazos de retomada.
+O build retorna 0 para promoted/unchanged e 1 para reprovação. Um resultado
+unchanged verifica integridade e mantém os arquivos/horários do lake vigente.
+
+`config/wikipedia_articles.csv` contém uma associação por DICO, page ID, escopo,
+trecho de abrangência, URL/revisão da evidência, justificativa, data e revisor.
+Foi curado por agente, com revisão dos títulos qualificados e da abrangência;
+não representa revisão humana independente. Nome e QID isolados não bastam.
+Artigos de município e sede têm `municipality_and_seat`; não interpretar todo
+número do texto como municipal. Ausência só é aceita com revisão individual
+documentada de busca/candidatos; `pending_review` bloqueia prontidão. Para
+atualizar uma associação, revisar a evidência e iniciar novo ciclo, sem editar raw.
+
+Os manifests próprios ficam em `.data/manifests/wikipedia/`; cada papel novo em
+`raw/source=wikipedia/dico=<DICO>/run_id=<run>/{metadata,content}.json`.
+Respostas de continuação conservam os bytes originais no envelope de metadados.
+`raw_collected_at_utc`, verificação, revisão e processamento são instantes distintos.
+Pageprops/QID/ligação inglesa são observações de metadados, e não snapshots históricos
+garantidos pela revisão. Os TXT e o notebook de `J:/MPAlugueisLisboa` não são lidos
+como entrada nem alterados.
+
+O build valida hashes e identidades e extrai de `.mw-parser-output` com
+Beautiful Soup e `html.parser` explícito. Preserva títulos/hierarquia, todos os
+parágrafos/listas, células/tabelas aninhadas, legendas, referências e links.
+Remove scripts, estilos, controles de edição, índice e navboxes pela lista
+versionada em `extract.py`; avisos substantivos permanecem. Notas de desambiguação
+editoriais são preservadas no texto, separadas da introdução narrativa. A evidência
+de identidade normaliza espaços junto à pontuação e exclui marcadores de citação;
+o texto preparado conserva essas referências. Índice divergente, nó substantivo
+desconhecido ou texto não atribuído a bloco reprova a extração. `audit_json`
+registra nós textuais, exclusões e versão das regras. Não há resumo ou tradução gerada.
+
+Após aprovação dbt e prontidão, são promovidos somente cinco modelos:
+`lake/bronze/wikipedia_revision` e `lake/silver/wikipedia_{article,section,block,coverage}`,
+mais `lake/silver/wikipedia_reports`. Ali estão `coverage.csv` e `sections.csv`
+(UTF-8 BOM, separador `;`), `readiness.json`, `summary.json`,
+`dbt_run_results.json` e `integrity.json`. A cobertura inclui título, abrangência,
+revisão, metadados opcionais, volume de texto, introdução, datas e causas das lacunas;
+o inventário de títulos permite inspecionar temas sem inferir indicadores.
+
+Cada tentativa tem recibo próprio em `reports/wikipedia/{collection,build}/<id>/`.
+O build padrão reprova a última coleta parcial/falha. Uma seleção consciente de
+histórico usa `build_wikipedia --local --root .data --run-id <run-completo>`:
+o recibo informa `selected_older`, a última tentativa e seu estado, sem ocultar a falha.
+
+O lock `.locks/wikipedia.json` registra PID/token. Não apagar um lock de processo
+ativo. Locks órfãos são identificados pelo PID; o build inspeciona o journal em
+`.build/wikipedia/journal.json` antes de prosseguir. Promoção interrompida sem commit
+é revertida pelos backups/hashes; commit já verificado permite limpar backups.
+Destino/backup inesperado interrompe a recuperação para inspeção, sem remoção cega.
+Os candidatos e logs dbt ficam em `.build/wikipedia/<build_id>/`; não apontar outros
+builds para esses caminhos. Nenhum `published/` ou `current.json` é modificado.
+
+Prova offline, em raiz nova e vazia:
+
+```powershell
+uv run --locked python -m tests.fixtures.wikipedia.ci_seed --root .data/ci-wikipedia-nova
+uv run --locked python -m pipelines.cli.build_wikipedia --local --root .data/ci-wikipedia-nova
+uv run --locked python -m pytest tests/contracts/test_wikipedia_contract.py -q --basetemp .data/tmp/wiki-contracts
+```
+
+O workflow Python inclui essa fixture/build isolado e mantém o scan de segredos
+em PR. A aprovação local não prova CI remoto: este exige o SHA final no fluxo de
+entrega autorizado. A prova nacional e a repetição estão registradas no checkpoint
+do [plano 008](../../.sdd/specs/008-ingestao-wikipedia/plan.md) e nos recibos privados
+em `.data/receipts/wikipedia-proof/`.
+
+### Prova local real da Wikipedia — 2026-11-20
+
+Coleta completa `20261120T185614436452Z-061ad950`: 308 artigos validados, sem ausência editorial,
+identidade pendente ou falha técnica. A coleta começou em lote e teve retomadas
+para revisar a normalização das evidências. Curadoria por agente registrada no CSV;
+nenhuma lacuna técnica foi convertida em ausência.
+
+Build `20261120T185847215174Z-e5ca6350` aprovado em 102.465 s:
+308 revisões/artigos, 7.028 seções e 248.931 blocos, cobertura 308 valid.
+São 6.699.736 caracteres de texto editorial; 308 introduções, QIDs e ligações
+inglesas. A auditoria reconstruiu exatamente os 308 textos a partir dos títulos
+e folhas ordenadas. Lisboa preserva seções próprias para população, religiões e saúde.
+Cuba, Gavião, Nazaré, Santa Cruz, Corvo e os pares Lagoa/Calheta foram conferidos
+contra as identidades curatoriais. dbt: cinco modelos e 30 testes aprovados.
+
+Repetição `20261120T190030045538Z-077e4eb3` em 620.528 s:
+308/308 unchanged, 616 brutos antes/depois e zero novos arquivos raw.
+Build `20261120T191050484861Z-7028d282` em 97.757 s:
+unchanged, sem mover/substituir o lake. Os 616 brutos referenciados conferem
+com bytes/SHA-256. Os 1.319 arquivos anteriores inventariados, incluindo os
+308 TXT e o notebook legados, permaneceram idênticos. Recibos privados:
+`.data/receipts/wikipedia-proof/proof-summary.json`, `before.json`,
+`raw-before-repeat.json`, `lake-before-repeat.json` e `manual-audit.json`.
+
+Validação local final: `uv run --locked python -m pytest -q --basetemp .data/tmp/wiki-final`
+→ 543 passed/433,90 s; Ruff aprovado; cinco contratos e oito travas íntegros.
+Área Wikipedia: 101 testes adicionais aprovados. Fixture dbt isolada aprovada.
+Os cenários controlados cobrem alteração renderizada na mesma revisão, erro,
+espera/limite, SIGINT, corrupção e morte de subprocesso com recuperação.
+O CI remoto e o scan de segredos do SHA final permanecem pendentes de entrega
+autorizada; nenhuma branch nova, commit, push ou PR foi feito nesta execução.
