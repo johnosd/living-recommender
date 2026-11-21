@@ -14,7 +14,9 @@ from tests.fixtures.idealista.ci_seed import seed
 
 OUTPUTS = ("lake/bronze/idealista_occurrences/data.parquet", "lake/silver/idealista_listings/data.parquet",
            "lake/bronze/idealista_reports/summary.json", "lake/bronze/idealista_reports/coverage.csv",
-           "lake/bronze/idealista_reports/duplicates.csv")
+           "lake/bronze/idealista_reports/duplicates.csv", "lake/bronze/idealista_reports/report.md",
+           "lake/bronze/idealista_reports/statistics.json", "lake/bronze/idealista_reports/municipality_stats.csv",
+           "lake/bronze/idealista_reports/municipality_typology_stats.csv", "lake/bronze/idealista_reports/regional_stats.csv")
 
 
 def digests(root):
@@ -42,6 +44,15 @@ def test_dbt_build_and_reports_match_the_manual_snapshot(built):
     coverage = pd.read_csv(root / OUTPUTS[3], sep=";", dtype=str)
     assert coverage.loc[coverage.territory == "0101", "listings"].item() == "0"
     assert json.loads((root / OUTPUTS[2]).read_text(encoding="utf-8"))["snapshot_month"] == "2025-08"
+    statistics = json.loads((root / OUTPUTS[6]).read_text(encoding="utf-8"))
+    assert statistics["lot"]["n_listings"] == 4 and statistics["lot"]["median_eur"] is None
+    assert "amostra insuficiente" in (root / OUTPUTS[5]).read_text(encoding="utf-8")
+    for key in ("municipality_stats", "municipality_typology_stats"):
+        csv = pd.read_csv(root / f"lake/bronze/idealista_reports/{key}.csv", sep=";", dtype={"dico": str})
+        assert csv.n_listings.sum() == sum(row["n_listings"] for row in statistics[key]) == 3
+        assert csv.n_eligible.sum() == sum(row["n_eligible"] for row in statistics[key])
+        assert csv.median_eur.isna().all() and all(row["median_eur"] is None for row in statistics[key])
+    assert "### Por município e tipologia" in (root / OUTPUTS[5]).read_text(encoding="utf-8")
 
 
 def test_dbt_failure_preserves_every_previous_output_and_other_sources(built, monkeypatch):
@@ -91,3 +102,9 @@ def test_an_empty_snapshot_is_reported_as_zero_without_phantom_listings(tmp_path
     result = module.build_idealista(root, snapshot_month="2025-08")
     assert result["unique_listings"] == 0 and result["records"] == 0
     assert len(pd.read_parquet(root / OUTPUTS[0])) == len(pd.read_parquet(root / OUTPUTS[1])) == 0
+    statistics = json.loads((root / OUTPUTS[6]).read_text(encoding="utf-8"))
+    assert statistics["lot"]["n_eligible"] == 0 and statistics["lot"]["median_eur"] is None
+    assert statistics["municipality_typology_stats"] == []
+    assert len(statistics["municipality_stats"]) == result["municipalities_expected"]
+    assert all(row["n_listings"] == row["n_eligible"] == 0 and row["median_eur"] is None
+               for row in statistics["municipality_stats"])

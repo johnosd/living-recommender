@@ -64,7 +64,8 @@ def build_idealista(root, *, snapshot_month):
         _run_dbt(candidate, root / "lake" / "silver")
         _verify_exports(candidate, summary)
         report_dir = candidate / PROMOTED[2]
-        for filename in ("summary.json", "coverage.csv", "duplicates.csv"):
+        for filename in ("summary.json", "coverage.csv", "duplicates.csv", "report.md", "statistics.json",
+                         "municipality_stats.csv", "municipality_typology_stats.csv", "regional_stats.csv"):
             shutil.copyfile(candidate / "prepared" / filename, report_dir / filename)
         shutil.copyfile(candidate / "dbt-target" / "run_results.json", report_dir / "dbt_run_results.json")
         promote_paths(root, candidate, PROMOTED)
@@ -90,6 +91,7 @@ def main(argv=None) -> int:
           f"{result['municipal_listings_without_parish']}")
     print(f"  Aviso: {result['conflicting_listings']} IDs com campos divergentes; escolha por ordem de arquivo, sem presumir recência.")
     print(f"  Relatórios locais: {args.root / PROMOTED[2]}")
+    print(f"  Relatório descritivo: {args.root / PROMOTED[2] / 'report.md'}")
     print("  Dados históricos, não publicados. Horário original da coleta desconhecido.")
     return 0
 

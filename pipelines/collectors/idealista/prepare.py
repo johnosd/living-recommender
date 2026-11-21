@@ -9,6 +9,7 @@ import pandas as pd
 from pipelines.collectors._shared.manifest import file_digest
 from pipelines.collectors._shared.storage import LocalStorage
 from pipelines.collectors.idealista.normalize import normalize_listing
+from pipelines.collectors.idealista.report import write_report
 from pipelines.collectors.idealista.snapshot import (
     IdealistaError,
     latest_snapshot,
@@ -19,6 +20,7 @@ from pipelines.collectors.idealista.territory import TerritoryResolver
 BASE_COLUMNS = [
     "listing_id", "source_id", "snapshot_month", "dico", "dicofre", "locality_level", "locality_raw",
     "source_region", "parish_match_method", "asking_rent_eur", "area_m2", "bedrooms", "typology", "quality_flags",
+    "source_subregion", "source_municipality", "source_parish",
     "source_run_id", "raw_key", "raw_sha256", "relative_path", "source_row", "collected_at_utc",
     "imported_at_utc", "processed_at_utc", "license_id", "attribution",
 ]
@@ -69,8 +71,9 @@ def _coverage(listings, municipalities, manifest):
                      "listings": len(selected), "with_price": int(selected.asking_rent_eur.notna().sum()),
                      "with_parish": int(selected.dicofre.notna().sum())})
     regional = listings[listings["locality_level"] == "regiao"]
-    for region, selected in regional.groupby("source_region"):
-        rows.append({"level": "regiao", "territory": region, "name": region, "listings": len(selected),
+    for (region, locality), selected in regional.groupby(["source_region", "locality_raw"], dropna=False):
+        territory = locality if pd.isna(region) else f"{region}/{locality}"
+        rows.append({"level": "regiao", "territory": territory, "name": locality, "listings": len(selected),
                      "with_price": int(selected.asking_rent_eur.notna().sum()), "with_parish": 0})
     conflict = listings[listings["locality_level"] == "conflict"]
     if len(conflict):
@@ -113,14 +116,18 @@ def prepare_snapshot(root, output_dir, *, snapshot_month, processed_at_utc,
         if len(rows) != entry["records"]:
             raise IdealistaError(f"contagem divergente: {entry['key']}")
         # Mesmo arquivos sem anúncios devem ter localidade conhecida.
-        territory = resolver.resolve_file(entry["relative_path"])
+        territory = (resolver.resolve_file(entry["relative_path"])
+                     if not rows or any("Município" not in row for row in rows) else None)
         inputs.append((entry, rows, territory))
     records = []
     for entry, rows, territory in inputs:
         for index, row in enumerate(rows, 1):
             records.append({
                 "listing_id": str(row["id"]).strip(), "source_id": "idealista", "snapshot_month": snapshot_month,
-                **resolver.resolve_listing(territory, row.get("Titulo")), **normalize_listing(row),
+                **(resolver.resolve_metadata(row) if "Município" in row
+                   else resolver.resolve_listing(territory, row.get("Titulo"))), **normalize_listing(row),
+                "source_subregion": row.get("Sub-região"), "source_municipality": row.get("Município"),
+                "source_parish": row.get("Freguesia"),
                 "source_run_id": manifest["run_id"], "raw_key": entry["key"], "raw_sha256": entry["sha256"],
                 "relative_path": entry["relative_path"], "source_row": index, "collected_at_utc": None,
                 "imported_at_utc": manifest["imported_at_utc"], "processed_at_utc": processed_at_utc,
@@ -142,6 +149,8 @@ def prepare_snapshot(root, output_dir, *, snapshot_month, processed_at_utc,
                "municipal_listings_without_parish": int((listings.dico.notna() & listings.dicofre.isna()).sum()),
                "listings_with_quality_flags": int(listings.quality_flags.ne("").sum()),
                "missing_or_invalid_price": int(listings.asking_rent_eur.isna().sum()),
+               "missing_or_invalid_area": int(listings.area_m2.isna().sum()),
+               "missing_or_invalid_typology": int(listings.typology.isna().sum()),
                "license_id": manifest["license_id"], "attribution": manifest["attribution"]}
     output_dir.mkdir(parents=True, exist_ok=True)
     occurrences.to_parquet(output_dir / "occurrences.parquet", engine="pyarrow", index=False)
@@ -149,4 +158,5 @@ def prepare_snapshot(root, output_dir, *, snapshot_month, processed_at_utc,
     coverage.to_csv(output_dir / "coverage.csv", sep=";", index=False, encoding="utf-8-sig")
     listings[listings.duplicate_count > 0].to_csv(output_dir / "duplicates.csv", sep=";", index=False, encoding="utf-8-sig")
     (output_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_report(listings, municipalities, summary, output_dir)
     return summary

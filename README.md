@@ -93,10 +93,19 @@ das ilhas, preservados sem município inventado. Não são preços atuais. Os da
 individuais ficam em `.data/`, fora do Git e sem publicação. Comandos, regras e
 limites de evidência estão no [guia de coletas](.docs/runbooks/coletas.md#idealista-importar-extração-manual-spec-005).
 
-Na auditoria de 2026-11-13, a extração externa foi localizada em
-`C:/Users/johns/Documents/Projetos/IdealistaScraper/.data/202508`, com os mesmos
-324 arquivos e hashes da importação. Para repetir a importação, informe esse
-caminho em `--directory`; `Bases/202508` permanece como origem histórica no manifest.
+Na auditoria de 2026-11-17, os dados externos estão em
+`J:/IdealistaScraper/.data/municipios/{YYYYMM}`. `Bases/202508` permanece como
+origem histórica no manifest antigo; o bruto importado foi preservado.
+
+A spec 007 adiciona suporte à hierarquia explícita do exportador atualizado e
+um relatório descritivo local. No formato novo, município vazio mantém o anúncio
+regional, evitando confundir distrito e cidade homônimos. Freguesias usam a CAOP
+e sinônimos explícitos; o formato antigo continua aceito. O lote **2026-11** tem
+**74 JSON e 18.059 anúncios únicos**, com amostra atribuída a **54/308 municípios**
+(42 com n ≥ 10) e **6.371 anúncios regionais**. Consulte o
+[relatório do lote](.docs/reports/idealista-2026-11.md) para cobertura, qualidade,
+tipologias e preços pedidos. A mediana do lote não representa uma mediana nacional.
+Nenhum anúncio individual foi publicado.
 
 
 ## Roteiro

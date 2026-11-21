@@ -17,6 +17,9 @@ class IdealistaError(ValueError):
     """Importação ou processamento reprovado sem substituir a base vigente."""
 
 
+TERRITORY_FIELDS = ("Região", "Sub-região", "Município", "Freguesia")
+
+
 def validate_month(value: str) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", value) or value[:4] == "0000":
         raise IdealistaError("snapshot_month deve ser YYYY-MM válido")
@@ -35,6 +38,10 @@ def read_rows(path: Path) -> list[dict]:
     for index, row in enumerate(rows, 1):
         if not isinstance(row, dict):
             raise IdealistaError(f"registro não é objeto: {path.name}, linha {index}")
+        if (any(key in row for key in TERRITORY_FIELDS)
+                and any(key not in row or (row[key] is not None and not isinstance(row[key], str))
+                        for key in TERRITORY_FIELDS)):
+            raise IdealistaError(f"metadados territoriais incompletos ou inválidos: {path.name}, linha {index}")
         identity = row.get("id")
         if isinstance(identity, bool) or not isinstance(identity, (str, int)) or not str(identity).strip():
             raise IdealistaError(f"ID ausente ou inválido: {path.name}, linha {index}")

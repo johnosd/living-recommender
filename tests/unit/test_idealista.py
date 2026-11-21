@@ -100,3 +100,72 @@ def test_truncated_manifest_cannot_silently_drop_a_file(tmp_path):
     manifest_path.write_text(json.dumps(result), encoding="utf-8")
     with pytest.raises(IdealistaError, match="manifest"):
         prepare_snapshot(root, tmp_path / "prepared", snapshot_month="2025-08", processed_at_utc="2026-11-13T12:00:00Z")
+
+
+@pytest.mark.parametrize("change", [{"Região": 3}, {"Freguesia": []}, {"Município": True}])
+def test_current_metadata_types_are_checked(tmp_path, change):
+    from pipelines.collectors.idealista.snapshot import read_rows
+
+    row = {"id": "synthetic", "Titulo": "Apartamento", "Preco": 1000,
+           "tipologia": "T1", "areaBrutaM2": 50,
+           "Região": "Norte", "Sub-região": "Porto", "Município": "Porto", "Freguesia": None, **change}
+    path = _write(tmp_path, "Porto.json", [row])
+    with pytest.raises(IdealistaError, match="territoria"):
+        read_rows(path)
+
+
+def test_current_aliases_and_unknown_territories():
+    import pandas as pd
+
+    from pipelines.collectors.idealista.territory import TerritoryResolver
+
+    municipalities = pd.DataFrame({"dico": ["4701", "0806"], "official_name": ["Horta", "Lagoa"]})
+    parishes = pd.DataFrame({"dicofre": ["470106", "470108"], "dico": ["4701", "4701"],
+                            "official_name": ["Horta (Angústias)", "Horta (Matriz)"]})
+    resolver = TerritoryResolver(municipalities, parishes, parish_synonyms=[])
+    assert resolver.resolve_metadata({"Município": "Angústias (Horta)", "Sub-região": "Horta"})["dicofre"] == "470106"
+    assert resolver.resolve_metadata({"Município": "Horta (Matriz)"})["dicofre"] == "470108"
+    assert resolver.resolve_metadata({"Município": "Horta (Matriz)", "Região": None})["source_region"] is None
+    assert resolver.resolve_metadata({"Município": None, "Sub-região": "Ilha declarada",
+                                      "Região": None})["source_region"] is None
+    assert resolver.resolve_metadata({"Município": "Lagoa (Algarve)"})["dico"] == "0806"
+    actual = resolver.resolve_metadata({"Município": "Horta", "Freguesia": "desconhecida",
+                                        "Titulo": "Apartamento, Horta (Matriz)"})
+    assert actual["dicofre"] is None  # campo explícito desconhecido não é substituído pelo título
+    with pytest.raises(IdealistaError, match="município"):
+        resolver.resolve_metadata({"Município": "Desconhecido"})
+    with pytest.raises(IdealistaError, match="territoria"):
+        resolver.resolve_metadata({"Município": None})
+
+
+def test_report_missing_values_and_insufficient_typology_groups(tmp_path):
+    import pandas as pd
+
+    from pipelines.collectors.idealista.report import write_report
+
+    rows = [{"dico": "1312", "typology": "T1", "asking_rent_eur": 1000,
+             "conflict_fields": ""} for _ in range(9)]
+    rows += [{"dico": "1312", "typology": None, "asking_rent_eur": None, "conflict_fields": ""}]
+    summary = {"snapshot_month": "2026-11", "source_run_id": "synthetic", "snapshot_sha256": "a" * 64,
+               "license_id": "restricted", "attribution": "Idealista"}
+    result = write_report(pd.DataFrame(rows), pd.DataFrame({"dico": ["1312"], "official_name": ["Porto"]}),
+                          summary, tmp_path)
+    assert result["lot"]["n_listings"] == 10 and result["lot"]["n_eligible"] == 9
+    assert result["lot"]["median_eur"] is None
+    assert all(group["median_eur"] is None for group in result["typologies"])
+
+
+def test_current_explicit_synonym_is_scoped_to_its_municipality():
+    import pandas as pd
+
+    from pipelines.collectors.idealista.territory import TerritoryResolver
+
+    municipalities = pd.DataFrame({"dico": ["1105", "1106"], "official_name": ["Cascais", "Lisboa"]})
+    parishes = pd.DataFrame({"dicofre": ["110508"], "dico": ["1105"],
+                            "official_name": ["União das freguesias de Cascais e Estoril"]})
+    resolver = TerritoryResolver(municipalities, parishes, parish_synonyms=[])
+    resolved = resolver.resolve_metadata({"Município": "Cascais", "Freguesia": "Cascais e Estoril"})
+    assert resolved["dicofre"] == "110508" and resolved["parish_match_method"] == "metadado_seed"
+    assert resolver.resolve_metadata({"Município": "Lisboa", "Freguesia": "Cascais e Estoril"})["dicofre"] is None
+    # A seed de metadado não altera o casamento de títulos do formato histórico.
+    assert resolver.resolve_listing(resolver.resolve_file("Cascais.json"), "Apartamento, Cascais e Estoril")["dicofre"] is None
