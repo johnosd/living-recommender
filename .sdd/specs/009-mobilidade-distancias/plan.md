@@ -218,11 +218,10 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 
 | Área | Estado |
 | --- | --- |
-| Fases 1 a 5 | Concluídas (T001–T025) |
-| Polish | T026–T030 concluídas: docs (fontes, runbook), passo do CI, quickstart offline, nota de memória |
+| Fases 1 a 5 e Polish | Concluídas (T001–T030); checklist de release 100% |
 | Contratos | 5/5 verdes; trava íntegra |
-| Suíte | 707 testes verdes (497 s), lint limpo, dbt verde sobre o fixture e build real offline contra a CAOP |
-| Aberto | Item 'scan de segredos passa': gitleaks só roda no CI após push/PR (não autorizado). Gates do autor: coordenadas dos aeroportos, preço do Google e coleta real |
+| Suíte | 707 testes verdes localmente; CI remoto do PR #11 verde (quality e gitleaks) |
+| Aberto (gates do autor) | Coordenadas de OPO, FAO, FNC e PDL (eAIP em 503), conferência do preço do Google (`pricing_verified_on`) e a coleta real |
 
 ## Riscos e Decisões
 
@@ -252,8 +251,9 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 | 2026-11-21 | Fase 4 (US2) | Coleta do Google: fetch com retry/parada em 401/403/429, redação da chave em toda mensagem, validação de HTTP 200 com erro, handler sobre collect_items, estimativa e CLI com confirmação. Os 5 contratos passaram de primeira; 705 testes verdes | Fase 5: teste do relatório de cobertura; depois Polish |
 | 2026-11-21 | Fase 5 (US3) | Relatório de cobertura com os quatro estados, ausência esperada nas ilhas sem polo e `stale`; o teste confirma que um polo alterado marca só os seus pares sem alterar resultados | Polish: documentação, CI e validação final |
 | 2026-11-21 | Polish | Documentação, passo de CI, quickstart offline e nota de memória; suíte final 707 passed. Recusas conferidas com dados reais (confirmação, preço e chave listados juntos, nenhum bruto do Google criado) | Falta o gitleaks do CI (push/PR) e os gates do autor |
+| 2026-11-21 | Release | PR #11 aberto; quality pass (4m17s e 7m40s) e secrets/gitleaks pass (14 s) no CI remoto. Checklist de release completo | Gates do autor para a coleta real; sdd-converge |
 
-**PRÓXIMO**: sdd-converge, depois push/PR com autorização do autor para o CI remoto (quality e gitleaks). Gates do autor antes da coleta real: coordenadas dos aeroportos, preço, chave.
+**PRÓXIMO**: sdd-converge. Depois, o autor decide o merge do PR #11 e cumpre os gates antes da coleta real.
 
 ## Arquivos Principais
 

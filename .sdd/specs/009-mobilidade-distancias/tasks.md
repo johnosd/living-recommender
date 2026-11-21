@@ -269,7 +269,7 @@ relatório reproduz as contagens do teste e diz se cada `sem_rota` é ausência 
 - [X] `ruff check pipelines tests` limpo e suíte completa verde, sem rede
 - [X] `dbt build --select tag:mobility` verde sobre o fixture
 - [X] Docs: `config/sources.yml`, `.docs/fontes_de_dados.md`, runbook e `config/poles.yml` atualizados (constitution, gate 6)
-- [ ] Nenhuma chave, resposta real ou arquivo de `.data/` no Git; scan de segredos passa (varredura local por regex limpa; o gitleaks do CI só roda após push/PR, ainda não autorizado)
+- [X] Nenhuma chave, resposta real ou arquivo de `.data/` no Git; scan de segredos passa (gitleaks do CI verde no PR #11, run 44961147765: job `secrets` pass em 14 s; `quality` pass nas duas execuções)
 - [X] **Não executado por esta feature (gate do autor)**: aprovação final de `config/poles.yml`, conferência de
   preços, coleta real do Google e `build_mobility` sobre dados reais; registrar como pendência, não como feito
 - [X] `quickstart.md` executado
