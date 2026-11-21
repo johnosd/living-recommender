@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Cria sdd/adr/ADR-NNN-slug.md semeado a partir do template. Usado só
+# Cria .sdd/adr/ADR-NNN-slug.md semeado a partir do template. Usado só
 # pelo sdd-adr. Não sobrescreve ADRs existentes — emenda é sempre uma nota
 # inline na ADR antiga, nunca um novo arquivo substituindo o anterior.
 #

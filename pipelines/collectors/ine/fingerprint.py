@@ -2,7 +2,7 @@
 
 A API devolve `DataExtracao` (o horário da chamada) e não envia `ETag` nem `Last-Modified`;
 o `sha256` do arquivo bruto mudaria a cada coleta. A impressão digital ignora só esse campo.
-Ver `sdd/specs/002-ingestao-pordata-ine/logic/ingestao-datasets.md` §2 e o risco R-008.
+Ver `.sdd/specs/002-ingestao-pordata-ine/logic/ingestao-datasets.md` §2 e o risco R-008.
 """
 
 import hashlib

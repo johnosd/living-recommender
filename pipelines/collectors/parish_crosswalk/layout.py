@@ -1,7 +1,7 @@
 """Leitura das planilhas de correspondência do INE: a única parte que abre o arquivo (spec 004).
 
 `validate_crosswalk_table` e `read_crosswalk_table` usam `load_rows`; assim os dois nunca divergem.
-Regras em `sdd/specs/004-correspondencia-freguesias/logic/derivacao-correspondencia.md` §1 e `research.md` R1-R3.
+Regras em `.sdd/specs/004-correspondencia-freguesias/logic/derivacao-correspondencia.md` §1 e `research.md` R1-R3.
 """
 
 import re

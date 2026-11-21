@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Resolve/cria sdd/assessments/<slug>/ e reporta qual fase (define/decide/complete)
+# Resolve/cria .sdd/assessments/<slug>/ e reporta qual fase (define/decide/complete)
 # roda a seguir. Usado só pelo sdd-assess. Explora é opcional e não entra na
 # resolução de NEXT_PHASE — Define é o estágio mínimo viável, roda direto
 # sobre a entrada do usuário se Explora não tiver sido feita.

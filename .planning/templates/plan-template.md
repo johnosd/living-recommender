@@ -1,6 +1,6 @@
 # Implementation Plan: [FEATURE]
 
-**Slug**: `[NNN-feature-slug]` | **Date**: [DATE] | **Spec**: `sdd/specs/[NNN-feature-slug]/spec.md`
+**Slug**: `[NNN-feature-slug]` | **Date**: [DATE] | **Spec**: `.sdd/specs/[NNN-feature-slug]/spec.md`
 
 **Nota**: Este template é preenchido pelo skill `sdd-plan`; a definição do skill
 descreve o fluxo de execução completo.
@@ -55,7 +55,7 @@ descreve o fluxo de execução completo.
 ### Documentation (this feature)
 
 ```text
-sdd/specs/[NNN-feature-slug]/
+.sdd/specs/[NNN-feature-slug]/
 ├── spec.md              # Saída do sdd-specify
 ├── plan.md               # Este arquivo (saída do sdd-plan)
 ├── research.md            # Fase 0, condicional

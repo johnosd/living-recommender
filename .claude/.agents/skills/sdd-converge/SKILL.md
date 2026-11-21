@@ -3,6 +3,16 @@ name: sdd-converge
 description: Compara a implementação real de uma feature contra sua spec/plano/tasks e a constitution do projeto, aponta lacunas (como novas tasks, nunca reescrevendo o que já existe) e, quando tudo bate, sincroniza o status final da documentação — incluindo o README.md do projeto, se existir e se algo relevante mudou. Use quando o usuário pedir para checar se uma feature está completa, achar o que falta antes de entregar, convergir uma feature, ou auditar a implementação. Exige pelo menos uma passada anterior do sdd-execute. NÃO edita código nem reescreve conteúdo existente de spec/plan/tasks — só anexa e atualiza campos de status.
 ---
 
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
+
 # sdd-converge
 
 Quarto estágio do sistema SDD, e o único não-linear: fecha o ciclo comparando

@@ -1,6 +1,6 @@
 """Derivação da correspondência 2013→2025 (spec 004, FR-007 a FR-011 e FR-014).
 
-Regras em `sdd/specs/004-correspondencia-freguesias/logic/derivacao-correspondencia.md` §3 e `research.md` R4.
+Regras em `.sdd/specs/004-correspondencia-freguesias/logic/derivacao-correspondencia.md` §3 e `research.md` R4.
 """
 
 import numpy as np

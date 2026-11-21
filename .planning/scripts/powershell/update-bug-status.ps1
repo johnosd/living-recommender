@@ -2,7 +2,7 @@
 # Atualiza o painel de status "## Bugs" em .planning/backlog.md pra um bug do
 # sdd-bugfix — espelha update-feature-status.ps1, mas pra bugs. Recalcula
 # fase atual/veredito/próximo passo direto do que já existe em
-# sdd/bugs/<slug>/ (mesma lógica de resolve-bug.ps1) e do conteúdo desses
+# .sdd/bugs/<slug>/ (mesma lógica de resolve-bug.ps1) e do conteúdo desses
 # arquivos, então nunca fica dessincronizado do disco.
 #
 # Sem isso, um bug em andamento não deixa rastro em lugar nenhum fora da
@@ -25,7 +25,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Get-RepoRoot
 $bugDir = Join-Path (Get-SddRoot -RepoRoot $repoRoot) "bugs/$Slug"
 if (-not (Test-Path -LiteralPath $bugDir -PathType Container)) {
-    [Console]::Error.WriteLine("ERROR: sdd/bugs/$Slug não existe")
+    [Console]::Error.WriteLine("ERROR: .sdd/bugs/$Slug não existe")
     exit 1
 }
 

@@ -1,0 +1,62 @@
+version: 2
+models:
+  - name: census_coverage
+    description: Cobertura por freguesia e categoria, preservando as ausências motivadas.
+    columns:
+      - name: dicofre
+        data_tests: [not_null]
+      - name: age_code
+        data_tests: [not_null]
+      - name: coverage_status
+        data_tests: [not_null]
+  - name: census_age_category
+    description: Categorias etárias nativas do INE, específicas do indicador.
+    columns:
+      - name: age_code
+        data_tests: [not_null]
+      - name: indicator
+        data_tests: [not_null]
+      - name: raw_sha256
+        data_tests: [not_null]
+      - name: license_id
+        data_tests: [not_null]
+  - name: census_observation
+    description: Contagens censitárias nativas com originais e metadados rastreáveis.
+    columns:
+      - name: source_dicofre
+        data_tests: [not_null]
+      - name: raw_sha256
+        data_tests: [not_null]
+      - name: metadata_raw_sha256
+        data_tests: [not_null]
+      - name: value_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [observed, suppressed, not_applicable, not_published]
+  - name: census_parish_observation
+    description: Uma observação por freguesia vigente/categoria, com cobertura e proveniência por observação.
+    columns:
+      - name: dicofre
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_parish')
+                field: dicofre
+      - name: dico
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: age_code
+        data_tests: [not_null]
+      - name: coverage_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [own, inherited, missing]

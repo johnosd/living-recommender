@@ -1,7 +1,7 @@
 """Coleta de uma fonte com vários datasets independentes (Pordata, INE).
 
 Cada dataset tem estado vigente próprio; a falha de um não impede os demais e não vira
-estado. Ver `sdd/specs/002-ingestao-pordata-ine/logic/ingestao-datasets.md` §1.
+estado. Ver `.sdd/specs/002-ingestao-pordata-ine/logic/ingestao-datasets.md` §1.
 """
 
 import contextlib

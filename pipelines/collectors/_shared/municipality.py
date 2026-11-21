@@ -1,6 +1,6 @@
 """Resolução de nomes de município para o código oficial `dico`.
 
-Regra de `sdd/specs/002-ingestao-pordata-ine/logic/ingestao-datasets.md` §5: um nome da fonte
+Regra de `.sdd/specs/002-ingestao-pordata-ine/logic/ingestao-datasets.md` §5: um nome da fonte
 vale se estiver na tabela de sinônimos (grafia exata) ou se o nome normalizado casar com
 **um único** município. Ambiguidade e ausência nunca são resolvidas por palpite.
 """

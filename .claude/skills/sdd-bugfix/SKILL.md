@@ -1,7 +1,17 @@
 ---
 name: sdd-bugfix
-description: Avalia, corrige e verifica bugs reportados fora de uma feature ativa, em fases Assess, Fix e Test registradas em sdd/bugs/. Use para triar, corrigir ou verificar um bug. Bugs descobertos durante sdd-execute são tratados nessa execução; features novas usam sdd-specify.
+description: Avalia, corrige e verifica bugs reportados fora de uma feature ativa, em fases Assess, Fix e Test registradas em .sdd/bugs/. Use para triar, corrigir ou verificar um bug. Bugs descobertos durante sdd-execute são tratados nessa execução; features novas usam sdd-specify.
 ---
+
+## Memória de longo prazo do projeto
+
+`.planning/memory/` é a memória de longo prazo deste repositório/projeto.
+Consulte os arquivos Markdown relevantes para a tarefa antes de decidir ou
+executar esta skill. Registre ali, em arquivos `.md`, insights duráveis e
+verificáveis descobertos no desenvolvimento, com contexto e evidências; não
+registre segredos ou dados sensíveis. `.planning/memory/constitution.md`
+continua sendo a constitution e o gate formal onde esta skill o exige; notas de
+memória não a substituem nem alteram decisões aprovadas.
 
 # sdd-bugfix
 
@@ -23,8 +33,8 @@ entrada `[Bug]` do `.planning/backlog.md` foi escolhida pra resolver agora.
 | **Fix** | **Sim — só esta fase** | `fix.md` | `applied` / `partial` / `not-applied` |
 | **Test** | Não — só reroda checagens | `test.md` | `verified` / `partial` / `failed` |
 
-Os 3 arquivos vivem em `sdd/bugs/<slug>/` — pasta própria, separada de
-`sdd/specs/`, sem numeração sequencial (o slug é o único identificador, igual ao
+Os 3 arquivos vivem em `.sdd/bugs/<slug>/` — pasta própria, separada de
+`.sdd/specs/`, sem numeração sequencial (o slug é o único identificador, igual ao
 design original).
 
 Cada fase termina rodando `update-bug-status.ps1`, que atualiza o painel
@@ -45,10 +55,10 @@ em vez de recomeçar do zero.
 .\.planning\scripts\powershell\resolve-bug.ps1 -Slug <slug> -Json
 ```
 
-Isso cria/resolve `sdd/bugs/<slug>/` e reporta `NEXT_PHASE`
+Isso cria/resolve `.sdd/bugs/<slug>/` e reporta `NEXT_PHASE`
 (`assess`/`fix`/`test`/`complete`) baseado em quais arquivos já existem. Rode
 a fase indicada — não pule fase nem adivinhe o slug se houver mais de um
-candidato em `sdd/bugs/` (liste e pergunte ao usuário qual é).
+candidato em `.sdd/bugs/` (liste e pergunte ao usuário qual é).
 
 Se a fase resolvida for `complete`, informe o status final (veredito do
 `test.md`) e pergunte se o usuário quer reabrir (rodar Assess de novo com
@@ -75,7 +85,7 @@ evidência nova) ou se está satisfeito.
 6. Escreve `assessment.md` a partir de
    `.planning/templates/bug-assessment-template.md`.
 7. Se a origem for uma entrada `[Bug]` de `.planning/backlog.md`, remova
-   essa entrada (o bug agora está sendo rastreado em `sdd/bugs/`).
+   essa entrada (o bug agora está sendo rastreado em `.sdd/bugs/`).
 8. Rode
    `.\.planning\scripts\powershell\update-bug-status.ps1 -Slug <slug>` —
    atualiza o painel `## Bugs` em `backlog.md` com fase/veredito/próximo
@@ -148,7 +158,7 @@ evidência nova) ou se está satisfeito.
 ## Guardrails
 
 - Assess e Test **nunca editam código-fonte** — só leem o repositório e
-  escrevem dentro de `sdd/bugs/<slug>/`.
+  escrevem dentro de `.sdd/bugs/<slug>/`.
 - Fix é a única fase que edita código, e fica dentro dos arquivos listados
   no assessment a menos que evidência nova exija expandir — expansão é
   sempre registrada, nunca silenciosa.
