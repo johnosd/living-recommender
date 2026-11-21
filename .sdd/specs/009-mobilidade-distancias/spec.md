@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-21
 
-**Status**: Planejada
+**Status**: Em Execução
 
 **Input**: "escreva a feature para passar para outro modelo de IA executar" — próximo passo do backlog depois da integração das specs 005, 007 e 008: ingerir a mobilidade, único critério do catálogo do MVP ("Distância a capitais", plano §8.1) ainda sem dado. Referências: `.sdd/adr/ADR-002-arquitetura-base-mvp.md` (D8, atualização de 2026-11-03), `.sdd/adr/ADR-003-byok-apis-externas.md`, `.docs/fontes_de_dados.md` (linha `google_distances`, "Risco aceito" e pendências do §3.3) e `.docs/plano_plataforma_recomendacao_portugal.md` §8.1 e §15.
 

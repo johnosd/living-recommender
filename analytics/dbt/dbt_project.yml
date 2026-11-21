@@ -27,3 +27,5 @@ models:
       +tags: ['censos']
     wikipedia:
       +tags: ['wikipedia']
+    mobility:
+      +tags: ['mobility']

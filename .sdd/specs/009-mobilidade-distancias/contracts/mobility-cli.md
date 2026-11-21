@@ -7,7 +7,7 @@ Os testes de contrato (`tests/contracts/test_mobility_contract.py`) só tocam es
 ```text
 python -m pipelines.cli.collect_mobility [--local|--s3 ...] [--root .data] [--catalog config/sources.yml]
     [--poles config/poles.yml] [--silver .data/lake/silver]
-    [--execute --confirm-elements N] [--max-elements M] [--no-wait]
+    [--execute --confirm-elements N] [--max-elements M]
 ```
 
 `main(argv=None, *, client=None, fetcher=None, storage=None, env=None, municipalities=None, poles=None,
@@ -26,9 +26,10 @@ YAML. `env` substitui `os.environ`. `client` é um `httpx.Client`; `fetcher`, se
 | `--execute` válido | consulta só os pares novos e desatualizados, grava bruto e manifest | 0 sem falha e sem pendente; 1 com `failed`; 2 com `pending` |
 | nada a consultar | informa "nada a coletar" | 0 |
 
-A ordem das recusas é: argumentos, catálogo, polos, confirmação, teto, preço, data, chave, rede. Erros de
-configuração saem em stderr, sem traceback e sem a chave. Argumentos inválidos podem sair por `SystemExit(2)`
-do `argparse`.
+Com `--execute`, a CLI **junta todas as recusas** (confirmação, teto, preço, data de partida do transporte, chave)
+e as imprime juntas, antes de qualquer chamada de rede; o operador vê tudo o que falta de uma vez. Erros de
+configuração (catálogo, polos, silver) saem antes, em stderr, sem traceback e sem a chave. A CLI nunca lê o
+`.env` quando `env` é injetado. Argumentos inválidos saem por `SystemExit(2)` do `argparse`.
 
 ## `pipelines.cli.build_mobility`
 

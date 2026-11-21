@@ -51,7 +51,7 @@ Faça nesta ordem; o comando recusa se algo faltar.
 
 ## 5. Itens cross-cutting (constitution)
 
-- [ ] Nenhuma chave em Git, fixture, log, manifest, stdout ou erro (`git grep AIza` vazio).
+- [ ] Nenhuma chave em Git, fixture, log, manifest, stdout ou erro (`git grep -nE "AIza[0-9A-Za-z_-]{35}"` vazio).
 - [ ] `config/sources.yml` e `.docs/fontes_de_dados.md` refletem a fonte, o risco aceito e a atribuição.
 - [ ] Custo estimado, teto e confirmação registrados; custo recorrente zero.
 - [ ] Bruto imutável: uma recoleta grava revisão nova, sem apagar a anterior.

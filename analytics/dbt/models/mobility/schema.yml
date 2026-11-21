@@ -1,0 +1,68 @@
+version: 2
+
+models:
+  - name: dim_mobility_pole
+    description: Polos vigentes de mobilidade, já resolvidos (config/poles.yml); alvo do relationships do staging.
+    columns:
+      - name: pole_id
+        data_tests: [not_null, unique]
+      - name: kind
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [cidade, aeroporto, sede_distrito, capital_regional]
+      - name: latitude
+        data_tests: [not_null]
+      - name: longitude
+        data_tests: [not_null]
+
+  - name: stg_municipality_pole_distance
+    description: >
+      Distância município-polo, uma linha por par esperado e modo (linha reta, carro). `km` e `minutes` só existem em
+      `ok`; `sem_rota`, `falha` e `pendente` ficam nulos e nunca são imputados.
+    columns:
+      - name: dico
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: pole_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_mobility_pole')
+                field: pole_id
+      - name: mode
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [straight_line, driving, transit]
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ok, sem_rota, falha, pendente]
+      - name: stale
+        data_tests: [not_null]
+      - name: license_id
+        data_tests: [not_null]
+      - name: reference_period
+        data_tests: [not_null]
+      - name: poles_catalog_version
+        data_tests: [not_null]
+
+  - name: rpt_mobility_coverage
+    description: Cobertura por modo e polo; ok + sem_rota + falha + pendente = expected.
+    columns:
+      - name: mode
+        data_tests: [not_null]
+      - name: pole_id
+        data_tests: [not_null]
+      - name: expected
+        data_tests: [not_null]

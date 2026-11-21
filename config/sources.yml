@@ -145,6 +145,33 @@ sources:
       - {id: wind_gusts_10m_max, unit: "km/h"}
       - {id: relative_humidity_2m_mean, unit: "%"}
 
+  google_distances:
+    id: google_distances
+    publisher: Google Maps Platform
+    responsible_party: living-recommender
+    # Spec 009 / ADR-004: cálculo único do tempo e da distância de carro entre o ponto representativo de cada município
+    # e os polos de config/poles.yml, pela Routes API (computeRouteMatrix, uma requisição 1x1 por par).
+    # Risco aceito (ADR-002 D8, 2026-11-03): os termos da Google Maps Platform restringem guardar e exibir os resultados
+    # fora de um mapa Google. Mitigações: execução única de volume baixo e atribuição em toda linha.
+    license_id: not_granted_by_source
+    usage_restriction: "termos da Google Maps Platform; guardar a matriz de tempos é risco aceito (ADR-002 D8, 2026-11-03)"
+    attribution: "Tempos de viagem: Google"
+    risk_accepted: "ADR-002-D8-2026-11-03"
+    substitution: "OpenRouteService (carro) e GTFS da CP (comboio), se o Google contestar ou na Fase B comercial"
+    collection_method: api_json
+    frequency: once
+    territorial_level: municipality
+    api_url: https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix
+    key_env: GOOGLE_ROUTES_API_KEY       # a chave NUNCA entra no Git: .env local ou SSM (constitution I, ADR-003)
+    reference_period: "2026-12"          # mês do cálculo; o operador o confere na coleta real
+    limits: {min_interval_seconds: 0.2, max_attempts: 3}
+    max_elements_per_run: 2000           # ~1.404 elementos esperados com os 7 polos iniciais (só carro)
+    pricing_verified_on: null            # o operador confere os preços na página oficial e preenche a data; null bloqueia --execute
+    pricing:                             # valores de referência (resumo de busca de 2026-11-21): A CONFIRMAR
+      driving: {usd_per_1000: 5.0, free_monthly: 10000}
+    modes:                               # só o carro por decisão do autor (ADR-004); transit é suportado, mas desabilitado
+      driving: {travel_mode: DRIVE, routing_preference: TRAFFIC_UNAWARE}
+
   ine_parish_crosswalk:
     id: ine_parish_crosswalk
     publisher: Instituto Nacional de Estatística, IP – Portugal

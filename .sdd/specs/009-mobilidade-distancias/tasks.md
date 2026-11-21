@@ -34,17 +34,17 @@ edite. **Esta feature não executa a coleta real do Google e não pede chave** (
 
 **Purpose**: catálogos antes de qualquer coletor (constitution IV) e linha de base.
 
-- [ ] T001 Acrescentar a entrada `google_distances` em `config/sources.yml` conforme `data-model.md` §1:
+- [X] T001 Acrescentar a entrada `google_distances` em `config/sources.yml` conforme `data-model.md` §1:
   `license_id: not_granted_by_source`, atribuição "Tempos de viagem: Google", risco aceito (ADR-002 D8) e
   substituição, `max_elements_per_run: 2000`, `pricing_verified_on: null`, preço de referência do research R2
   (`driving` 5,0/10000) e `modes` com **só `driving`** (`DRIVE`, `TRAFFIC_UNAWARE`); **sem** `modes.transit`
   (decisão do autor, plan D14). **Sem `window` e sem `datasets`.**
-- [ ] T002 [P] Criar `config/poles.yml` (`data-model.md` §2) com os **7 polos iniciais** (decisão do autor):
+- [X] T002 [P] Criar `config/poles.yml` (`data-model.md` §2) com os **7 polos iniciais** (decisão do autor):
   cidades Lisboa 1106 e Porto 1312 (`scope: national`); aeroportos LIS, OPO, FAO (`national`), FNC (`island`,
   "Ilha da Madeira") e PDL (`island`, "Ilha de São Miguel"). Nada de sedes de distrito, Faro como cidade nem
   capitais regionais por ora (DICO para ampliar em research R7). Cada aeroporto leva `source_ref` verificada pelo
   executor numa fonte pública (anotar a URL).
-- [ ] T003 Linha de base: rodar lint, a suíte e os contratos. Esperado: lint e suíte verdes (exceto os 5
+- [X] T003 Linha de base: rodar lint, a suíte e os contratos. Esperado: lint e suíte verdes (exceto os 5
   contratos), contratos vermelhos por `NotImplementedError` e `check-contract-tests.ps1` íntegro.
 
 ---
@@ -53,27 +53,27 @@ edite. **Esta feature não executa a coleta real do Google e não pede chave** (
 
 **Purpose**: entradas validadas, elegibilidade e estado por par.
 
-- [ ] T004 Criar `pipelines/collectors/mobility/municipalities.py` com `load_mobility_municipalities(silver_dir)`:
+- [X] T004 Criar `pipelines/collectors/mobility/municipalities.py` com `load_mobility_municipalities(silver_dir)`:
   lê `dim_municipality/data.parquet` e devolve `{dico, name, latitude, longitude, district_or_island,
   autonomous_region, routing_group}` (`logic/pares-e-estados.md` §1; `NaN` → `None`; região desconhecida é
   erro). Reusar `check_municipalities` do clima para o conjunto de 308 e as caixas de coordenadas.
-- [ ] T005 [P] Escrever `tests/unit/test_mobility_catalog.py`: uma rejeição por regra de `data-model.md` §1
+- [X] T005 [P] Escrever `tests/unit/test_mobility_catalog.py`: uma rejeição por regra de `data-model.md` §1
   (campo ausente, `api_url` HTTP, modo desconhecido, `transit` sem partida, partida em fim de semana, número ≤ 0,
   presença de `window`), mais o catálogo real de `config/sources.yml` aceito.
-- [ ] T006 Implementar `mobility_source` em `pipelines/collectors/mobility/catalog.py` e rotear
+- [X] T006 Implementar `mobility_source` em `pipelines/collectors/mobility/catalog.py` e rotear
   `google_distances` em `load_catalog` (`pipelines/collectors/_shared/catalog.py`, ao lado do ramo `wikipedia`,
   antes dos testes `window`/`datasets`). Garantir que os testes de catálogo existentes seguem verdes.
-- [ ] T007 [P] Escrever `tests/unit/test_mobility_poles.py` e `tests/unit/test_mobility_pairs.py`: cada regra de
+- [X] T007 [P] Escrever `tests/unit/test_mobility_poles.py` e `tests/unit/test_mobility_pairs.py`: cada regra de
   rejeição de `resolve_poles` (id duplicado, `dico` inexistente, aeroporto sem coordenadas/`source_ref`,
   coordenada fora da caixa, escopo incoerente, campo desconhecido), a mensagem cita o `pole_id`, e a
   elegibilidade (`national`/`district`/`island`, ilhas sem polo). Um teste lê `config/poles.yml` real contra a
   silver real e confere ~1.404 pares por modo, **ignorado se `.data/lake/silver/dim_municipality` não existir**.
-- [ ] T008 Implementar `resolve_poles`, `load_poles` e `poles_catalog_version` em
+- [X] T008 Implementar `resolve_poles`, `load_poles` e `poles_catalog_version` em
   `pipelines/collectors/mobility/poles.py` (`data-model.md` §2). Rejeita o catálogo inteiro, antes de qualquer
   cálculo, com o `pole_id` na mensagem (FR-002).
-- [ ] T009 Implementar `pair_id` e `route_pairs` em `pipelines/collectors/mobility/pairs.py`
+- [X] T009 Implementar `pair_id` e `route_pairs` em `pipelines/collectors/mobility/pairs.py`
   (`logic/pares-e-estados.md` §2–§4); saída ordenada por `id`.
-- [ ] T010 Criar `pipelines/collectors/mobility/state.py` com `pair_signature`, `is_current_state` e
+- [X] T010 Criar `pipelines/collectors/mobility/state.py` com `pair_signature`, `is_current_state` e
   `latest_attempts(storage)` (última entrada de cada par, de qualquer status, entre os manifests da fonte), mais
   `tests/unit/test_mobility_state.py` (assinatura estável, muda com cada campo de `logic` §4, falha mais nova não
   apaga estado vigente).
@@ -98,24 +98,24 @@ proveniência. Entrega valor sozinha.
 
 ### Implementation
 
-- [ ] T011 [US1] Implementar `straight_line_rows` em `pipelines/collectors/mobility/straight_line.py`, reusando
+- [X] T011 [US1] Implementar `straight_line_rows` em `pipelines/collectors/mobility/straight_line.py`, reusando
   `haversine_km` de `pipelines/collectors/open_meteo/points.py` → contrato: `test_us1_...`
-- [ ] T012 [US1] Implementar `build_distance_rows` em `pipelines/collectors/mobility/rows.py`: linhas de
+- [X] T012 [US1] Implementar `build_distance_rows` em `pipelines/collectors/mobility/rows.py`: linhas de
   `straight_line` (`logic` §5) e, para `driving`/`transit`, um estado por par esperado (incluindo identidade,
   `stale`, `falha`, `pendente`), lendo os manifests por `latest_dataset_states` e `latest_attempts`. Com o
   storage vazio, todos os pares de rota saem `pendente`.
-- [ ] T013 [US1] Criar `pipelines/cli/build_mobility.py` no molde de `pipelines/cli/build_climate.py`: `prepare`
+- [X] T013 [US1] Criar `pipelines/cli/build_mobility.py` no molde de `pipelines/cli/build_climate.py`: `prepare`
   (Parquet em área temporária; `dim_mobility_pole` e `distances`), `dbt build --select tag:mobility`,
   `promote_paths` para `lake/bronze/{stg_municipality_pole_distance,dim_mobility_pole,rpt_mobility_coverage}`.
   Falha preserva a versão anterior; `dico` do estado sem correspondência na dimensão falha o build (FR-020).
-- [ ] T014 [US1] Criar `analytics/dbt/models/mobility/` (`stg_municipality_pole_distance.sql`,
+- [X] T014 [US1] Criar `analytics/dbt/models/mobility/` (`stg_municipality_pole_distance.sql`,
   `dim_mobility_pole.sql`, `schema.yml` com `not_null`, `unique` na chave composta via teste, `relationships` com
   `dim_municipality` e `dim_mobility_pole`, `accepted_values` de `status` e `mode`), a tag `mobility` em
   `analytics/dbt/dbt_project.yml` e `tests/fixtures/mobility/ci_seed.py` (silver mínima sintética, sem rede).
 
 ### Testes da Fase
 
-- [ ] T015 [P] [US1] `tests/unit/test_mobility_straight_line.py` (valores conhecidos: 1° de latitude ≈ 111,195 km;
+- [X] T015 [P] [US1] `tests/unit/test_mobility_straight_line.py` (valores conhecidos: 1° de latitude ≈ 111,195 km;
   simetria; antimeridiano não ocorre) e `tests/unit/test_mobility_rows.py` (estados e `stale` por tabela de
   `logic` §5); `tests/integration/test_mobility_build.py` (build completo com dbt sobre o fixture: contagem
   `308 × 7` de linha reta, rodar duas vezes dá o mesmo hash do Parquet, falha do dbt preserva o anterior).
@@ -128,11 +128,11 @@ proveniência. Entrega valor sozinha.
 
 **Registro da Fase**:
 
-- Status:
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: Concluída em 2026-11-21
+- Feito: T011–T015. Linha reta (haversine reutilizado), `build_distance_rows` com os quatro estados e `stale`, `build_mobility` (prepare, dbt `tag:mobility`, promoção atômica por caminho, CSVs de auditoria), modelos e testes dbt, fixture `ci_seed`. Build real offline com a CAOP: 3.562 linhas (2.156 de linha reta, 1.404 de carro pendentes, 2 identidades); Lisboa–Porto 273 km, Lisboa–aeroporto 4 km.
+- Contrato: `pytest tests/contracts/test_mobility_contract.py -k test_us1` → 1/1 verde; trava íntegra (`check-contract-tests.ps1` PASS)
+- Testes executados: `test_mobility_straight_line` (3), `test_mobility_rows` (9), `test_mobility_build` (4, com dbt sobre o fixture) verdes; uma asserção minha errada (>900 km) corrigida para >800 em Porto Santo; lint limpo
+- Pendências: T024 (CSVs) já está no código de `build_mobility.py`; falta o teste da Fase 5. Coordenadas dos aeroportos a conferir (R-010).
 
 ---
 
@@ -153,33 +153,33 @@ retomar consultando só os pendentes.
 
 ### Implementation
 
-- [ ] T016 [US2] Implementar `resolve_api_key` e `redact` em `pipelines/collectors/mobility/secrets.py`
+- [X] T016 [US2] Implementar `resolve_api_key` e `redact` em `pipelines/collectors/mobility/secrets.py`
   (variável de `key_env` no `env`, senão `.env` simples `CHAVE=valor` na raiz; nunca imprime valor; `redact`
   troca a chave por `[REDACTED]`) → contrato: `test_constitution_i_...`
-- [ ] T017 [US2] Implementar `make_routes_fetcher` em `pipelines/collectors/mobility/fetch.py` no molde de
+- [X] T017 [US2] Implementar `make_routes_fetcher` em `pipelines/collectors/mobility/fetch.py` no molde de
   `open_meteo/fetch.py`: `POST` conforme `contracts/mobility-cli.md`, `RateLimiter`, retry com backoff, 401/403
   → `AuthorizationStop(StopCollection)` (criar em `pipelines/collectors/mobility/` ao lado do fetch), 429/
   `RESOURCE_EXHAUSTED` → `QuotaExhausted`, gravação atômica do destino, **toda** mensagem de erro (inclusive o
   corpo do servidor e a exceção do `httpx`) passa por `redact` → contrato: `test_us2_ac4_...`,
   `test_constitution_i_...`
-- [ ] T018 [US2] Implementar `validate_routes_response` em `pipelines/collectors/mobility/validate.py`
+- [X] T018 [US2] Implementar `validate_routes_response` em `pipelines/collectors/mobility/validate.py`
   (`research` R3): lista de um elemento, `originIndex == destinationIndex == 0`, `ROUTE_EXISTS` com
   `distanceMeters` inteiro ≥ 0 e `duration` `"<n>s"`, ou `ROUTE_NOT_FOUND`; `status.code != 0` → `ValueError`
   → contrato: `test_us2_ac4_...`
-- [ ] T019 [US2] Implementar `collect_mobility` em `pipelines/collectors/mobility/handler.py`: monta os itens de
+- [X] T019 [US2] Implementar `collect_mobility` em `pipelines/collectors/mobility/handler.py`: monta os itens de
   `route_pairs` sem identidade, ordena por `id`, injeta em `entry_extra` o que `data-model.md` §3 lista e usa
   `collect_items(skip_current=True, state_is_current=...)` com `max_items=max_elements`. Sem alterar
   `_shared/datasets.py` → contrato: `test_us2_ac4_...`, `test_us2_ac5_...`
-- [ ] T020 [US2] Implementar `estimate_run` em `pipelines/collectors/mobility/estimate.py` (`logic` §7) →
+- [X] T020 [US2] Implementar `estimate_run` em `pipelines/collectors/mobility/estimate.py` (`logic` §7) →
   contrato: `test_us2_ac1_...`, `test_us2_ac5_...`
-- [ ] T021 [US2] Implementar `main` em `pipelines/cli/collect_mobility.py` (`contracts/mobility-cli.md`):
+- [X] T021 [US2] Implementar `main` em `pipelines/cli/collect_mobility.py` (`contracts/mobility-cli.md`):
   estimativa por padrão, recusas na ordem do contrato, validação da data de partida (futura, ≤ 90 dias, dia
   útil) **só se** `modes.transit` estiver habilitado, aviso de preço com mais de 30 dias, `--poles`, `--silver`, `--max-elements`, saída com códigos 0/1/2 e
   mensagens sem chave → contrato: `test_us2_ac1_...`, `test_constitution_i_...`
 
 ### Testes da Fase
 
-- [ ] T022 [P] [US2] `tests/unit/test_mobility_validate.py`, `test_mobility_fetch.py` (retry, backoff, 429 dia
+- [X] T022 [P] [US2] `tests/unit/test_mobility_validate.py`, `test_mobility_fetch.py` (retry, backoff, 429 dia
   vs minuto, 401, corpo não JSON, eco da chave), `test_mobility_secrets.py` (ambiente, `.env`, ausência),
   `test_mobility_estimate.py` (teto gratuito, pior caso, `stale` vs novo) e
   `tests/integration/test_mobility_cli.py` (CLI de ponta a ponta sobre `LocalStorage` e S3 simulado com `moto`,
@@ -193,11 +193,11 @@ execuções iguais gravam 0 brutos novos (SC-006); nenhuma ocorrência da chave 
 
 **Registro da Fase**:
 
-- Status:
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: Concluída em 2026-11-21
+- Feito: T016–T022. `resolve_api_key`/`redact`, `make_routes_fetcher` (retry com backoff, `AuthorizationStop` em 401/403, `QuotaExhausted` em 429, gravação atômica, redação em toda mensagem), `validate_routes_response`, `collect_mobility` (itens por par, estado por assinatura, `entry_extra` com rota, distância e duração), `estimate_run` e a CLI `collect_mobility` (estimativa por padrão, `--execute` com confirmação, teto, preço e data validados antes da rede). Nenhuma chamada real ao Google.
+- Contrato: `pytest tests/contracts/test_mobility_contract.py` → 5/5 verdes na suíte completa; trava íntegra (`check-contract-tests.ps1` PASS)
+- Testes executados: validate, fetch, secrets, estimate, integração CLI (disco, retomada após Ctrl+C, S3 simulado com chaves idênticas, erros) e suíte completa 705 passed em 473 s; `ruff check pipelines tests` limpo
+- Pendências: Preço do Google e coordenadas dos aeroportos a conferir pelo autor antes da coleta real (R-001, R-010). Nenhum teste instável observado.
 
 ---
 
@@ -214,18 +214,18 @@ execuções iguais gravam 0 brutos novos (SC-006); nenhuma ocorrência da chave 
 
 ### Implementation
 
-- [ ] T023 [US3] Criar `analytics/dbt/models/mobility/rpt_mobility_coverage.sql` (contagens por `mode` e
+- [X] T023 [US3] Criar `analytics/dbt/models/mobility/rpt_mobility_coverage.sql` (contagens por `mode` e
   `pole_id`: `ok`, `sem_rota`, `falha`, `pendente`, `stale`, `expected`) e `analytics/dbt/tests/mobility_*.sql`:
   chave única, `km`/`minutes` nulos só fora de `ok` (e `minutes` nulo em `straight_line`), faixas plausíveis
   (`km` de 0 a 3.500; `minutes` de 0 a 3.000), soma dos quatro estados igual a `expected`, atribuição presente
   em toda linha `driving`/`transit` (FR-021, FR-022).
-- [ ] T024 [US3] Em `pipelines/cli/build_mobility.py`, gerar `mobility_coverage.csv`, `mobility_no_route.csv`
+- [X] T024 [US3] Em `pipelines/cli/build_mobility.py`, gerar `mobility_coverage.csv`, `mobility_no_route.csv`
   (com `expected_absence`), `mobility_pending.csv` e `mobility_stale.csv` em `lake/bronze/` e imprimir a
   cobertura por modo e polo (modelo: `write_coverage`/`format_coverage` do `build_climate`) (FR-023, FR-025).
 
 ### Testes da Fase
 
-- [ ] T025 [P] [US3] `tests/integration/test_mobility_coverage.py`: fixture com os quatro estados e polo
+- [X] T025 [P] [US3] `tests/integration/test_mobility_coverage.py`: fixture com os quatro estados e polo
   alterado; confere somas, lista de `sem_rota` com motivo, ausência esperada nas ilhas sem polo, `stale` listado e
   nenhum resultado alterado.
 
@@ -236,43 +236,43 @@ relatório reproduz as contagens do teste e diz se cada `sem_rota` é ausência 
 
 **Registro da Fase**:
 
-- Status:
-- Feito:
-- Contrato:
-- Testes executados:
-- Pendências:
+- Status: Concluída em 2026-11-21
+- Feito: T023–T025. O modelo `rpt_mobility_coverage` e os testes dbt nasceram com a Fase 3 e foram completados aqui; `build_mobility` grava `mobility_coverage.csv`, `mobility_no_route.csv` (com `expected_absence`: ilhas sem polo são ausência esperada, `ROUTE_NOT_FOUND` é a investigar), `mobility_pending.csv` e `mobility_stale.csv`.
+- Contrato: sem contrato novo nesta fase (o orçamento de 5 casos está usado; US3-AC1/AC3 são exercitadas pelo contrato `test_us2_ac5_us3_ac1_ac3_...`, 5/5 verdes, trava íntegra)
+- Testes executados: `tests/integration/test_mobility_coverage.py` (2 testes, com dbt sobre o fixture): somas dos quatro estados, lista de sem_rota com motivo, ausência esperada em Porto Santo, pendentes/falha com erro, `stale` só nos pares do polo alterado e resultados inalterados
+- Pendências: Nenhuma desta fase.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T026 Atualizar `.docs/fontes_de_dados.md` (linha `google_distances`: Routes API, um par por requisição,
+- [X] T026 Atualizar `.docs/fontes_de_dados.md` (linha `google_distances`: Routes API, um par por requisição,
   elegibilidade, estados, custo, polos; manter o "Risco aceito") e a seção de pendências do §3.3.
-- [ ] T027 Acrescentar a seção "Mobilidade (spec 009)" em `.docs/runbooks/coletas.md`: comandos de estimativa,
+- [X] T027 Acrescentar a seção "Mobilidade (spec 009)" em `.docs/runbooks/coletas.md`: comandos de estimativa,
   execução e build; **checklist do operador** (aprovar `config/poles.yml`, conferir preços e preencher
   `pricing_verified_on`, atualizar `departure_time`, criar a chave com restrição de API e orçamento, `.env`,
   estimativa, confirmar, executar, `build_mobility`); retomada; atribuição "Tempos de viagem: Google".
-- [ ] T028 [P] Acrescentar ao `.github/workflows/python.yml` os passos "Prepare mobility fixture" e "Build dbt
+- [X] T028 [P] Acrescentar ao `.github/workflows/python.yml` os passos "Prepare mobility fixture" e "Build dbt
   mobility from fixture" no molde dos de clima (`tests/fixtures/mobility/ci_seed.py`, `--select tag:mobility`).
-- [ ] T029 Rodar o quickstart offline (`quickstart.md`) e a suíte completa, o lint e o dbt do fixture; conferir
-  `check-contract-tests.ps1` e que **nenhuma** chave ou resposta real foi versionada (`git grep` do prefixo `AIza`).
-- [ ] T030 Registrar em `.planning/memory/` uma nota `mobilidade-009-execucao.md` com os achados duráveis
+- [X] T029 Rodar o quickstart offline (`quickstart.md`) e a suíte completa, o lint e o dbt do fixture; conferir
+  `check-contract-tests.ps1` e que **nenhuma** chave ou resposta real foi versionada (`git grep -nE "AIza[0-9A-Za-z_-]{35}"` vazio).
+- [X] T030 Registrar em `.planning/memory/` uma nota `mobilidade-009-execucao.md` com os achados duráveis
   (contagem real de pares, `pricing_verified_on`, divergências A-001/A-002) e atualizar o backlog com
   `update-feature-status.ps1`.
 
 ### Checklist de Release
 
-- [ ] Fase 3 (US1) concluída
-- [ ] Fase 4 (US2) concluída
-- [ ] Fase 5 (US3) concluída
-- [ ] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro
-- [ ] `ruff check pipelines tests` limpo e suíte completa verde, sem rede
-- [ ] `dbt build --select tag:mobility` verde sobre o fixture
-- [ ] Docs: `config/sources.yml`, `.docs/fontes_de_dados.md`, runbook e `config/poles.yml` atualizados (constitution, gate 6)
-- [ ] Nenhuma chave, resposta real ou arquivo de `.data/` no Git; scan de segredos passa
-- [ ] **Não executado por esta feature (gate do autor)**: aprovação final de `config/poles.yml`, conferência de
+- [X] Fase 3 (US1) concluída
+- [X] Fase 4 (US2) concluída
+- [X] Fase 5 (US3) concluída
+- [X] Testes de contrato 5/5 verdes na suíte completa e `check-contract-tests.ps1` íntegro
+- [X] `ruff check pipelines tests` limpo e suíte completa verde, sem rede
+- [X] `dbt build --select tag:mobility` verde sobre o fixture
+- [X] Docs: `config/sources.yml`, `.docs/fontes_de_dados.md`, runbook e `config/poles.yml` atualizados (constitution, gate 6)
+- [ ] Nenhuma chave, resposta real ou arquivo de `.data/` no Git; scan de segredos passa (varredura local por regex limpa; o gitleaks do CI só roda após push/PR, ainda não autorizado)
+- [X] **Não executado por esta feature (gate do autor)**: aprovação final de `config/poles.yml`, conferência de
   preços, coleta real do Google e `build_mobility` sobre dados reais; registrar como pendência, não como feito
-- [ ] `quickstart.md` executado
+- [X] `quickstart.md` executado
 
 ---
 

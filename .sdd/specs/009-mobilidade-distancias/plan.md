@@ -214,10 +214,15 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 
 ## Estado Atual
 
-<!-- Sobrescrita a cada checkpoint pelo sdd-execute. Vazia na criação. -->
+<!-- Sobrescrita a cada checkpoint pelo sdd-execute. -->
 
 | Área | Estado |
 | --- | --- |
+| Fases 1 a 5 | Concluídas (T001–T025) |
+| Polish | T026–T030 concluídas: docs (fontes, runbook), passo do CI, quickstart offline, nota de memória |
+| Contratos | 5/5 verdes; trava íntegra |
+| Suíte | 707 testes verdes (497 s), lint limpo, dbt verde sobre o fixture e build real offline contra a CAOP |
+| Aberto | Item 'scan de segredos passa': gitleaks só roda no CI após push/PR (não autorizado). Gates do autor: coordenadas dos aeroportos, preço do Google e coleta real |
 
 ## Riscos e Decisões
 
@@ -232,18 +237,34 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 | R-007 | ~3.800 brutos e entradas de manifest; `latest_dataset_states` lê todos os manifests | Lentidão de leitura | Volume pequeno (≈ 4k entradas); medir no build; sem otimização antecipada |
 | R-008 | Carro sem `departureTime` desvia do FR-007/ADR-002 D8 | O tempo de carro não é "08:00 de dia útil" | `TRAFFIC_UNAWARE` é reprodutível e mais barato; autor confirma (A-001); ADR emendado só se ele discordar |
 | R-009 | Cota gratuita mensal pode já estar consumida por outro uso da conta | Custo acima do estimado | Aviso na CLI; o pior caso (sem teto gratuito) está sempre impresso |
+| R-010 | O eAIP (ais.nav.pt) devolveu HTTP 503 com Retry-After 3600 em 2026-11-21; só o LPPT foi conferido (pelo AIP via busca) | Coordenadas de OPO, FAO, FNC e PDL aproximadas (~1 km) | Marcadas como APROXIMADO no `source_ref` de `config/poles.yml`; o autor confere antes da coleta real (A-007) |
+| R-011 | `test_climate_catalog.py` fixava a lista exata de fontes do catálogo | Acrescentar uma fonte quebrava o teste | Resolvido: lista atualizada com `google_distances` (mesma prática das specs anteriores) |
+| R-012 | As linhas de linha reta não tinham licença (FR-022); o dbt acusou | Linha sem fonte/licença viola a constitution III | Resolvido: `license_id` lido da dimensão CAOP (`load_mobility_municipalities`); atribuição só nas linhas do Google |
+| R-013 | A ordem das recusas do contrato (confirmação, teto, preço, data, chave) não pôde ser sequencial: o contrato 2 exige que a falta da chave apareça mesmo quando o teto também recusa | Mensagem de recusa incompleta se uma só fosse reportada | Resolvido: a CLI junta todas as recusas e as imprime juntas (melhor para o operador); `contracts/mobility-cli.md` ajustado |
+| R-014 | Um `.env` real na raiz tornaria o teste de chave ausente não hermético | Teste dependente da máquina do autor | Resolvido: `.env` só é lido quando `env` não é injetado (`resolve_api_key(root=None)` nos testes) |
 
 ## Execution Notes
 
 | Data | Fase/Story | Resumo | Pendência Principal |
 | --- | --- | --- | --- |
+| 2026-11-21 | Fases 1 e 2 | Fonte e polos no catálogo; catálogo, polos, pares e estado implementados com 72 testes novos. eAIP devolveu 503 (Retry-After 3600): coordenadas dos aeroportos ficaram aproximadas e marcadas para conferência | Conferir as coordenadas dos 4 aeroportos no eAIP quando o site voltar |
+| 2026-11-21 | Fase 3 (US1) | Linha reta, linhas por estado, build com dbt e relatórios CSV; contrato da US1 verde. O dbt apontou linhas sem licença, corrigido lendo license_id da dimensão CAOP | Fase 4: coleta do Google (fetch, validate, handler, estimate, CLI) |
+| 2026-11-21 | Fase 4 (US2) | Coleta do Google: fetch com retry/parada em 401/403/429, redação da chave em toda mensagem, validação de HTTP 200 com erro, handler sobre collect_items, estimativa e CLI com confirmação. Os 5 contratos passaram de primeira; 705 testes verdes | Fase 5: teste do relatório de cobertura; depois Polish |
+| 2026-11-21 | Fase 5 (US3) | Relatório de cobertura com os quatro estados, ausência esperada nas ilhas sem polo e `stale`; o teste confirma que um polo alterado marca só os seus pares sem alterar resultados | Polish: documentação, CI e validação final |
+| 2026-11-21 | Polish | Documentação, passo de CI, quickstart offline e nota de memória; suíte final 707 passed. Recusas conferidas com dados reais (confirmação, preço e chave listados juntos, nenhum bruto do Google criado) | Falta o gitleaks do CI (push/PR) e os gates do autor |
 
-**PRÓXIMO**: —
+**PRÓXIMO**: sdd-converge, depois push/PR com autorização do autor para o CI remoto (quality e gitleaks). Gates do autor antes da coleta real: coordenadas dos aeroportos, preço, chave.
 
 ## Arquivos Principais
 
-- (nenhum ainda)
+- `config/sources.yml` (google_distances) e `config/poles.yml` (7 polos)
+- `pipelines/collectors/mobility/*` e `pipelines/cli/{collect_mobility,build_mobility}.py`
+- `analytics/dbt/models/mobility/` e `analytics/dbt/tests/mobility_*.sql`
+- `.docs/fontes_de_dados.md`, `.docs/runbooks/coletas.md`, `.github/workflows/python.yml`, `.planning/memory/mobilidade-009-execucao.md`
 
 ## Cuidados para Retomada
-
-- (nenhum ainda)
+- `load_catalog` trata `google_distances` antes dos ramos `window`/`datasets`; não acrescente essas chaves à entrada.
+- `route_pairs` aceita `modes`; o padrão (ambos os modos) é só para os contratos. O código real passa `tuple(source['modes'])`.
+- O eAIP pode voltar a responder; reconferir as coordenadas dos aeroportos antes da coleta real.
+- A CLI de coleta lê `.env` da raiz do repositório só quando usa o ambiente real; com `env` injetado, nunca.
+- `--no-wait` foi retirado: um 429 para a coleta de imediato (FR-012); rode o mesmo comando depois.
