@@ -8,7 +8,6 @@ update-bug-status.ps1.
 
 - **2026-11-17 — Enriquecimento geográfico posterior dos anúncios Idealista:** recuperar município/freguesia combinando nomes e contexto territorial com a CAOP; geocodificar endereços parciais dos títulos quando necessário, preservando proveniência e precisão. A exploração encontrou 2.792 candidatos municipais únicos entre 6.371 anúncios regionais, ainda sem validação ou promoção ao lake. Próximo passo: definir um piloto de 100 anúncios para medir acurácia, ganho de cobertura e custo; escolher provedor e verificar licença/persistência (OpenCage como candidato; Google condicionado ao enquadramento contratual; não depender do Nominatim público para lotes recorrentes). Provedor, orçamento e implementação permanecem pendentes de decisão. [Avaliação e diagnóstico](../.sdd/assessments/enriquecimento-geogrfico-posterior-dos-anncios-idealista/explora.md).
 
-- **2026-11-20 — Spec 009: mobilidade e distância a polos:** é o único critério do catálogo do MVP (plano §8.1, "Distância a capitais") ainda sem ingestão e faz parte do marco da v0 sem Idealista (plano §15). Escopo previsto: `config/poles.yml` (Lisboa, Porto, Faro, aeroportos, sedes de distrito) e distâncias por município e freguesia em linha reta (haversine), carro e transporte público. Os tempos vêm do Google Distance Matrix, calculados uma única vez por CLI local e guardados em `raw/`, conforme o ADR-002. Próximo passo: `sdd-specify`.
 - **2026-11-20 — Fase 3: marts de indicadores e `criteria_catalog`:** depois da mobilidade, construir os marts municipais (e de freguesia, quando houver dado) com os indicadores do catálogo do MVP e o `criteria_catalog` versionado (plano §8.1 e §8.2), que alimenta o ranker. O catálogo também serve de checagem final da ingestão: cada critério precisa apontar para um dado existente no lake. Confirmar antes o estado das Fases 0 e 1 (segredos, AWS, PoC MWAA), que aparecem desmarcadas no checklist do plano (§16), já que a Fase 3 prevê `dbt build` contra o S3.
 - **2026-11-20 — Pendências que não bloqueiam a Fase 3:** AIMA/SNS está em `needs-clarification` por falta de enquadramento de reutilização do dataset SNS ([decisão](../.sdd/assessments/viabilidade-das-fontes-aima-sns/decision.md)); o recorte de brasileiros já vem do Pordata 354. O WWO segue apenas como fallback do Open-Meteo.
 
@@ -24,6 +23,7 @@ update-bug-status.ps1.
 | 006-censos-2021-freguesia | Censos 2021 por freguesia — coleta e preparação de população e faixas etárias | Convergida | 35/35 tasks | 2026-11-13 |
 | 007-idealista-formato-atual-relatorio | Idealista atual e relatório descritivo | Convergida | 17/17 tasks | 2026-11-17 |
 | 008-ingestao-wikipedia | Ingestão Wikipedia — textos municipais rastreáveis e organizados por seções | Convergida | 46/46 tasks | 2026-11-20 |
+| 009-mobilidade-distancias | Mobilidade — distâncias e tempos de viagem dos municípios até polos fixos | Planejada | 0/40 tasks | 2026-11-21 |
 
 ## Melhorias Ad-hoc
 
