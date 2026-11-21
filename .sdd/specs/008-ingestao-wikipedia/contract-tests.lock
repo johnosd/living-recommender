@@ -1,0 +1,17 @@
+{
+    "feature":  "008-ingestao-wikipedia",
+    "lockedAt":  "2026-11-20 15:14",
+    "total":  null,
+    "files":  [
+                  {
+                      "path":  "tests/contracts/test_wikipedia_contract.py",
+                      "sha256":  "68e8f78cb96b35c5a0359063bc5e3b3703bbb84d9d9be789ac638b407b590af8",
+                      "tests":  "unknown"
+                  },
+                  {
+                      "path":  "tests/fixtures/wikipedia/responses.py",
+                      "sha256":  "034db3ff1677b6bdb547560fd8fc594afe47578c2a448357d81a76ea64254211",
+                      "tests":  "unknown"
+                  }
+              ]
+}

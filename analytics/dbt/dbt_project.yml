@@ -25,3 +25,5 @@ models:
       +tags: ['idealista']
     censos:
       +tags: ['censos']
+    wikipedia:
+      +tags: ['wikipedia']

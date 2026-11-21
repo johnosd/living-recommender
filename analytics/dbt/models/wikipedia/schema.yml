@@ -1,0 +1,89 @@
+version: 2
+models:
+  - name: wikipedia_revision
+    description: Identidades e revisões aceitas com referências aos dois originais imutáveis.
+    columns:
+      - name: dico
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: revision_id
+        data_tests: [not_null]
+      - name: metadata_raw_sha256
+        data_tests: [not_null]
+      - name: content_raw_sha256
+        data_tests: [not_null]
+  - name: wikipedia_article
+    description: Texto editorial português; narrativa não equivale a indicador estatístico.
+    columns:
+      - name: dico
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('wikipedia_revision')
+                field: dico
+      - name: full_text
+        data_tests: [not_null]
+      - name: license_id
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['CC-BY-SA-4.0']
+      - name: permanent_url
+        data_tests: [not_null]
+      - name: processing_signature
+        data_tests: [not_null]
+  - name: wikipedia_section
+    columns:
+      - name: dico
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('wikipedia_article')
+                field: dico
+      - name: section_id
+        data_tests: [not_null]
+      - name: level
+        data_tests: [not_null]
+  - name: wikipedia_block
+    columns:
+      - name: dico
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('wikipedia_article')
+                field: dico
+      - name: block_id
+        data_tests: [not_null]
+      - name: section_id
+        data_tests: [not_null]
+      - name: kind
+        data_tests: [not_null]
+  - name: wikipedia_coverage
+    columns:
+      - name: official_name
+        description: Nome oficial municipal da dimensão CAOP congelada, independente do título do artigo.
+        data_tests: [not_null]
+      - name: dico
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['valid', 'absent']
