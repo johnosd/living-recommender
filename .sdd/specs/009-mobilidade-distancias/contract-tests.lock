@@ -1,0 +1,17 @@
+{
+    "feature":  "009-mobilidade-distancias",
+    "lockedAt":  "2026-11-21 19:24",
+    "total":  null,
+    "files":  [
+                  {
+                      "path":  "tests/contracts/test_mobility_contract.py",
+                      "sha256":  "62a02bca8622a7ad3dd2b753f358bcdeaaba278acc8ed15023eb6f2dbfc3703c",
+                      "tests":  "unknown"
+                  },
+                  {
+                      "path":  "tests/fixtures/mobility/responses.py",
+                      "sha256":  "f2356376ff54b1252c3ba39ca66e87f1b063406035aba1c6ede2390e47218231",
+                      "tests":  "unknown"
+                  }
+              ]
+}

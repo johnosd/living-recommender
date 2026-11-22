@@ -83,6 +83,11 @@ jobs:
       - name: Build Wikipedia offline with dbt and readiness gate
         run: uv run --locked python -m pipelines.cli.build_wikipedia --local --root .data/ci-wikipedia
 
+      - name: Prepare mobility fixture
+        run: uv run --locked python -m tests.fixtures.mobility.ci_seed --root .data/ci-mobility --collect
+      - name: Build mobility offline with dbt
+        run: uv run --locked python -m pipelines.cli.build_mobility --local --root .data/ci-mobility --catalog .data/ci-mobility/catalog.yml --poles .data/ci-mobility/poles.yml
+
   secrets:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

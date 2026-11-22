@@ -1,0 +1,60 @@
+# Polos de mobilidade (spec 009, ADR-004): pontos de referência até os quais se mede a distância de cada município.
+# Lista inicial enxuta, por decisão do autor (2026-11-21): cidades Lisboa e Porto e cinco aeroportos.
+#
+# scope:
+#   national  - vale para todos os municípios do continente (só com routing_group: continente)
+#   district  - vale só para os municípios do mesmo distrito do polo (sede_distrito)
+#   island    - vale só para os municípios da mesma ilha do polo
+# Cidades, sedes e capitais usam o ponto representativo da CAOP do município `dico` (sem coordenadas aqui).
+# Aeroportos declaram latitude, longitude e source_ref.
+#
+# PENDENTE (gate do autor, antes da coleta real): as coordenadas dos aeroportos abaixo são aproximadas. A página
+# oficial do eAIP (ais.nav.pt, AD 2) devolveu HTTP 503 com Retry-After 3600 em 2026-11-21, então só o LPPT
+# foi conferido (pelo valor do AIP em 384627N 0090803W). Conferir os demais no AD 2 de cada aeródromo e atualizar
+# `source_ref`. Um erro de ~1 km não altera de forma relevante a distância entre municípios.
+version: 1
+poles:
+  - {pole_id: lisboa, name: Lisboa, kind: cidade, routing_group: continente, scope: national, dico: "1106"}
+  - {pole_id: porto, name: Porto, kind: cidade, routing_group: continente, scope: national, dico: "1312"}
+  - pole_id: aeroporto_lis
+    name: Aeroporto de Lisboa (LPPT)
+    kind: aeroporto
+    routing_group: continente
+    scope: national
+    latitude: 38.77417
+    longitude: -9.13417
+    source_ref: "AIP Portugal, AD 2 LPPT, ARP 384627N 0090803W (valor lido por busca; página eAIP indisponível em 2026-11-21)"
+  - pole_id: aeroporto_opo
+    name: Aeroporto do Porto (LPPR)
+    kind: aeroporto
+    routing_group: continente
+    scope: national
+    latitude: 41.2475
+    longitude: -8.6781
+    source_ref: "APROXIMADO (Wikipedia, 41°14'51\"N 8°40'41\"W); CONFERIR no eAIP AD 2 LPPR"
+  - pole_id: aeroporto_fao
+    name: Aeroporto de Faro (LPFR)
+    kind: aeroporto
+    routing_group: continente
+    scope: national
+    latitude: 37.0144
+    longitude: -7.9661
+    source_ref: "APROXIMADO (Wikipedia, 37°00'52\"N 7°57'58\"W); CONFERIR no eAIP AD 2 LPFR"
+  - pole_id: aeroporto_fnc
+    name: Aeroporto da Madeira (LPMA)
+    kind: aeroporto
+    routing_group: madeira
+    scope: island
+    district_or_island: "Ilha da Madeira"
+    latitude: 32.6978
+    longitude: -16.7775
+    source_ref: "APROXIMADO (Wikipedia, 32°41'52\"N 16°46'39\"W); CONFERIR no eAIP AD 2 LPMA"
+  - pole_id: aeroporto_pdl
+    name: Aeroporto de Ponta Delgada (LPPD)
+    kind: aeroporto
+    routing_group: acores
+    scope: island
+    district_or_island: "Ilha de São Miguel"
+    latitude: 37.7411
+    longitude: -25.6969
+    source_ref: "APROXIMADO (Wikipedia, 37°44'28\"N 25°41'49\"W); CONFERIR no eAIP AD 2 LPPD"

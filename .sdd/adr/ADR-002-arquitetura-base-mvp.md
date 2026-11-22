@@ -75,6 +75,13 @@ React com exportação estática, mapas com MapLibre GL, i18n PT-BR + EN, sem co
 - **Clima:** médias históricas de 10 a 30 anos do Open-Meteo, mais a janela recente do WWO (uma chave, guardada como segredo), calculadas por centroide do município.
 - **Mobilidade:** distâncias pré-calculadas até polos fixos (Lisboa, Porto, Faro, aeroportos e sede de distrito).
 
+  **Atualização (ADR-004, 2026-11-21):** a v1 passa de três modos para **dois (linha reta e carro)**; o transporte
+  público fica fora por ora e pode ser habilitado depois por catálogo. O produto passa a ser a Routes API
+  `computeRouteMatrix` (um par por requisição), o carro usa `TRAFFIC_UNAWARE` sem horário de partida, e os polos
+  iniciais são 7 (Lisboa, Porto e os aeroportos LIS, OPO, FAO, FNC e PDL). A atualização de 2026-11-03 abaixo
+  continua valendo no que não for contrariado. Ver [ADR-004](ADR-004-mobilidade-linha-reta-e-carro.md) para o
+  raciocínio completo.
+
   **Atualização (2026-11-03):** a mobilidade tem três modos selecionáveis na v1: linha reta (haversine), carro e transporte público. Os tempos de carro e de transporte vêm do Google Distance Matrix, **calculados uma única vez** por uma CLI local e guardados em `raw/`. O autor aceitou o risco de termos de uso do Google, porque a alternativa com motor de rotas próprio (`r5py` + OSM + GTFS da CP) foi considerada complexa demais. Ela fica registrada como substituição caso o Google conteste ou o projeto entre na Fase B comercial. O Google Places entra como enriquecimento **online** no navegador, sob demanda e sem gravar resultados. O clima usa o Open-Meteo como fonte principal e o WWO como fallback. Detalhes em `.docs/fontes_de_dados.md` §3.3.
 
 ### D9. Plataforma, repositório e segurança

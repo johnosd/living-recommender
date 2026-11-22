@@ -66,6 +66,7 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 | Open-Meteo Histórico (`era5`); WWO como fallback futuro | Coleta diária municipal de 24 meses; score e extremos em etapa futura | Ponto representativo da CAOP |
 | Anúncios de arrendamento (Idealista) | Aluguel pedido, **só agregado** (mediana, P25–P75, n) | Município / freguesia |
 | Wikipedia | Texto descritivo dos municípios (CC BY-SA, com atribuição) | Município |
+| Google Routes API (carro) | Tempo e distância de carro até polos fixos, calculados uma vez; a distância em linha reta não usa API | Município |
 
 Os anúncios são coletados manualmente, uma vez por mês e em baixa frequência, até a integração com a API oficial do Idealista, já solicitada. Nenhum anúncio individual é publicado. Licenças e regras de uso de cada fonte estão nas seções 3.4 e 5 do plano.
 
@@ -117,6 +118,8 @@ tipologias e preços pedidos. A mediana do lote não representa uma mediana naci
 Nenhum anúncio individual foi publicado.
 
 
+A spec 009 acrescenta a **mobilidade**: a distância dos 308 municípios até 7 polos (Lisboa, Porto e os aeroportos LIS, OPO, FAO, FNC e PDL), em **linha reta** (sem API) e de **carro** (Routes API do Google, cálculo único). `collect_mobility` só estima por padrão; gastar exige `--execute`, a confirmação do número de elementos, um teto e a chave, que fica em `.env` e nunca no Git. `build_mobility` monta o staging (`ok`, `sem_rota`, `falha`, `pendente`) e os relatórios de cobertura. O transporte público ficou fora (ADR-004). Os tempos de carro levam a atribuição "Tempos de viagem: Google" e são um risco aceito de termos de uso. A coleta real ainda não foi feita: faltam conferir as coordenadas dos aeroportos e o preço. Passo a passo no [guia de coletas](.docs/runbooks/coletas.md#mobilidade-distancia-e-tempo-de-carro-até-os-polos-spec-009).
+
 ## Roteiro
 
 | Fase | Entrega | Estado |
@@ -139,7 +142,7 @@ Estado atual:
 .planning/               fluxo de desenvolvimento SDD (templates, scripts, backlog, constitution)
 .agents/                 skills do agente de desenvolvimento
 .sdd/                     ADRs (adr/) e specs das features (specs/)
-config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual)
+config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual, Wikipedia, Google Routes)
 pipelines/               coletores (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual), storage local/S3 e CLIs (collect, load, build, view)
 analytics/dbt/           modelos Bronze/Silver, seed de sinônimos de município e testes de qualidade
 tests/                   unitários, integração, contrato e fixtures sintéticas

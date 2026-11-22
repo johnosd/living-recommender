@@ -583,3 +583,56 @@ aprovou quality/secrets do código corrigido `3574232`: 553 testes/1 skip
 Windows no Linux, Ruff e sete builds isolados; gitleaks sem segredos.
 Fase 8 concluída, spec 008 Implementada/46 de 46 itens; nova convergência é a
 próxima etapa. CI do fechamento documental nos checks do head final do PR #9.
+
+## Mobilidade: distância e tempo de carro até os polos (spec 009)
+
+Mede, para cada município, a distância até os polos de `config/poles.yml` (Lisboa, Porto e os aeroportos LIS, OPO,
+FAO, FNC e PDL): **linha reta** (haversine, sem API) e **carro** (Routes API do Google, cálculo **único**). O
+transporte público não é calculado (ADR-004). A coleta real é do operador; nada aqui roda sozinho.
+
+Comandos (todos locais):
+
+```powershell
+# 1. Só estima: não lê a chave e não abre a rede
+uv run --locked python -m pipelines.cli.collect_mobility --local --root .data
+# 2. Gasta (depois do checklist abaixo): o número é o total de elementos mostrado na estimativa
+uv run --locked python -m pipelines.cli.collect_mobility --local --root .data --execute --confirm-elements <N>
+# 3. Constrói o staging, o relatório e os CSVs (sem chave, sem rede)
+uv run --locked python -m pipelines.cli.build_mobility --local --root .data
+```
+
+**Checklist do operador antes do passo 2** (a CLI recusa e lista tudo o que faltar):
+
+1. Aprovar `config/poles.yml` e conferir as coordenadas dos aeroportos no eAIP (AD 2 de cada aeródromo). Em
+   2026-11-21 o site respondeu HTTP 503; só o LPPT foi conferido e os outros quatro estão marcados `APROXIMADO`.
+2. Conferir na página oficial a tabela de preços e a cota gratuita da Routes API (Compute Route Matrix, `DRIVE` com
+   `TRAFFIC_UNAWARE`), ajustar `pricing` e preencher `pricing_verified_on` em `config/sources.yml`.
+3. Criar a chave no Google Cloud restrita à Routes API, com orçamento e alerta, e guardá-la em `.env`
+   (`GOOGLE_CV20_API_KEY=...`, ignorado pelo Git). **Nunca** colar a chave em arquivo versionado, chat ou issue.
+4. Rodar o passo 1 e conferir o total (~1.404 elementos) e o custo; o teto por execução é `max_elements_per_run`
+   (2.000) e só `--max-elements` o eleva.
+5. Ao terminar, revogar a chave no Google Cloud e apagá-la do `.env` (cálculo único).
+
+**Retomada.** Se a cota ou a conexão acabar, rode o mesmo comando do passo 2 com o novo total estimado: só os pares
+pendentes e os desatualizados são consultados. Um erro 401/403 ou 429 para a execução na hora, sem repetir. Um
+`Ctrl+C` preserva o que já foi gravado. O código de saída é 0 sem falhas, 1 com falhas e 2 com pendentes.
+
+**Estados de cada par** (`stg_municipality_pole_distance`): `ok`, `sem_rota` (o Google respondeu que não há rota),
+`falha` (erro de coleta, inclusive erro dentro de HTTP 200) e `pendente`. `km` e `minutes` só existem em `ok`;
+nunca se preenche um par sem rota com outro valor. Um par é `stale` quando o polo ou as coordenadas mudaram depois
+do cálculo; ele mantém o valor antigo até ser recalculado. As ilhas sem polo (8 ilhas dos Açores e Porto Santo) ficam
+só com linha reta e aparecem em `mobility_no_route.csv` como `sem_polo_elegivel` (ausência esperada).
+
+Saídas: `.data/lake/bronze/{stg_municipality_pole_distance,dim_mobility_pole,rpt_mobility_coverage}/data.parquet` e
+`.data/lake/bronze/mobility_{coverage,no_route,pending,stale,retired}.csv` (todos com atribuição e risco aceito; `retired` lista os pares gravados de polos que saíram do catálogo). Bruto imutável em
+`.data/raw/source=google_distances/dataset=<dico>--<polo>--<modo>/run_id=<run>/` e manifests em
+`.data/manifests/google_distances/`. Atribuição obrigatória: "Tempos de viagem: Google" em toda linha de carro.
+
+Risco aceito (ADR-002 D8, 2026-11-03): os termos do Google restringem guardar e exibir a matriz de tempos. A
+substituição documentada é OpenRouteService (carro) e GTFS da CP (comboio). Para ampliar polos ou habilitar o
+transporte público, edite o catálogo: só os pares novos são cobrados. O [quickstart da 009](../../.sdd/specs/009-mobilidade-distancias/quickstart.md)
+descreve o cenário offline.
+
+Estado em 2026-11-21: implementação concluída e validada offline (suíte completa, dbt sobre fixture e build real
+contra a CAOP: 3.562 linhas, 2.156 de linha reta e 1.404 pares de carro pendentes). **Nenhuma chamada real ao Google
+foi feita**; a coleta real, o preço e as coordenadas dos aeroportos seguem como gates do autor.

@@ -122,6 +122,10 @@ def load_catalog(path: str | Path = DEFAULT_CATALOG) -> dict:
             from pipelines.collectors.wikipedia.catalog import wikipedia_source
 
             wikipedia_source(catalog)
+        elif source_id == "google_distances":
+            from pipelines.collectors.mobility.catalog import mobility_source
+
+            mobility_source(catalog)
         elif isinstance(source, dict) and source.get("collection_method") == "manual_extension":
             get_manual_snapshot_source(catalog, source_id)
         elif isinstance(source, dict) and "window" in source:
