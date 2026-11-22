@@ -218,10 +218,11 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 
 | Área | Estado |
 | --- | --- |
-| Fases 1 a 5 e Polish | Concluídas (T001–T030); checklist de release 100% |
+| Fases 1 a 5 e Polish | Concluídas e no PR #11 (CI verde) |
+| Phase 6 (Convergence) | T031–T034 concluídas (source_id, atribuição nos relatórios, mobility_retired.csv, data-model alinhado). T035 (decisão do autor) e T036 (CI remoto) abertas |
 | Contratos | 5/5 verdes; trava íntegra |
-| Suíte | 707 testes verdes localmente; CI remoto do PR #11 verde (quality e gitleaks) |
-| Aberto (gates do autor) | Coordenadas de OPO, FAO, FNC e PDL (eAIP em 503), conferência do preço do Google (`pricing_verified_on`) e a coleta real |
+| Suíte | 710 testes verdes localmente (712 s), lint limpo; build real offline com source_id e atribuição |
+| Aberto | T035: autor aprova as emendas de FR-011/US2-AC4, FR-021 e US1-AC4. T036: CI remoto após push. Gates do autor: coordenadas dos aeroportos, preço e coleta real |
 
 ## Riscos e Decisões
 
@@ -252,8 +253,9 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 | 2026-11-21 | Fase 5 (US3) | Relatório de cobertura com os quatro estados, ausência esperada nas ilhas sem polo e `stale`; o teste confirma que um polo alterado marca só os seus pares sem alterar resultados | Polish: documentação, CI e validação final |
 | 2026-11-21 | Polish | Documentação, passo de CI, quickstart offline e nota de memória; suíte final 707 passed. Recusas conferidas com dados reais (confirmação, preço e chave listados juntos, nenhum bruto do Google criado) | Falta o gitleaks do CI (push/PR) e os gates do autor |
 | 2026-11-21 | Release | PR #11 aberto; quality pass (4m17s e 7m40s) e secrets/gitleaks pass (14 s) no CI remoto. Checklist de release completo | Gates do autor para a coleta real; sdd-converge |
+| 2026-11-21 | Phase 6 (Convergence) | T031 `source_id` (caop|google_distances) no staging e no dbt; T032 atribuição e risco aceito em todos os CSVs e no console; T033 `mobility_retired.csv`; T034 data-model alinhado. 710 testes verdes | T035 (decisão do autor) e push para o CI remoto (T036) |
 
-**PRÓXIMO**: sdd-converge. Depois, o autor decide o merge do PR #11 e cumpre os gates antes da coleta real.
+**PRÓXIMO**: T035 (autor decide as 3 emendas da spec), push da Phase 6 e CI do PR #11 (T036); depois sdd-converge.
 
 ## Arquivos Principais
 

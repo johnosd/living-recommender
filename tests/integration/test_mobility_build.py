@@ -33,6 +33,9 @@ def test_straight_line_covers_every_pair_and_a_second_build_gives_the_same_conte
     line = frame[frame["mode"] == "straight_line"]
     assert len(line) == 5 * 4 and line["km"].notna().all() and (line["status"] == "ok").all()  # SC-001
     assert not frame.duplicated(["dico", "pole_id", "mode"]).any()  # SC-002
+    assert frame["source_id"].notna().all()  # constitution III: every row names its source
+    assert set(line["source_id"]) == {"caop"} and set(frame[frame["mode"] != "straight_line"]["source_id"]) == {
+        "google_distances"}
     assert set(frame["license_id"]) == {"CC-BY-4.0", "not_granted_by_source"}
     assert set(frame["dico"]) == set(pd.read_parquet(silver).dico)
     assert set(frame[frame["mode"] != "straight_line"]["status"]) == {"ok", "pendente"}  # identities are ok

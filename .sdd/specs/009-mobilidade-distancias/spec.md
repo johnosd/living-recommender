@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-21
 
-**Status**: Implementada
+**Status**: Convergência Pendente
 
 **Input**: "escreva a feature para passar para outro modelo de IA executar" — próximo passo do backlog depois da integração das specs 005, 007 e 008: ingerir a mobilidade, único critério do catálogo do MVP ("Distância a capitais", plano §8.1) ainda sem dado. Referências: `.sdd/adr/ADR-002-arquitetura-base-mvp.md` (D8, atualização de 2026-11-03), `.sdd/adr/ADR-003-byok-apis-externas.md`, `.docs/fontes_de_dados.md` (linha `google_distances`, "Risco aceito" e pendências do §3.3) e `.docs/plano_plataforma_recomendacao_portugal.md` §8.1 e §15.
 
@@ -211,3 +211,6 @@ Esta spec foi escrita **sem entrevista com o autor**, a pedido dele, para entreg
 - Q: A coleta real do Google roda neste trabalho? → A: não; é etapa manual do autor, com chave própria e confirmação (decisão de enquadramento desta spec, a confirmar).
 - Q: Quais são os polos iniciais? → A: só cidades (Lisboa e Porto) e aeroportos (LIS, OPO, FAO, FNC, PDL), 7 no total; o autor decidiu em 2026-11-21 (resolve o pendente da lista de polos). Faltam só as coordenadas dos aeroportos, conferidas antes da coleta real.
 - Pendente 2: produto, preço e cota vigentes do Google no momento do plano (Assumptions).
+- Q: A Routes API não devolve as coordenadas ajustadas à via; aceitar que não haverá sinalização de "ponto fora de via" nem coordenadas devolvidas (FR-011, US2-AC4 e o edge case)? → A: sim, aceito pelo autor em 2026-11-21. O manifest grava só as coordenadas pedidas e `returned_coordinates: unavailable`; o Google encaixa a origem na estrada mais próxima e o desvio não é medido (T035, item a).
+- Q: Na linha reta o tempo não se aplica; aceitar `minutes` nulo com `status = ok` nesse modo (ajuste do FR-021)? → A: sim, aceito pelo autor em 2026-11-21. Nos modos de rota, `km` e `minutes` continuam nulos só quando `status ≠ ok` (T035, item b).
+- Q: A linha reta é derivada no build, sem coleta e sem bruto; aceitar que a idempotência seja o mesmo resultado (hash do conteúdo) em vez de `unchanged` no manifest (US1-AC4)? → A: sim, aceito pelo autor em 2026-11-21 (T035, item c).

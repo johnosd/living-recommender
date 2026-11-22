@@ -23,10 +23,11 @@ from pipelines.collectors.mobility.rows import build_distance_rows
 ROOT = Path(__file__).resolve().parents[2]
 BRONZE_TABLES = ("stg_municipality_pole_distance", "dim_mobility_pole", "rpt_mobility_coverage")
 PROMOTED = tuple("lake/bronze/" + name for name in BRONZE_TABLES)
-REPORTS = ("mobility_coverage.csv", "mobility_no_route.csv", "mobility_pending.csv", "mobility_stale.csv")
+REPORTS = ("mobility_coverage.csv", "mobility_no_route.csv", "mobility_pending.csv", "mobility_stale.csv",
+           "mobility_retired.csv")
 STRING_COLUMNS = ("dico", "pole_id", "mode", "status", "no_route_reason", "error", "method", "departure_time",
                   "calculated_at_utc", "source_run_id", "caop_version", "poles_catalog_version", "license_id",
-                  "attribution", "usage_restriction", "reference_period", "processed_at_utc")
+                  "attribution", "usage_restriction", "reference_period", "processed_at_utc", "source_id")
 DISTANCES = pa.schema([*[(name, pa.string()) for name in STRING_COLUMNS[:3]], ("km", pa.float64()),
                        ("minutes", pa.float64()), *[(name, pa.string()) for name in STRING_COLUMNS[3:]],
                        ("stale", pa.bool_())])
@@ -58,16 +59,20 @@ def prepare_mobility(root: Path, output_dir: Path, *, processed_at_utc: str, cat
     if unknown:
         raise MobilityBuildError(f"município sem correspondência na dimensão CAOP: {', '.join(unknown)}")
     retired = sorted(key for key in states if key.split("--")[1] not in pole_ids)
+    retired_records = [{"dico": key.split("--")[0], "pole_id": key.split("--")[1], "mode": key.split("--")[2],
+                        "source_run_id": states[key]["run_id"]} for key in retired]
     rows = build_distance_rows(catalog, municipalities=towns, poles=poles, storage=storage,
                                processed_at_utc=processed_at_utc)
     output_dir.mkdir(parents=True, exist_ok=True)
     _write_parquet(output_dir / "distances.parquet", rows, DISTANCES)
     _write_parquet(output_dir / "poles.parquet", [{k: pole.get(k) for k in POLES.names} for pole in poles], POLES)
     return {"rows": len(rows), "municipalities": len(towns), "poles": len(poles), "modes": list(source["modes"]),
-            "retired_pairs": retired, "towns": towns, "pole_list": poles}
+            "retired_pairs": retired, "retired_records": retired_records, "towns": towns, "pole_list": poles,
+            "source": source}
 
 
-def write_reports(candidate: Path, towns: list[dict], poles: list[dict], modes) -> dict:
+def write_reports(candidate: Path, towns: list[dict], poles: list[dict], modes, *, source: dict,
+                  retired: list[dict] | None = None) -> dict:
     """CSVs de auditoria (`;`, UTF-8 com BOM, como o clima): cobertura, sem rota, pendentes e desatualizados."""
     base = Path(candidate) / "lake/bronze"
     distances = pd.read_parquet(base / "stg_municipality_pole_distance/data.parquet")
@@ -87,10 +92,19 @@ def write_reports(candidate: Path, towns: list[dict], poles: list[dict], modes) 
     pending = pending.assign(name=pending["dico"].map(names))
     stale = routed[routed["stale"]][["dico", "pole_id", "mode", "status", "calculated_at_utc"]]
     stale = stale.assign(name=stale["dico"].map(names))
+    retired_frame = pd.DataFrame(retired or [], columns=["dico", "pole_id", "mode", "source_run_id"])
+    retired_frame.insert(1, "name", retired_frame["dico"].map(names))
+    # US3-AC4: toda saída com tempos do Google leva a atribuição e a referência ao risco aceito.
+    notice = {"attribution": source["attribution"], "usage_restriction": source.get("usage_restriction")}
     for name, frame in (("mobility_coverage.csv", coverage), ("mobility_no_route.csv", report),
-                        ("mobility_pending.csv", pending), ("mobility_stale.csv", stale)):
+                        ("mobility_pending.csv", pending), ("mobility_stale.csv", stale),
+                        ("mobility_retired.csv", retired_frame)):
+        frame = frame.copy()
+        google = frame["mode"] != "straight_line"
+        for column, value in notice.items():
+            frame[column] = [value if is_google else "" for is_google in google]
         frame.to_csv(base / name, sep=";", index=False, encoding="utf-8-sig")
-    return {"coverage": coverage, "no_route": report, "pending": pending, "stale": stale}
+    return {"coverage": coverage, "no_route": report, "pending": pending, "stale": stale, "retired": retired_frame}
 
 
 def format_coverage(coverage: pd.DataFrame) -> str:
@@ -161,7 +175,8 @@ def build_mobility(root=Path(".data"), *, catalog=None, poles_path=None) -> dict
         for relative in PROMOTED:
             (candidate / relative).mkdir(parents=True, exist_ok=True)
         _run_dbt(candidate, silver)
-        reports = write_reports(candidate, counts["towns"], counts["pole_list"], counts["modes"])
+        reports = write_reports(candidate, counts["towns"], counts["pole_list"], counts["modes"],
+                                source=counts["source"], retired=counts["retired_records"])
         _promote_reports(root, candidate)
         return {**counts, **reports}
     finally:
@@ -187,7 +202,9 @@ def main(argv=None) -> int:
     print(f"  Bronze: {args.root / 'lake/bronze/stg_municipality_pole_distance'}")
     print(format_coverage(result["coverage"]))
     if result["retired_pairs"]:
-        print(f"  Pares de polos retirados do catálogo (fora do staging): {len(result['retired_pairs'])}")
+        print(f"  Pares de polos retirados do catálogo (fora do staging): {len(result['retired_pairs'])} "
+              f"(ver mobility_retired.csv)")
+    print(f"  {result['source']['attribution']} | {result['source'].get('usage_restriction')}")
     print(f"  Detalhe: {args.root / 'lake/bronze'}/mobility_*.csv")
     return 0
 

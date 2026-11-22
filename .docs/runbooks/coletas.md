@@ -624,7 +624,7 @@ do cálculo; ele mantém o valor antigo até ser recalculado. As ilhas sem polo 
 só com linha reta e aparecem em `mobility_no_route.csv` como `sem_polo_elegivel` (ausência esperada).
 
 Saídas: `.data/lake/bronze/{stg_municipality_pole_distance,dim_mobility_pole,rpt_mobility_coverage}/data.parquet` e
-`.data/lake/bronze/mobility_{coverage,no_route,pending,stale}.csv`. Bruto imutável em
+`.data/lake/bronze/mobility_{coverage,no_route,pending,stale,retired}.csv` (todos com atribuição e risco aceito; `retired` lista os pares gravados de polos que saíram do catálogo). Bruto imutável em
 `.data/raw/source=google_distances/dataset=<dico>--<polo>--<modo>/run_id=<run>/` e manifests em
 `.data/manifests/google_distances/`. Atribuição obrigatória: "Tempos de viagem: Google" em toda linha de carro.
 

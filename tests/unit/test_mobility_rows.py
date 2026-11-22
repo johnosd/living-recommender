@@ -128,3 +128,9 @@ def test_only_the_enabled_modes_get_route_rows_and_provenance_is_complete():
 def test_every_row_has_the_columns_the_staging_expects(field):
     rows, _ = by_key(MemoryStorage())
     assert all(field in row for row in rows)
+
+
+def test_every_row_names_its_source():
+    rows, _ = by_key(MemoryStorage())
+    assert {row["source_id"] for row in rows if row["mode"] == "straight_line"} == {"caop"}
+    assert {row["source_id"] for row in rows if row["mode"] != "straight_line"} == {"google_distances"}

@@ -295,3 +295,27 @@ relatório reproduz as contagens do teste e diz se cada `sem_rota` é ausência 
 - Commits curtos, em inglês. Sem commit/push/PR sem autorização do autor.
 
 <!-- sdd-converge anexa "## Phase N: Convergence" abaixo desta linha -->
+
+
+## Phase 6: Convergence
+
+**Purpose**: fechar as lacunas achadas pelo `sdd-converge` em 2026-11-21 (nenhuma CRITICAL ou HIGH). As tasks citam a origem; o `sdd-execute` as cumpre e o `sdd-converge` roda de novo.
+
+**Restrições**: os contratos travados (`test_mobility_contract.py` e o fixture) **não** mudam. Mudanças de comportamento entram só em código e testes novos.
+
+- [X] T031 [US1] Acrescentar `source_id` ao staging, em `pipelines/collectors/mobility/rows.py`, `pipelines/cli/build_mobility.py` (`DISTANCES`/`STRING_COLUMNS`) e `analytics/dbt/models/mobility/stg_municipality_pole_distance.sql`: `google_distances` nas linhas `driving`/`transit` (inclusive identidade) e `caop` na `straight_line`; `not_null` e `accepted_values` em `schema.yml`; atualizar `test_mobility_rows.py` e `test_mobility_build.py`. Origem: Constitution III, FR-022, SC-010 (C-001).
+- [X] T032 [US3] Levar a atribuição "Tempos de viagem: Google" e a referência ao risco aceito (ADR-002 D8) aos relatórios: coluna `attribution` e `usage_restriction` em `mobility_coverage.csv` e demais CSVs de `write_report`/`write_reports` em `pipelines/cli/build_mobility.py`, e uma linha no texto de `main`; ampliar `tests/integration/test_mobility_coverage.py`. Origem: US3-AC4 (C-002).
+- [X] T033 [US3] Gerar `mobility_retired.csv` (`dico`, `pole_id`, `mode`, `source_run_id`) com os pares do estado cujo polo saiu de `config/poles.yml`, em `pipelines/cli/build_mobility.py`, e contá-lo no console; teste em `tests/integration/test_mobility_coverage.py`. Origem: edge case "polo removido do catálogo" (C-003).
+- [X] T034 Alinhar `.sdd/specs/009-mobilidade-distancias/data-model.md` §3 ao código: anotar que `caop_version` entra no staging pelo build (da dimensão) e não no `entry_extra`, ou gravá-lo em `pipelines/collectors/mobility/handler.py` (escolher uma das duas e registrar). Origem: plan: data-model (C-004).
+- [X] T035 **Decisão do autor** (não é código): aprovar e registrar em `spec.md` → `## Clarifications` as emendas dos desvios aceitos: (a) FR-011, US2-AC4 e o edge case "ponto fora de via" (a API não devolve coordenadas ajustadas; manifest grava `returned_coordinates: unavailable`); (b) FR-021 (`minutes` nulo também em `straight_line`); (c) US1-AC4 (a linha reta é derivada no build, sem bruto, e a idempotência é o hash do resultado). Se o autor discordar de algum, abrir task própria. Origem: FR-011, FR-021, US1-AC4 (C-005, C-006, C-007).
+- [ ] T036 Revalidar: `ruff check pipelines tests`, suíte completa, `dbt build --select tag:mobility` sobre o fixture, `check-contract-tests.ps1` íntegro e CI remoto do PR verde (incluindo gitleaks). Origem: Quality Gates da constitution.
+
+**Fora das tasks (gate externo, registrado como pendente, não como feito)**: SC-008 e SC-009 (cobertura real e custo real) dependem da coleta real do Google, das coordenadas dos aeroportos (R-010) e do preço (R-001), todos gates do autor.
+
+**Registro da Fase**:
+
+- Status: Parcial em 2026-11-21 (T031–T034 concluídas; T035 depende do autor; T036 depende do CI remoto)
+- Feito: T031 `source_id` (`caop` na linha reta, `google_distances` no carro e na identidade) no staging, no schema Parquet e no dbt, com `not_null` e `accepted_values`. T032 colunas `attribution` e `usage_restriction` em todos os CSVs e a mesma linha no texto do `build_mobility` (US3-AC4). T033 `mobility_retired.csv` com os pares gravados de polos retirados, e a contagem no console. T034 `data-model.md` alinhado (a `caop_version` entra no staging pelo build, não no `entry_extra`; colunas e CSVs novos descritos).
+- Contrato: `pytest tests/contracts/test_mobility_contract.py` → 5/5 verdes na suíte completa; trava íntegra (`check-contract-tests.ps1` PASS); nenhum arquivo de contrato foi tocado
+- Testes executados: suíte completa 710 passed em 712 s; `ruff check pipelines tests` limpo; testes novos em `test_mobility_rows` (fonte por linha), `test_mobility_build` (`source_id` no staging) e `test_mobility_coverage` (atribuição em todos os relatórios; polo retirado listado e fora do staging, brutos preservados); build real offline: `caop` 2.156 linhas e `google_distances` 1.406. Duas correções de teste no caminho (import faltando e uma asserção frouxa `or True` trocada por uma exata)
+- Pendências: T035 (o autor aprova as emendas de FR-011/US2-AC4/edge "ponto fora de via", FR-021 e US1-AC4); T036 só fecha com o CI remoto do PR #11 após o push desta fase. Gates do autor para a coleta real: coordenadas dos aeroportos, preço e a coleta em si.

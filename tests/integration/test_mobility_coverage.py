@@ -4,6 +4,7 @@ import yaml
 
 from pipelines.cli import build_mobility as builder
 from pipelines.collectors._shared.catalog import load_catalog
+from pipelines.collectors._shared.storage import LocalStorage
 from tests.fixtures.mobility.ci_seed import seed
 
 BRONZE = "lake/bronze"
@@ -65,3 +66,43 @@ def test_a_changed_pole_lists_its_stored_pairs_as_stale_without_touching_their_r
     assert (merged["status_new"] == merged["status_old"]).all()
     coverage = csv(tmp_path, "mobility_coverage.csv")
     assert int(coverage[(coverage["mode"] == "driving") & (coverage["pole_id"] == "aeroporto_x")]["stale"].iloc[0]) == 2
+
+
+def poles_args(root):
+    return ["--local", "--root", str(root), "--catalog", str(root / "catalog.yml"), "--poles", str(root / "poles.yml")]
+
+
+def test_every_report_carries_the_google_attribution_and_the_accepted_risk(tmp_path, capsys):
+    seed(tmp_path, collect=True)
+    build(tmp_path)
+    for name in ("mobility_coverage.csv", "mobility_no_route.csv", "mobility_pending.csv", "mobility_stale.csv",
+                 "mobility_retired.csv"):
+        frame = csv(tmp_path, name)
+        assert {"attribution", "usage_restriction"} <= set(frame.columns), name  # US3-AC4
+        assert set(frame[frame["mode"] != "straight_line"]["attribution"]) <= {"Tempos de viagem: Google"}, name
+        assert (frame[frame["mode"] == "straight_line"]["attribution"] == "").all(), name
+    coverage = csv(tmp_path, "mobility_coverage.csv")
+    google = coverage[coverage["mode"] == "driving"]
+    assert not google.empty and set(google["attribution"]) == {"Tempos de viagem: Google"}
+    assert all("risco aceito" in value for value in google["usage_restriction"])
+    assert builder.main(poles_args(tmp_path)) == 0
+    assert "Tempos de viagem: Google" in capsys.readouterr().out
+
+
+def test_a_retired_pole_lists_its_stored_pairs_and_leaves_the_staging(tmp_path, capsys):
+    seed(tmp_path, collect=True)
+    build(tmp_path)
+    assert csv(tmp_path, "mobility_retired.csv").empty
+    document = yaml.safe_load((tmp_path / "poles.yml").read_text(encoding="utf-8"))
+    document["poles"] = [pole for pole in document["poles"] if pole["pole_id"] != "aeroporto_x"]
+    (tmp_path / "poles.yml").write_text(yaml.safe_dump(document, allow_unicode=True), encoding="utf-8")
+    assert builder.main(poles_args(tmp_path)) == 0
+    assert "mobility_retired.csv" in capsys.readouterr().out
+    retired = csv(tmp_path, "mobility_retired.csv")
+    assert set(zip(retired["dico"], retired["mode"], strict=True)) == {
+        ("0101", "driving"), ("0101", "transit"), ("0102", "transit"), ("0201", "driving"), ("0201", "transit")}
+    assert set(retired["pole_id"]) == {"aeroporto_x"} and set(retired["source_run_id"]) == {"ci-mobility"}
+    assert set(retired["attribution"]) == {"Tempos de viagem: Google"}
+    staging = pd.read_parquet(tmp_path / BRONZE / "stg_municipality_pole_distance/data.parquet")
+    assert "aeroporto_x" not in set(staging["pole_id"])  # out of the staging, still in the immutable raw layer
+    assert len(LocalStorage(tmp_path).list_keys("raw/")) == 9  # 5 ok + 4 sem_rota; the failed pair stores nothing

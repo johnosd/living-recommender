@@ -1,6 +1,7 @@
 {{ config(materialized='external', format='parquet', location=env_var('MOBILITY_BUILD_DIR', '.data/ci-mobility') ~ '/lake/bronze/stg_municipality_pole_distance/data.parquet') }}
 
 select
+    cast(source_id as varchar) as source_id,
     cast(dico as varchar) as dico,
     cast(pole_id as varchar) as pole_id,
     cast(mode as varchar) as mode,

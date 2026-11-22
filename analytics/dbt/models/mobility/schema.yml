@@ -22,6 +22,12 @@ models:
       Distância município-polo, uma linha por par esperado e modo (linha reta, carro). `km` e `minutes` só existem em
       `ok`; `sem_rota`, `falha` e `pendente` ficam nulos e nunca são imputados.
     columns:
+      - name: source_id
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [caop, google_distances]
       - name: dico
         data_tests:
           - not_null

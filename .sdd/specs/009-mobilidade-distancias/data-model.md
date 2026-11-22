@@ -63,7 +63,8 @@ falhas não são gravados. Manifest: `manifests/google_distances/<run_id>.json` 
 `pair_signature`, `mode`, `pole_id`, `dico`, `requested_origin` `[lat, lon]`, `requested_destination`
 `[lat, lon]`, `travel_mode`, `routing_preference`, `departure_time` (nulo no carro), `api_url`, `field_mask`,
 `route_status` (`ROUTE_EXISTS` | `ROUTE_NOT_FOUND`), `returned_coordinates: "unavailable"`,
-`poles_catalog_version`, `caop_version`. **Nunca** a chave, nem em `error`.
+`poles_catalog_version`. **Nunca** a chave, nem em `error`. A `caop_version` **não** vai no `entry_extra`: ela entra
+no staging pelo build, lida da `dim_municipality` (decisão do T034).
 
 ## 4. Staging `stg_municipality_pole_distance` (`lake/bronze/`)
 
@@ -71,6 +72,7 @@ Uma linha por par esperado e modo (inclui `straight_line`, `pendente`, `falha` e
 
 | Coluna | Tipo | Regra |
 |---|---|---|
+| `source_id` | varchar | `google_distances` (carro, `transit` e identidade) ou `caop` (linha reta, derivada da dimensão e dos polos); `not_null` (T031) |
 | `dico` | varchar | FK `dim_municipality`; `not_null` |
 | `pole_id` | varchar | FK da lista de polos vigente; `not_null` |
 | `mode` | varchar | `straight_line`, `driving` ou `transit` |
@@ -96,4 +98,7 @@ vigentes (`pole_id`, `name`, `kind`, `routing_group`, `scope`, `latitude`, `long
   `pendente`, `stale` e `expected`, com `ok + sem_rota + falha + pendente = expected`.
 - CSVs em `lake/bronze/` (`;`, UTF-8 com BOM, como o clima): `mobility_coverage.csv`, `mobility_no_route.csv`
   (`dico`, `name`, `pole_id`, `mode`, `reason`, `expected_absence`), `mobility_pending.csv`,
-  `mobility_stale.csv`. `expected_absence = true` quando o município está numa ilha sem polo elegível.
+  `mobility_stale.csv` e `mobility_retired.csv` (pares gravados de polos que saíram do catálogo: `dico`, `name`,
+  `pole_id`, `mode`, `source_run_id`). Todos levam as colunas `attribution` e `usage_restriction` (vazias nas linhas de
+  linha reta; "Tempos de viagem: Google" e o risco aceito nas demais), e o texto do `build_mobility` as repete (T032).
+  `expected_absence = true` quando o município está numa ilha sem polo elegível.

@@ -7,6 +7,8 @@ from pipelines.collectors.mobility.state import is_current_state, latest_attempt
 from pipelines.collectors.mobility.straight_line import straight_line_rows
 
 STATUSES = ("ok", "sem_rota", "falha", "pendente")
+# A linha reta deriva da dimensão CAOP e dos polos; os tempos de carro (e a identidade) são do Google.
+LINE_SOURCE_ID = "caop"
 
 
 def _blank(pair: dict, mode: str) -> dict:
@@ -41,14 +43,14 @@ def build_distance_rows(catalog, *, municipalities, poles, storage, processed_at
     caop = (catalog.get("sources", catalog) or {}).get("caop") or {}
     towns = {town["dico"]: town for town in municipalities}
     version = poles_catalog_version(poles)
-    rows = [{**row, "departure_time": None, "stale": False, "calculated_at_utc": None, "source_run_id": None}
-            for row in straight_line_rows(municipalities, poles)]
+    rows = [{**row, "departure_time": None, "stale": False, "calculated_at_utc": None, "source_run_id": None,
+             "source_id": LINE_SOURCE_ID} for row in straight_line_rows(municipalities, poles)]
     for row in rows:  # a linha reta deriva da CAOP e dos polos: leva a licença da dimensão
         row.update(license_id=towns[row["dico"]].get("license_id") or caop.get("license_id"),
                    attribution=None, usage_restriction=None)
     for pair in route_pairs(municipalities, poles, modes):
         row = _route_row(pair, items.get(pair["id"]), states.get(pair["id"]), attempts.get(pair["id"]))
-        row.update(license_id=source["license_id"], attribution=source["attribution"],
+        row.update(source_id=SOURCE_ID, license_id=source["license_id"], attribution=source["attribution"],
                    usage_restriction=source.get("usage_restriction"))
         rows.append(row)
     for row in rows:
