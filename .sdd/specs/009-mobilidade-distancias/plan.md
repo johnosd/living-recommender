@@ -218,11 +218,10 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 
 | Área | Estado |
 | --- | --- |
-| Fases 1 a 5 e Polish | Concluídas e no PR #11 (CI verde) |
-| Phase 6 (Convergence) | T031–T034 concluídas (source_id, atribuição nos relatórios, mobility_retired.csv, data-model alinhado). T035 (decisão do autor) e T036 (CI remoto) abertas |
+| Fases 1 a 6 | Concluídas (T001–T036); checklist de release completo |
 | Contratos | 5/5 verdes; trava íntegra |
-| Suíte | 710 testes verdes localmente (712 s), lint limpo; build real offline com source_id e atribuição |
-| Aberto | T035: autor aprova as emendas de FR-011/US2-AC4, FR-021 e US1-AC4. T036: CI remoto após push. Gates do autor: coordenadas dos aeroportos, preço e coleta real |
+| Suíte | 710 testes verdes localmente; CI remoto do PR #11 verde no commit 6a55091 (quality e gitleaks) |
+| Aberto (gates do autor) | Coordenadas de OPO, FAO, FNC e PDL, preço do Google (`pricing_verified_on`) e a coleta real; SC-008 e SC-009 dependem dela |
 
 ## Riscos e Decisões
 
@@ -231,11 +230,11 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 | R-001 | Preço e faixa de cobrança do carro (`DRIVE`, `TRAFFIC_UNAWARE`) e da máscara de campos **não confirmados** (resumo de busca; research R2) | Custo real pode passar da estimativa | Preços no catálogo; `pricing_verified_on` obrigatório; teto de elementos; confirmação do número exato; custo único |
 | R-002 | (Só se `transit` for habilitado) `departureTime` vale só até ~100 dias à frente | Coleta falha se a data do catálogo envelhecer | Validação antes da rede; trocar a data invalida (marca `stale`) todos os pares de transporte, então fixá-la só na execução real |
 | R-003 | Termos de uso do Google contra guardar/exibir a matriz | Contestação futura | **Risco aceito** (ADR-002 D8, 2026-11-03); atribuição em toda linha; substituição documentada |
-| R-004 | A API não devolve coordenadas ajustadas à via | FR-011 e o edge case "ponto fora de via" não são atendidos como escritos | Gravar só as coordenadas pedidas e `returned_coordinates: unavailable`; sem sinalização de divergência (A-002) |
+| R-004 | A API não devolve coordenadas ajustadas à via | FR-011 e o edge case "ponto fora de via" não são atendidos como escritos | Resolvido: aceito pelo autor em 2026-11-21 (Clarifications da spec); sem sinalização de ponto fora de via. Gravar só as coordenadas pedidas e `returned_coordinates: unavailable`; sem sinalização de divergência (A-002) |
 | R-005 | (Só se `transit` for habilitado) transporte público em municípios rurais devolve `ROUTE_NOT_FOUND` com frequência | Cobertura de `transit` baixa | Esperado e mostrado como `sem_rota`; nunca preenchido pelo carro (constitution III) |
 | R-006 | Lista de polos e coordenadas dos aeroportos não aprovadas/conferidas | Polo errado vira dado errado em 308 municípios | Aprovação do autor antes de `--execute` (FR-003); `source_ref` obrigatório; executor confere cada coordenada |
-| R-007 | ~3.800 brutos e entradas de manifest; `latest_dataset_states` lê todos os manifests | Lentidão de leitura | Volume pequeno (≈ 4k entradas); medir no build; sem otimização antecipada |
-| R-008 | Carro sem `departureTime` desvia do FR-007/ADR-002 D8 | O tempo de carro não é "08:00 de dia útil" | `TRAFFIC_UNAWARE` é reprodutível e mais barato; autor confirma (A-001); ADR emendado só se ele discordar |
+| R-007 | ~3.800 brutos e entradas de manifest; `latest_dataset_states` lê todos os manifests | Lentidão de leitura | Resolvido: ~1.400 entradas; o build real offline leu os manifests em segundos. Volume pequeno (≈ 4k entradas); medir no build; sem otimização antecipada |
+| R-008 | Carro sem `departureTime` desvia do FR-007/ADR-002 D8 | O tempo de carro não é "08:00 de dia útil" | Resolvido: registrado no ADR-004, que o autor mandou registrar em 2026-11-21. `TRAFFIC_UNAWARE` é reprodutível e mais barato; autor confirma (A-001); ADR emendado só se ele discordar |
 | R-009 | Cota gratuita mensal pode já estar consumida por outro uso da conta | Custo acima do estimado | Aviso na CLI; o pior caso (sem teto gratuito) está sempre impresso |
 | R-010 | O eAIP (ais.nav.pt) devolveu HTTP 503 com Retry-After 3600 em 2026-11-21; só o LPPT foi conferido (pelo AIP via busca) | Coordenadas de OPO, FAO, FNC e PDL aproximadas (~1 km) | Marcadas como APROXIMADO no `source_ref` de `config/poles.yml`; o autor confere antes da coleta real (A-007) |
 | R-011 | `test_climate_catalog.py` fixava a lista exata de fontes do catálogo | Acrescentar uma fonte quebrava o teste | Resolvido: lista atualizada com `google_distances` (mesma prática das specs anteriores) |
@@ -254,8 +253,9 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 | 2026-11-21 | Polish | Documentação, passo de CI, quickstart offline e nota de memória; suíte final 707 passed. Recusas conferidas com dados reais (confirmação, preço e chave listados juntos, nenhum bruto do Google criado) | Falta o gitleaks do CI (push/PR) e os gates do autor |
 | 2026-11-21 | Release | PR #11 aberto; quality pass (4m17s e 7m40s) e secrets/gitleaks pass (14 s) no CI remoto. Checklist de release completo | Gates do autor para a coleta real; sdd-converge |
 | 2026-11-21 | Phase 6 (Convergence) | T031 `source_id` (caop|google_distances) no staging e no dbt; T032 atribuição e risco aceito em todos os CSVs e no console; T033 `mobility_retired.csv`; T034 data-model alinhado. 710 testes verdes | T035 (decisão do autor) e push para o CI remoto (T036) |
+| 2026-11-21 | Phase 6 (Convergence) | T031–T034 em código, T035 aprovado pelo autor (3 emendas na spec), T036 com CI remoto verde (quality 6m10s e 8m25s; gitleaks 7 s) | sdd-converge e merge do PR #11 pelo autor |
 
-**PRÓXIMO**: T035 (autor decide as 3 emendas da spec), push da Phase 6 e CI do PR #11 (T036); depois sdd-converge.
+**PRÓXIMO**: sdd-converge. O merge do PR #11 e os gates da coleta real (aeroportos, preço, chave) são do autor.
 
 ## Arquivos Principais
 
@@ -270,3 +270,20 @@ Stubs criados pelo plan (ponto de partida do execute, **não travados**): `pipel
 - O eAIP pode voltar a responder; reconferir as coordenadas dos aeroportos antes da coleta real.
 - A CLI de coleta lê `.env` da raiz do repositório só quando usa o ambiente real; com `env` injetado, nunca.
 - `--no-wait` foi retirado: um 429 para a coleta de imediato (FR-012); rode o mesmo comando depois.
+
+## Resultado Final
+
+*Convergida em 2026-11-21 (`sdd-converge`): 46/46 itens, 5/5 contratos verdes com a trava íntegra, 710 testes locais verdes e CI remoto do PR #11 verde (`quality` e gitleaks) no commit `6a55091`.*
+
+**O que foi construído.** Distância dos 308 municípios até 7 polos (cidades Lisboa e Porto e os aeroportos LIS, OPO, FAO, FNC e PDL) em dois modos. A **linha reta** é haversine, calculada no build, sem API e sem bruto. O **carro** vem da Routes API (`computeRouteMatrix`, uma requisição 1x1 por par), pela CLI `collect_mobility`: estimativa por padrão; `--execute` exige a confirmação do número de elementos, o teto, `pricing_verified_on` e a chave; retoma só os pares pendentes e desatualizados; para na hora em 401/403/429; trata HTTP 200 com erro como falha; redige a chave em toda saída. `build_mobility` monta o staging `stg_municipality_pole_distance` (estados `ok`, `sem_rota`, `falha`, `pendente`, bandeira `stale` e `source_id`), roda o dbt com testes e grava cinco CSVs de auditoria (cobertura, sem rota, pendentes, desatualizados e polos retirados), todos com a atribuição do Google e o risco aceito.
+
+**Desvios do plano original, todos decididos e registrados.**
+- **Só o carro e 7 polos** (decisão do autor, ADR-004, que emenda o ADR-002 D8): o plano nasceu com três modos e 25 polos. O transporte público ficou suportado por catálogo e desabilitado.
+- **Carro sem horário de partida** (`TRAFFIC_UNAWARE`), em vez de "dia útil às 08:00".
+- **Recusas juntas**: o contrato 2 exige que a falta da chave apareça mesmo quando o teto também recusa, então a CLI imprime todas as recusas de uma vez (R-013).
+- **Coordenadas devolvidas e "ponto fora de via"**: a API não as devolve; aceito pelo autor. **`minutes` nulo na linha reta** e **linha reta sem bruto** (idempotência pelo hash do resultado): também aceitos pelo autor.
+- **`source_id`, atribuição e `mobility_retired.csv`** foram acrescentados pela convergência (Constitution III e US3-AC4).
+- O dbt acusou linhas sem licença; a licença da linha reta passou a vir de `license_id` da `dim_municipality`.
+
+**Provas e limites.** Build real offline contra a CAOP: 3.562 linhas (2.156 `caop` e 1.406 `google_distances`); Lisboa–Porto 273 km. **Nenhuma chamada real ao Google foi feita.** Continuam gates do autor, e SC-008/SC-009 só se provam com a coleta real: as coordenadas de OPO, FAO, FNC e PDL (só o LPPT foi conferido; o eAIP respondeu 503), a conferência do preço e `pricing_verified_on`, a chave e a coleta em si. Riscos ainda abertos: R-001 (preço), R-003 (termos do Google, risco aceito), R-005 e R-002 (só se `transit` for habilitado), R-006 e R-010 (aeroportos), R-009 (cota gratuita já usada).
+

@@ -608,7 +608,7 @@ uv run --locked python -m pipelines.cli.build_mobility --local --root .data
 2. Conferir na página oficial a tabela de preços e a cota gratuita da Routes API (Compute Route Matrix, `DRIVE` com
    `TRAFFIC_UNAWARE`), ajustar `pricing` e preencher `pricing_verified_on` em `config/sources.yml`.
 3. Criar a chave no Google Cloud restrita à Routes API, com orçamento e alerta, e guardá-la em `.env`
-   (`GOOGLE_ROUTES_API_KEY=...`, ignorado pelo Git). **Nunca** colar a chave em arquivo versionado, chat ou issue.
+   (`GOOGLE_CV20_API_KEY=...`, ignorado pelo Git). **Nunca** colar a chave em arquivo versionado, chat ou issue.
 4. Rodar o passo 1 e conferir o total (~1.404 elementos) e o custo; o teto por execução é `max_elements_per_run`
    (2.000) e só `--max-elements` o eleva.
 5. Ao terminar, revogar a chave no Google Cloud e apagá-la do `.env` (cálculo único).

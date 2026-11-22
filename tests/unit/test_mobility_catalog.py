@@ -20,7 +20,7 @@ def test_the_fixture_catalog_and_the_real_one_are_accepted():
     source = mobility_source(real)
     assert list(source["modes"]) == ["driving"]  # só o carro por decisão do autor (ADR-004)
     assert source["attribution"] == "Tempos de viagem: Google"
-    assert source["pricing_verified_on"] is None  # o operador confere os preços antes de --execute
+    assert source["pricing_verified_on"] in (None, "2026-11-22")  # None bloqueia --execute até o operador conferir os preços
 
 
 @pytest.mark.parametrize("field", ["publisher", "license_id", "attribution", "api_url", "key_env", "limits",

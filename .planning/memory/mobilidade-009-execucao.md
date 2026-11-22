@@ -39,6 +39,19 @@ do autor.
 - Build real offline: `uv run --locked python -m pipelines.cli.build_mobility --local --root .data`.
 - Estimativa real: `uv run --locked python -m pipelines.cli.collect_mobility --local --root .data` (sem rede, sem chave).
 
+## Coleta real (2026-11-22)
+
+- **Preço conferido** na página oficial (Compute Route Matrix Essentials: US$ 5,00/1.000 elementos até 100 mil; a página lista
+  10.000 gratuitos/mês, o autor informou ter 1.000, e o catálogo usa 1.000, o cenário conservador). `pricing_verified_on`
+  passou a `2026-11-22`. A página não mostra data de atualização.
+- **Chave:** `key_env` agora é `GOOGLE_CV20_API_KEY`. A primeira chave (`GOOGLE_ROUTES_API_KEY`) deu 403 `PERMISSION_DENIED`
+  (Routes API não habilitada ou fora da restrição da chave); a segunda funcionou.
+- **Resultado:** 1.404 elementos coletados, 0 falhas, 0 `sem_rota`, 0 pendentes (run `20261122T175309191606Z-d38e5992`);
+  staging com 3.562 linhas. Lisboa→Porto: 317,5 km e 181 min de carro (273 km em linha reta); LIS 9,8 km do centro de
+  Lisboa. Os 2 valores `km = 0` são as identidades (Lisboa e Porto), sem chamada.
+- **Pendente:** as coordenadas de OPO, FAO, FNC e PDL continuam aproximadas (R-006/R-010); corrigi-las deixa os pares do polo
+  `stale` e exige recoleta (~200 elementos cada). A chave deve ser revogada ou restringida ao terminar.
+
 ## Limites
 
 Não há prova de preço, de faixa de cobrança do carro, de aceitação da chave nem de cobertura real do Google. O formato
