@@ -127,7 +127,10 @@ O script [`.docs/sql/catalogo_tabelas.sql`](../sql/catalogo_tabelas.sql) lista t
 
 O site do `dbt docs` mostra os modelos, as colunas com descrição e o grafo de dependências. Como cada fonte é
 construída num build isolado, o dbt não liga a fonte `caop_silver.dim_municipality` ao modelo `dim_municipality`; o
-comando faz essa ligação no manifest do site para o grafo mostrar quem depende de quem. Se houver lake, o catálogo do
+comando faz essa ligação no manifest do site para o grafo mostrar quem depende de quem. Ele também desenha uma aresta
+para cada relacionamento declarado (teste `relationships`), porque vários modelos leem o parquet de outro build direto,
+sem `ref` nem `source` (por exemplo, `stg_municipality_pole_distance` → `dim_municipality`). Essas arestas mostram
+relacionamentos declarados, não dependências de SQL. Se houver lake, o catálogo do
 site traz também as colunas reais de cada tabela, inclusive as ainda não declaradas.
 
 ```powershell

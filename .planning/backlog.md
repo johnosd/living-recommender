@@ -33,7 +33,7 @@ update-bug-status.ps1.
 | 007-idealista-formato-atual-relatorio | Idealista atual e relatório descritivo | Convergida | 17/17 tasks | 2026-11-17 |
 | 008-ingestao-wikipedia | Ingestão Wikipedia — textos municipais rastreáveis e organizados por seções | Convergida | 46/46 tasks | 2026-11-20 |
 | 009-mobilidade-distancias | Mobilidade — distâncias e tempos de viagem dos municípios até polos fixos | Convergida | 46/46 tasks | 2026-11-22 |
-| 010-visibilidade-modelo-dados | Visibilidade do modelo de dados — dicionário, diagrama ER, catálogo DuckDB único e dbt docs | Em Execução | 32/38 tasks | 2026-11-24 |
+| 010-visibilidade-modelo-dados | Visibilidade do modelo de dados — dicionário, diagrama ER, catálogo DuckDB único e dbt docs | Convergida | 42/42 tasks | 2026-11-24 |
 
 ## Melhorias Ad-hoc
 

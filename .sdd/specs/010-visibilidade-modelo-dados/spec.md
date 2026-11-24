@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-22
 
-**Status**: Em Execução
+**Status**: Convergida
 
 **Input**: "tenho 1 preocupação sobre o projeto: não tenho visibilidade das tabelas, nem de seus relacionamentos" e, depois: "A e B são necessárias, podemos usar duckdb e também gostaria de poder visualizar no dbt". Situação levantada em 2026-11-22: 25 modelos dbt em 9 domínios (`analytics/dbt/models/`), 15 testes `relationships` espalhados em 9 `schema.yml`, descrições quase só em nível de tabela, nenhum diagrama nem dicionário em `.docs/`, e nenhum banco único: cada fonte é construída em um build dbt isolado, com promoção atômica para `lake/bronze` e `lake/silver`.
 

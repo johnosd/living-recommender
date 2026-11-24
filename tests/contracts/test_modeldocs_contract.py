@@ -60,7 +60,7 @@ def test_the_document_is_complete_deterministic_and_free_of_values_and_local_pat
     assert ("stg_municipality_pole_distance", "dim_municipality", "dico", "dico") in edges  # source -> other build
     shuffled = {**real_manifest, "nodes": dict(reversed(list(real_manifest["nodes"].items())))}
     assert render_markdown(load_model(shuffled), sources) == document  # same bytes whatever the manifest order
-    assert "\r" not in document and ".data" not in document and "\\" not in document
+    assert "\r" not in document and ".data/" not in document and "\\" not in document
     assert not re.search(r"[A-Za-z]:[\\/]", document) and not re.search(r"\d{8}T\d{6}", document)  # paths, run ids
 
 

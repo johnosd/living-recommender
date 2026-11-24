@@ -30,6 +30,15 @@ def test_the_site_has_the_index_the_manifest_with_the_linked_source_and_the_real
     assert list(catalog["nodes"][DIM]["columns"]) == ["dico", "extra"]  # includes the undeclared column
 
 
+def test_a_model_that_reads_parquet_directly_is_linked_by_its_declared_relationship(site):
+    """US4-AC2, SC-006: `stg_municipality_pole_distance` lê o parquet sem `ref`/`source`; a aresta vem do teste."""
+    _, output, _ = site
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+    pole_distance = "model.caop_territory.stg_municipality_pole_distance"
+    assert DIM in manifest["parent_map"][pole_distance]
+    assert manifest["child_map"][DIM].count(pole_distance) == 1
+
+
 def test_the_lake_is_not_touched_and_nothing_is_created_outside_the_output(site):
     root, output, before = site
     after = snapshot(root)

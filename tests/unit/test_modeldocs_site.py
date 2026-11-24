@@ -3,7 +3,11 @@ import copy
 from datetime import UTC, datetime
 
 from pipelines.modeldocs.model import load_model
-from pipelines.modeldocs.site import lake_catalog_json, link_sources_to_models
+from pipelines.modeldocs.site import (
+    lake_catalog_json,
+    link_relationships,
+    link_sources_to_models,
+)
 from tests.fixtures.modeldocs.lake import write_table
 from tests.fixtures.modeldocs.manifests import column, make_manifest, model
 
@@ -41,6 +45,32 @@ def test_a_source_without_a_model_is_left_alone_and_existing_edges_are_kept():
     linked = link_sources_to_models(base)
     assert "source.caop_territory.caop_silver.only_source" not in linked["parent_map"]
     assert linked["child_map"][DIM] == ["test.caop_territory.t", SOURCE]
+
+
+STG = "model.caop_territory.stg_a"
+
+
+def test_a_declared_relationship_becomes_a_lineage_edge_from_the_target_to_the_model():
+    base = manifest()
+    linked = link_relationships(base, load_model(base))
+    assert linked["parent_map"][STG] == [DIM]
+    assert linked["child_map"][DIM] == [STG]
+
+
+def test_relationship_edges_do_not_change_the_input_duplicate_or_point_a_model_to_itself():
+    base = make_manifest(
+        [model("dim_municipality", layer="silver", columns=[column("dico"), column("parent_dico")]),
+         model("stg_a", columns=[column("dico"), column("other_dico")])],
+        relationships=[("stg_a", "dico", "ref:dim_municipality", "dico"),
+                       ("stg_a", "other_dico", "ref:dim_municipality", "dico"),
+                       ("dim_municipality", "parent_dico", "ref:dim_municipality", "dico")])
+    snapshot = copy.deepcopy(base)
+    data_model = load_model(base)
+    once = link_relationships(base, data_model)
+    assert base == snapshot
+    assert once["parent_map"][STG] == [DIM] and once["child_map"][DIM] == [STG]  # two tests, one edge
+    assert DIM not in once["parent_map"].get(DIM, [])
+    assert link_relationships(once, data_model) == once
 
 
 def test_the_catalog_has_the_real_columns_including_the_undeclared_ones_and_no_values(tmp_path):
