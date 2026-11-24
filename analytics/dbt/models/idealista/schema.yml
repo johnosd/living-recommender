@@ -3,62 +3,241 @@ version: 2
 models:
   - name: idealista_occurrences
     description: Todas as ocorrências do snapshot manual, com valores tipados e proveniência, sem publicação.
+    meta:
+      source_ids: [idealista, caop]
     columns:
       - name: listing_id
-        data_tests: [not_null]
-      - name: snapshot_month
-        data_tests: [not_null]
-      - name: raw_key
-        data_tests: [not_null]
-      - name: raw_sha256
-        data_tests: [not_null]
-      - name: source_row
-        data_tests: [not_null]
-      - name: source_run_id
-        data_tests: [not_null]
-      - name: imported_at_utc
-        data_tests: [not_null]
-
-  - name: idealista_listings
-    description: Um anúncio por ID no snapshot escolhido; duplicatas e conflitos explícitos. Não é um agregado publicável.
-    columns:
-      - name: listing_id
-        data_tests: [not_null, unique]
-      - name: snapshot_month
+        description: Identificador do anúncio na fonte (campo `id` do arquivo importado).
+        data_type: varchar
         data_tests: [not_null]
       - name: source_id
+        description: 'Fonte do dado: `idealista`.'
+        data_type: varchar
+      - name: snapshot_month
+        description: Mês do snapshot manual importado (AAAA-MM).
+        data_type: varchar
+        data_tests: [not_null]
+      - name: dico
+        description: Código DICO do município resolvido; nulo quando o anúncio só tem região ou há conflito.
+        data_type: varchar
+      - name: dicofre
+        description: Código DICOFRE da freguesia, quando resolvida; nulo quando só há município ou região.
+        data_type: varchar
+      - name: locality_level
+        description: >-
+          Nível da localidade resolvida: `municipio`, `freguesia`, `regiao` (sem município) ou `conflict`
+          (ocorrências com território divergente).
+        data_type: varchar
+      - name: locality_raw
+        description: Localidade como informada na fonte, antes da resolução territorial.
+        data_type: varchar
+      - name: source_region
+        description: Região informada no arquivo de origem (por exemplo Norte ou Algarve).
+        data_type: varchar
+      - name: parish_match_method
+        description: >-
+          Como a freguesia foi resolvida: `arquivo`, `titulo_exato_ou_sinonimo`, `metadado_exato_ou_sinonimo`,
+          `metadado_seed`, `nao_resolvido` ou `conflict`.
+        data_type: varchar
+      - name: asking_rent_eur
+        description: Renda pedida, em euros por mês (campo `Preco`); nulo quando ausente ou inválida.
+        data_type: double
+      - name: area_m2
+        description: Área bruta em m² (campo `areaBrutaM2`); nulo quando ausente ou inválida.
+        data_type: double
+      - name: bedrooms
+        description: Número de quartos derivado da tipologia (T2 = 2); nulo quando a tipologia é ausente ou inválida.
+        data_type: bigint
+      - name: typology
+        description: >-
+          Tipologia normalizada: `T0`, `T1`, `T2`, `T3` ou `T4+` (quatro ou mais quartos); nulo quando ausente
+          ou inválida.
+        data_type: varchar
+      - name: quality_flags
+        description: >-
+          Alertas de qualidade separados por `|` (`missing_or_invalid_price`, `missing_or_invalid_area`,
+          `missing_or_invalid_typology`); vazio quando não há.
+        data_type: varchar
+      - name: source_subregion
+        description: Sub-região informada no arquivo (campo `Sub-região`); nulo quando ausente.
+        data_type: varchar
+      - name: source_municipality
+        description: Município informado no arquivo (campo `Município`); nulo quando ausente.
+        data_type: varchar
+      - name: source_parish
+        description: Freguesia informada no arquivo (campo `Freguesia`); nulo quando ausente.
+        data_type: varchar
+      - name: source_run_id
+        description: Identificador da importação do snapshot (`run_id` do manifest).
+        data_type: varchar
+        data_tests: [not_null]
+      - name: raw_key
+        description: Chave, em `raw/`, do arquivo original de onde a linha veio.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: raw_sha256
+        description: SHA-256 do arquivo original em `raw/`, para conferir a integridade.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: relative_path
+        description: Caminho do arquivo dentro do snapshot importado.
+        data_type: varchar
+      - name: source_row
+        description: Número da linha do anúncio dentro do arquivo (a partir de 1).
+        data_type: bigint
+        data_tests: [not_null]
+      - name: collected_at_utc
+        description: 'Sempre nulo: a extração manual não informa o horário de coleta de cada anúncio.'
+        data_type: varchar
+      - name: imported_at_utc
+        description: Instante (UTC, ISO 8601) em que o snapshot foi importado.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
+      - name: license_id
+        description: 'Licença da fonte: `not_granted_by_source` (não concedida; risco aceito no ADR-002 D4).'
+        data_type: varchar
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+
+  - name: idealista_listings
+    description: >-
+      Um anúncio por ID no snapshot escolhido; duplicatas e conflitos explícitos. Não é um agregado publicável.
+    meta:
+      source_ids: [idealista, caop]
+    columns:
+      - name: listing_id
+        description: Identificador do anúncio na fonte (campo `id` do arquivo importado).
+        data_type: varchar
+        data_tests: [not_null, unique]
+      - name: source_id
+        description: 'Fonte do dado: `idealista`.'
+        data_type: varchar
         data_tests:
           - accepted_values:
               arguments:
                 values: [idealista]
+      - name: snapshot_month
+        description: Mês do snapshot manual importado (AAAA-MM).
+        data_type: varchar
+        data_tests: [not_null]
       - name: dico
+        description: Código DICO do município resolvido; nulo quando o anúncio só tem região ou há conflito.
+        data_type: varchar
         data_tests:
           - relationships:
               arguments:
                 to: source('caop_silver', 'dim_municipality')
                 field: dico
       - name: dicofre
+        description: Código DICOFRE da freguesia, quando resolvida; nulo quando só há município ou região.
+        data_type: varchar
         data_tests:
           - relationships:
               arguments:
                 to: source('caop_silver', 'dim_parish')
                 field: dicofre
       - name: locality_level
+        description: >-
+          Nível da localidade resolvida: `municipio`, `freguesia`, `regiao` (sem município) ou `conflict`
+          (ocorrências com território divergente).
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [municipio, freguesia, regiao, conflict]
+      - name: locality_raw
+        description: Localidade como informada na fonte, antes da resolução territorial.
+        data_type: varchar
+      - name: source_region
+        description: Região informada no arquivo de origem (por exemplo Norte ou Algarve).
+        data_type: varchar
+      - name: parish_match_method
+        description: >-
+          Como a freguesia foi resolvida: `arquivo`, `titulo_exato_ou_sinonimo`, `metadado_exato_ou_sinonimo`,
+          `metadado_seed`, `nao_resolvido` ou `conflict`.
+        data_type: varchar
+      - name: asking_rent_eur
+        description: Renda pedida, em euros por mês (campo `Preco`); nulo quando ausente ou inválida.
+        data_type: double
+      - name: area_m2
+        description: Área bruta em m² (campo `areaBrutaM2`); nulo quando ausente ou inválida.
+        data_type: double
+      - name: bedrooms
+        description: Número de quartos derivado da tipologia (T2 = 2); nulo quando a tipologia é ausente ou inválida.
+        data_type: bigint
       - name: typology
+        description: >-
+          Tipologia normalizada: `T0`, `T1`, `T2`, `T3` ou `T4+` (quatro ou mais quartos); nulo quando ausente
+          ou inválida.
+        data_type: varchar
         data_tests:
           - accepted_values:
               arguments:
                 values: [T0, T1, T2, T3, T4+]
+      - name: quality_flags
+        description: >-
+          Alertas de qualidade separados por `|` (`missing_or_invalid_price`, `missing_or_invalid_area`,
+          `missing_or_invalid_typology`); vazio quando não há.
+        data_type: varchar
+      - name: source_subregion
+        description: Sub-região informada no arquivo (campo `Sub-região`); nulo quando ausente.
+        data_type: varchar
+      - name: source_municipality
+        description: Município informado no arquivo (campo `Município`); nulo quando ausente.
+        data_type: varchar
+      - name: source_parish
+        description: Freguesia informada no arquivo (campo `Freguesia`); nulo quando ausente.
+        data_type: varchar
+      - name: source_run_id
+        description: Identificador da importação do snapshot (`run_id` do manifest).
+        data_type: varchar
+      - name: raw_key
+        description: Chave, em `raw/`, do arquivo original de onde a linha veio.
+        data_type: varchar
+      - name: raw_sha256
+        description: SHA-256 do arquivo original em `raw/`, para conferir a integridade.
+        data_type: varchar
+      - name: relative_path
+        description: Caminho do arquivo dentro do snapshot importado.
+        data_type: varchar
+      - name: source_row
+        description: Número da linha do anúncio dentro do arquivo (a partir de 1).
+        data_type: bigint
+      - name: collected_at_utc
+        description: 'Sempre nulo: a extração manual não informa o horário de coleta de cada anúncio.'
+        data_type: varchar
+      - name: imported_at_utc
+        description: Instante (UTC, ISO 8601) em que o snapshot foi importado.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
       - name: license_id
+        description: 'Licença da fonte: `not_granted_by_source` (não concedida; risco aceito no ADR-002 D4).'
+        data_type: varchar
         data_tests: [not_null]
       - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
         data_tests: [not_null]
+      - name: occurrence_count
+        description: Quantas ocorrências do mesmo `listing_id` existem no snapshot.
+        data_type: bigint
       - name: duplicate_count
+        description: Quantas ocorrências além da escolhida (`occurrence_count` menos 1).
+        data_type: bigint
         data_tests: [not_null]
       - name: has_conflict
+        description: Verdadeiro quando as ocorrências do anúncio divergem em algum dos campos de `conflict_fields`.
+        data_type: boolean
         data_tests: [not_null]
+      - name: conflict_fields
+        description: >-
+          Campos que divergem entre as ocorrências, separados por `|` (entre `asking_rent_eur`, `area_m2`,
+          `bedrooms`, `dico` e `dicofre`); vazio sem conflito.
+        data_type: varchar

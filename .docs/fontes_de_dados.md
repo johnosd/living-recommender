@@ -2,6 +2,8 @@
 
 > Complementa as §5 e §6 do [plano](plano_plataforma_recomendacao_portugal.md) e segue o [ADR-002](../.sdd/adr/ADR-002-arquitetura-base-mvp.md) (D3, D4 e D8). Análise feita em 2026-11-03 sobre o repositório `MPAlugueisLisboa` (e o `IdealistaScraper`, no caso da coleta de imóveis de 2023).
 
+> As tabelas do lake e seus relacionamentos estão no [modelo de dados](modelo_de_dados.md).
+
 ## 1. Resumo
 
 O legado tem **14 processos de captura**, todos rodados à mão em notebooks ou scripts. Cada um grava em `Bases/` com caminho relativo (`..\\..\\Bases`), muitas vezes depois de um `os.chdir`. Nenhum guarda versão nem período de referência, e os arquivos novos sobrescrevem os antigos. A junção entre fontes é feita pelo **nome do município sem acento** (`unidecode`), sem código oficial. Quatro processos têm chaves de API no código.

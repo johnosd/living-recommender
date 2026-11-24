@@ -1,0 +1,22 @@
+{
+  "feature": "010-visibilidade-modelo-dados",
+  "lockedAt": "2026-11-22 19:51",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_modeldocs_contract.py",
+      "sha256": "78df7e4af7c6cde9f2f83b22066c2b2e884db0727eece6daa56e850465c865ff",
+      "tests": "unknown"
+    },
+    {
+      "path": "tests/fixtures/modeldocs/manifests.py",
+      "sha256": "c813f8c4b33160586318459b7f56cd2f446c2cf9f0be902c873378c0ed27003d",
+      "tests": "unknown"
+    },
+    {
+      "path": "tests/fixtures/modeldocs/lake.py",
+      "sha256": "2f774f14635ed2b2df0376ac5fe9c9a7af51a8068203807b12b4d2eb02f3eb7a",
+      "tests": "unknown"
+    }
+  ]
+}

@@ -11,32 +11,86 @@ sources:
 
 models:
   - name: stg_observation
-    description: Observações municipais em formato longo (Pordata e INE), uma linha por dataset, município, período e filtros.
+    description: >-
+      Observações municipais em formato longo (Pordata e INE), uma linha por dataset, município, período e
+      filtros.
+    meta:
+      source_ids: [pordata, ine]
     columns:
       - name: source_id
+        description: 'Fonte do dataset: `pordata` ou `ine`.'
+        data_type: varchar
         data_tests: [not_null]
       - name: dataset_id
+        description: Identificador do dataset de origem dentro da fonte (`source_id`).
+        data_type: varchar
         data_tests: [not_null]
       - name: dico
+        description: Código DICO do município da observação, resolvido na normalização em Python.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: source('caop_silver', 'dim_municipality')
                 field: dico
+      - name: source_name
+        description: Nome do município como veio na fonte, antes da resolução para o DICO.
+        data_type: varchar
       - name: period
+        description: Período da observação (ano).
+        data_type: integer
         data_tests: [not_null]
+      - name: filter_1
+        description: >-
+          Rótulo do 1º filtro (dimensão) do dataset, por exemplo sexo, faixa etária ou natureza; texto vazio
+          quando o dataset não usa o filtro.
+        data_type: varchar
+      - name: filter_2
+        description: >-
+          Rótulo do 2º filtro (dimensão) do dataset, por exemplo sexo, faixa etária ou natureza; texto vazio
+          quando o dataset não usa o filtro.
+        data_type: varchar
+      - name: filter_3
+        description: >-
+          Rótulo do 3º filtro (dimensão) do dataset, por exemplo sexo, faixa etária ou natureza; texto vazio
+          quando o dataset não usa o filtro.
+        data_type: varchar
+      - name: value
+        description: Valor da observação; nulo quando a fonte não publica valor (ver `symbol`), nunca imputado.
+        data_type: double
+      - name: symbol
+        description: >-
+          Símbolo ou nota da fonte para a observação (por exemplo `x`, `-`, `...` ou quebra de série); nulo
+          quando não há.
+        data_type: varchar
       - name: unit
+        description: Unidade de medida do valor (por exemplo pessoas, edifícios ou crimes).
+        data_type: varchar
         data_tests: [not_null]
       - name: source_run_id
+        description: Identificador da coleta de origem (`run_id` do manifest em `manifests/<fonte>/`).
+        data_type: varchar
         data_tests: [not_null]
       - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
         data_tests: [not_null]
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
 
   - name: rpt_observation_coverage
     description: Cobertura municipal por dataset no período mais recente; a ausência é listada, nunca imputada.
     columns:
       - name: dataset_id
+        description: Identificador do dataset de origem; uma linha de cobertura por dataset.
         data_tests: [not_null, unique]
       - name: latest_period
         data_tests: [not_null]

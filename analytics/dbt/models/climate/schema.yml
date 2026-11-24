@@ -3,10 +3,16 @@ version: 2
 models:
   - name: stg_climate_daily
     description: Clima diário municipal; valores ausentes permanecem nulos e datas são dias locais.
+    meta:
+      source_ids: [open_meteo]
     columns:
       - name: source_id
+        description: 'Fonte do clima: `open_meteo`.'
+        data_type: varchar
         data_tests: [not_null]
       - name: dico
+        description: Código DICO do município cujo ponto foi coletado.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -14,17 +20,51 @@ models:
                 to: source('caop_silver', 'dim_municipality')
                 field: dico
       - name: variable
+        description: Variável climática diária (por exemplo `temperature_2m_mean` ou `precipitation_sum`).
+        data_type: varchar
         data_tests: [not_null]
       - name: date
+        description: Dia local da observação.
+        data_type: date
         data_tests: [not_null]
+      - name: value
+        description: >-
+          Valor da variável no dia, na unidade de `unit`; nulo quando a fonte não o fornece, nunca imputado.
+        data_type: double
       - name: unit
+        description: Unidade de medida da variável (por exemplo °C, mm, km/h).
+        data_type: varchar
         data_tests: [not_null]
       - name: model
+        description: Reanálise ou modelo de origem do valor (`era5`).
+        data_type: varchar
         data_tests: [not_null]
+      - name: window_start
+        description: Primeiro dia da janela coletada (inclusive).
+        data_type: date
+      - name: window_end
+        description: Último dia da janela coletada (inclusive).
+        data_type: date
       - name: source_run_id
+        description: Identificador da coleta de origem (`run_id` do manifest em `manifests/<fonte>/`).
+        data_type: varchar
         data_tests: [not_null]
       - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
         data_tests: [not_null]
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: usage_restriction
+        description: Restrição de uso da fonte (plano gratuito, uso não comercial; risco aceito pelo autor).
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
 
   - name: rpt_climate_coverage
     description: Cobertura por variável, com ausentes e lacunas explícitos; missing_days_total soma lacunas dos coletados.

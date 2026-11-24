@@ -21,6 +21,8 @@ jobs:
         run: uv run --locked ruff check pipelines tests
       - name: Test without external services
         run: uv run --locked python -m pytest -q --basetemp .pytest_tmp
+      - name: Check data model document
+        run: uv run --locked python -m pipelines.cli.model_docs --check
       - name: Prepare dbt fixture
         if: ${{ hashFiles('analytics/dbt/dbt_project.yml') != '' && hashFiles('tests/fixtures/caop/ci_seed.py') != '' }}
         run: uv run --locked python -m tests.fixtures.caop.ci_seed --root .data/ci
