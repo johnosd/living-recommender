@@ -2,27 +2,71 @@ version: 2
 models:
   - name: dim_municipality
     description: Uma linha por município vigente da CAOP.
+    meta:
+      source_ids: [caop]
     columns:
       - name: dico
+        description: >-
+          Código DICO do município na CAOP (4 dígitos: distrito/ilha + concelho); chave territorial do projeto.
+        data_type: varchar
         data_tests: [not_null, unique]
       - name: official_name
+        description: Nome oficial na CAOP.
+        data_type: varchar
         data_tests: [not_null]
       - name: normalized_name
+        description: Nome normalizado (minúsculas e sem acentos), para comparar e juntar nomes.
+        data_type: varchar
         data_tests: [not_null]
+      - name: district_or_island
+        description: Distrito (continente) ou ilha (regiões autónomas) a que pertence.
+        data_type: varchar
+      - name: autonomous_region
+        description: Nome da região autónoma (Açores ou Madeira); nulo no continente.
+        data_type: varchar
       - name: area_km2
+        description: Área em km², calculada sobre a geometria no sistema original.
+        data_type: double
         data_tests: [not_null]
       - name: representative_lat
+        description: Latitude (graus, WGS84) de um ponto interno representativo; não é o centroide.
+        data_type: double
         data_tests: [not_null]
       - name: representative_lon
+        description: Longitude (graus, WGS84) de um ponto interno representativo; não é o centroide.
+        data_type: double
         data_tests: [not_null]
+      - name: caop_version
+        description: Edição da CAOP (ano) usada na coleta.
+        data_type: varchar
       - name: source_run_id
+        description: Identificador da coleta de origem (`run_id` do manifest em `manifests/<fonte>/`).
+        data_type: varchar
         data_tests: [not_null]
+      - name: reference_period
+        description: Período de referência da CAOP (ano).
+        data_type: varchar
+      - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
   - name: dim_parish
     description: Uma linha por código oficial de freguesia vigente da CAOP.
+    meta:
+      source_ids: [caop]
     columns:
       - name: dicofre
+        description: 'Código DICOFRE da freguesia (6 caracteres: DICO + 2); chave territorial das freguesias.'
+        data_type: varchar
         data_tests: [not_null, unique]
       - name: dico
+        description: Código DICO do município da freguesia (os 4 primeiros caracteres do DICOFRE).
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -30,14 +74,50 @@ models:
                 to: ref('dim_municipality')
                 field: dico
       - name: official_name
+        description: Nome oficial da freguesia na CAOP.
+        data_type: varchar
         data_tests: [not_null]
       - name: normalized_name
+        description: Nome da freguesia normalizado (minúsculas e sem acentos), para comparar e juntar nomes.
+        data_type: varchar
         data_tests: [not_null]
+      - name: district_or_island
+        description: Distrito (continente) ou ilha (regiões autónomas) a que pertence.
+        data_type: varchar
+      - name: autonomous_region
+        description: Nome da região autónoma (Açores ou Madeira); nulo no continente.
+        data_type: varchar
+      - name: parish_type
+        description: Tipo da freguesia, quando a fonte informa; nulo na CAOP 2025 coletada.
+        data_type: varchar
       - name: area_km2
+        description: Área em km², calculada sobre a geometria no sistema original.
+        data_type: double
         data_tests: [not_null]
       - name: representative_lat
+        description: Latitude (graus, WGS84) de um ponto interno representativo; não é o centroide.
+        data_type: double
         data_tests: [not_null]
       - name: representative_lon
+        description: Longitude (graus, WGS84) de um ponto interno representativo; não é o centroide.
+        data_type: double
         data_tests: [not_null]
+      - name: caop_version
+        description: Edição da CAOP (ano) usada na coleta.
+        data_type: varchar
       - name: source_run_id
+        description: Identificador da coleta de origem (`run_id` do manifest em `manifests/<fonte>/`).
+        data_type: varchar
         data_tests: [not_null]
+      - name: reference_period
+        description: Período de referência da CAOP (ano).
+        data_type: varchar
+      - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar

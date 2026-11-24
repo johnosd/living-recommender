@@ -3,32 +3,73 @@ version: 2
 models:
   - name: dim_mobility_pole
     description: Polos vigentes de mobilidade, já resolvidos (config/poles.yml); alvo do relationships do staging.
+    meta:
+      source_ids: [caop]
     columns:
       - name: pole_id
+        description: Identificador estável do polo (por exemplo `lisboa` ou `aeroporto_lis`).
+        data_type: varchar
         data_tests: [not_null, unique]
+      - name: name
+        description: Nome do polo.
+        data_type: varchar
       - name: kind
+        description: 'Tipo do polo: `cidade`, `aeroporto`, `sede_distrito` ou `capital_regional`.'
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [cidade, aeroporto, sede_distrito, capital_regional]
+      - name: routing_group
+        description: >-
+          Grupo de roteamento (`continente`, `madeira` ou `acores`); só há rota entre pontos do mesmo grupo.
+        data_type: varchar
+      - name: scope
+        description: >-
+          Municípios que medem a distância até o polo: `national` (todo o continente), `district` (mesmo
+          distrito) ou `island` (mesma ilha).
+        data_type: varchar
+      - name: dico
+        description: Município (DICO) do polo quando ele é um município da CAOP; nulo nos aeroportos.
+        data_type: varchar
       - name: latitude
+        description: >-
+          Latitude do polo (graus, WGS84); nos polos de cidade é o ponto representativo do município na CAOP.
+        data_type: double
         data_tests: [not_null]
       - name: longitude
+        description: >-
+          Longitude do polo (graus, WGS84); nos polos de cidade é o ponto representativo do município na CAOP.
+        data_type: double
         data_tests: [not_null]
+      - name: district_or_island
+        description: Distrito ou ilha do polo, usado nos escopos `district` e `island`; pode ser nulo.
+        data_type: varchar
+      - name: source_ref
+        description: Referência da coordenada (AIP/eAIP ou nota `APROXIMADO` a conferir); nulo nos polos de cidade.
+        data_type: varchar
 
   - name: stg_municipality_pole_distance
-    description: >
-      Distância município-polo, uma linha por par esperado e modo (linha reta, carro). `km` e `minutes` só existem em
-      `ok`; `sem_rota`, `falha` e `pendente` ficam nulos e nunca são imputados.
+    description: >-
+      Distância município-polo, uma linha por par esperado e modo (linha reta, carro). `km` e `minutes` só
+      existem em `ok`; `sem_rota`, `falha` e `pendente` ficam nulos e nunca são imputados.
+    meta:
+      source_ids: [caop, google_distances]
     columns:
       - name: source_id
+        description: >-
+          Origem do cálculo: `caop` (linha reta, calculada localmente) ou `google_distances` (carro, Routes
+          API).
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [caop, google_distances]
       - name: dico
+        description: Código DICO do município de origem.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -36,6 +77,8 @@ models:
                 to: source('caop_silver', 'dim_municipality')
                 field: dico
       - name: pole_id
+        description: Polo de destino (`dim_mobility_pole.pole_id`).
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -43,25 +86,79 @@ models:
                 to: ref('dim_mobility_pole')
                 field: pole_id
       - name: mode
+        description: >-
+          Modo: `straight_line` (linha reta), `driving` (carro) ou `transit` (transporte público, fora da v1).
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [straight_line, driving, transit]
+      - name: km
+        description: Distância em km; só existe quando `status` é `ok`.
+        data_type: double
+      - name: minutes
+        description: Tempo de viagem em minutos; só existe no carro com `status` `ok` (a linha reta não tem tempo).
+        data_type: double
       - name: status
+        description: 'Estado do par: `ok`, `sem_rota`, `falha` ou `pendente`.'
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [ok, sem_rota, falha, pendente]
+      - name: no_route_reason
+        description: Motivo quando `sem_rota` (por exemplo `ROUTE_NOT_FOUND`); nulo nos demais estados.
+        data_type: varchar
+      - name: error
+        description: Mensagem do último erro quando `falha`; nulo nos demais estados.
+        data_type: varchar
+      - name: method
+        description: >-
+          Método de cálculo: `haversine` (linha reta), `google_routes_v2` (Routes API) ou `identity` (o
+          município é o próprio polo, 0 km).
+        data_type: varchar
+      - name: departure_time
+        description: Horário de partida usado no cálculo; nulo na linha reta e no carro sem horário.
+        data_type: varchar
       - name: stale
+        description: >-
+          Verdadeiro quando o resultado guardado foi calculado com uma configuração do par que já não é a
+          vigente.
+        data_type: boolean
+        data_tests: [not_null]
+      - name: calculated_at_utc
+        description: >-
+          Instante (UTC, ISO 8601) em que o resultado do par foi coletado na API; nulo quando não há coleta.
+        data_type: varchar
+      - name: source_run_id
+        description: Coleta do Google que produziu o resultado do par; nulo quando não há coleta.
+        data_type: varchar
+      - name: caop_version
+        description: Edição da CAOP usada para as coordenadas dos municípios.
+        data_type: varchar
+      - name: poles_catalog_version
+        description: SHA-256 do catálogo de polos resolvido usado no cálculo.
+        data_type: varchar
         data_tests: [not_null]
       - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
         data_tests: [not_null]
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: usage_restriction
+        description: Restrição de uso da fonte (termos da Google Maps Platform no carro); nulo na linha reta.
+        data_type: varchar
       - name: reference_period
+        description: Período de referência configurado para a fonte (AAAA-MM).
+        data_type: varchar
         data_tests: [not_null]
-      - name: poles_catalog_version
-        data_tests: [not_null]
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
 
   - name: rpt_mobility_coverage
     description: Cobertura por modo e polo; ok + sem_rota + falha + pendente = expected.

@@ -2,45 +2,95 @@ version: 2
 
 models:
   - name: xwalk_parish_2013_2025
-    description: >
-      Correspondência de freguesias entre a divisão de 2013 e a CAOP 2025, uma linha por par. A relação e os sinais
-      (herdado, origem parcial, nome e município alterados) orientam quem consome; nenhum valor é repartido.
+    description: >-
+      Correspondência de freguesias entre a divisão de 2013 e a CAOP 2025, uma linha por par. A relação e os
+      sinais (herdado, origem parcial, nome e município alterados) orientam quem consome; nenhum valor é
+      repartido.
+    meta:
+      source_ids: [ine_parish_crosswalk]
     columns:
       - name: dicofre_2013
+        description: Código DICOFRE da freguesia na divisão de 2013.
+        data_type: varchar
         data_tests: [not_null]
+      - name: name_2013
+        description: Nome da freguesia na divisão de 2013.
+        data_type: varchar
       - name: dicofre_2025
+        description: Código DICOFRE da freguesia na CAOP 2025.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: source('caop_silver', 'dim_parish')
                 field: dicofre
+      - name: name_2025
+        description: Nome da freguesia na CAOP 2025.
+        data_type: varchar
       - name: relation
+        description: >-
+          Natureza da relação do par: `one_to_one`, `one_to_many` (a de 2013 se divide), `many_to_one` (várias
+          se juntam) ou `many_to_many`.
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [one_to_one, one_to_many, many_to_one, many_to_many]
       - name: inherited
+        description: >-
+          Verdadeiro quando a freguesia de 2013 tem mais de um destino em 2025; é só um sinal, nenhum valor é
+          repartido.
+        data_type: boolean
         data_tests: [not_null]
       - name: partial_origin
+        description: >-
+          Verdadeiro quando alguma das origens pré-2013 do par contribui só em parte (marcada como parcial na
+          planilha A do INE).
+        data_type: boolean
         data_tests: [not_null]
       - name: name_changed
+        description: Verdadeiro quando o nome mudou entre 2013 e 2025 (comparação normalizada).
+        data_type: boolean
         data_tests: [not_null]
       - name: municipality_changed
+        description: Verdadeiro quando o município (os 4 primeiros dígitos do DICOFRE) mudou entre 2013 e 2025.
+        data_type: boolean
         data_tests: [not_null]
       - name: pre2013_codes
+        description: Códigos das freguesias anteriores a 2013 que deram origem ao par.
+        data_type: varchar[]
         data_tests: [not_null]
       - name: source_run_id_2013
+        description: Coleta da planilha A do INE (freguesias pré-2013 → 2013).
+        data_type: varchar
         data_tests: [not_null]
       - name: source_run_id_2025
+        description: Coleta da planilha B do INE (freguesias pré-2013 repostas → 2025).
+        data_type: varchar
         data_tests: [not_null]
       - name: sha256_2013
+        description: SHA-256 do arquivo original da planilha A.
+        data_type: varchar
         data_tests: [not_null]
       - name: sha256_2025
+        description: SHA-256 do arquivo original da planilha B.
+        data_type: varchar
         data_tests: [not_null]
       - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
         data_tests: [not_null]
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
 
   - name: rpt_parish_crosswalk_coverage
     description: >

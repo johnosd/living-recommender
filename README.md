@@ -120,6 +120,14 @@ Nenhum anúncio individual foi publicado.
 
 A spec 009 acrescenta a **mobilidade**: a distância dos 308 municípios até 7 polos (Lisboa, Porto e os aeroportos LIS, OPO, FAO, FNC e PDL), em **linha reta** (sem API) e de **carro** (Routes API do Google, cálculo único). `collect_mobility` só estima por padrão; gastar exige `--execute`, a confirmação do número de elementos, um teto e a chave, que fica em `.env` e nunca no Git. `build_mobility` monta o staging (`ok`, `sem_rota`, `falha`, `pendente`) e os relatórios de cobertura. O transporte público ficou fora (ADR-004). Os tempos de carro levam a atribuição "Tempos de viagem: Google" e são um risco aceito de termos de uso. A coleta real ainda não foi feita: faltam conferir as coordenadas dos aeroportos e o preço. Passo a passo no [guia de coletas](.docs/runbooks/coletas.md#mobilidade-distancia-e-tempo-de-carro-até-os-polos-spec-009).
 
+A spec 010 dá **visibilidade ao modelo de dados**: o [modelo de dados](.docs/modelo_de_dados.md) (diagrama de relacionamentos e dicionário, gerado dos `schema.yml` do dbt e conferido no CI), um catálogo DuckDB local para consultar o lake e o site do `dbt docs` com o lineage. Os comandos estão no [guia do modelo de dados](.docs/runbooks/modelo_de_dados.md).
+
+| Comando | Gera |
+| --- | --- |
+| `uv run --locked python -m pipelines.cli.model_docs` | `.docs/modelo_de_dados.md` (`--check` no CI) |
+| `uv run --locked python -m pipelines.cli.lake_catalog --root .data` | `.data/catalog.duckdb`, para DuckDB UI ou DBeaver |
+| `uv run --locked python -m pipelines.cli.dbt_docs_site --root .data [--serve]` | site local do `dbt docs` com lineage |
+
 ## Roteiro
 
 | Fase | Entrega | Estado |

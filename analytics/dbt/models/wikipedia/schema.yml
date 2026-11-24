@@ -2,8 +2,12 @@ version: 2
 models:
   - name: wikipedia_revision
     description: Identidades e revisões aceitas com referências aos dois originais imutáveis.
+    meta:
+      source_ids: [wikipedia]
     columns:
       - name: dico
+        description: Código DICO do município associado ao artigo.
+        data_type: varchar
         data_tests:
           - not_null
           - unique
@@ -11,16 +15,79 @@ models:
               arguments:
                 to: source('caop_silver', 'dim_municipality')
                 field: dico
-      - name: revision_id
-        data_tests: [not_null]
+      - name: scope
+        description: >-
+          Abrangência do artigo: `municipality` (só o município) ou `municipality_and_seat` (município e sede).
+        data_type: varchar
+      - name: canonical_title
+        description: Título canônico do artigo na Wikipedia em português.
+        data_type: varchar
+      - name: fingerprint
+        description: >-
+          Impressão digital do conteúdo aceito (metadados, texto, associação e território), para detectar
+          mudança.
+        data_type: varchar
+      - name: association_hash
+        description: Hash da associação curada entre o município e o artigo.
+        data_type: varchar
+      - name: territory_hash
+        description: SHA-256 da dimensão territorial (`dim_municipality`) congelada usada na coleta.
+        data_type: varchar
+      - name: source_run_id
+        description: Coleta em que a revisão foi verificada pela última vez.
+        data_type: varchar
+      - name: checked_at_utc
+        description: Instante (UTC, ISO 8601) da última verificação do artigo.
+        data_type: varchar
+      - name: revision_at_utc
+        description: Instante (UTC, ISO 8601) da revisão aceita, conforme a Wikipedia.
+        data_type: varchar
+      - name: permanent_url
+        description: Endereço permanente da revisão aceita.
+        data_type: varchar
+      - name: metadata_raw_key
+        description: Chave, em `raw/`, do arquivo original de metadados da página.
+        data_type: varchar
       - name: metadata_raw_sha256
+        description: SHA-256 do arquivo original de metadados, para conferir a integridade.
+        data_type: varchar
         data_tests: [not_null]
+      - name: content_raw_key
+        description: Chave, em `raw/`, do arquivo original com o conteúdo da página.
+        data_type: varchar
       - name: content_raw_sha256
+        description: SHA-256 do arquivo original de conteúdo, para conferir a integridade.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: metadata_raw_collected_at_utc
+        description: Instante (UTC) em que o arquivo de metadados foi coletado.
+        data_type: varchar
+      - name: content_raw_collected_at_utc
+        description: Instante (UTC) em que o arquivo de conteúdo foi coletado.
+        data_type: varchar
+      - name: manifest_key
+        description: Chave do manifest da Wikipedia que registra esta revisão.
+        data_type: varchar
+      - name: processing_signature
+        description: >-
+          Assinatura do processamento (entradas do manifest, território e código), para saber se a saída está
+          atual.
+        data_type: varchar
+      - name: page_id
+        description: Identificador numérico da página na Wikipedia.
+        data_type: bigint
+      - name: revision_id
+        description: Identificador numérico da revisão aceita na Wikipedia.
+        data_type: bigint
         data_tests: [not_null]
   - name: wikipedia_article
     description: Texto editorial português; narrativa não equivale a indicador estatístico.
+    meta:
+      source_ids: [wikipedia]
     columns:
       - name: dico
+        description: Código DICO do município associado ao artigo.
+        data_type: varchar
         data_tests:
           - not_null
           - unique
@@ -28,21 +95,82 @@ models:
               arguments:
                 to: ref('wikipedia_revision')
                 field: dico
+      - name: scope
+        description: >-
+          Abrangência do artigo: `municipality` (só o município) ou `municipality_and_seat` (município e sede).
+        data_type: varchar
+      - name: canonical_title
+        description: Título canônico do artigo na Wikipedia em português.
+        data_type: varchar
+      - name: introduction
+        description: Texto da introdução (seção inicial), em texto simples.
+        data_type: varchar
       - name: full_text
+        description: Texto completo do artigo em texto simples, com as seções separadas por linha em branco.
+        data_type: varchar
         data_tests: [not_null]
+      - name: wikidata_id
+        description: Identificador do item na Wikidata (QID); nulo quando a página não tem.
+        data_type: varchar
+      - name: english_url
+        description: Endereço do artigo em inglês (link interlíngua); nulo quando não existe.
+        data_type: varchar
+      - name: permanent_url
+        description: Endereço permanente da revisão aceita.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: history_url
+        description: Endereço do histórico de edições do artigo.
+        data_type: varchar
+      - name: revision_at_utc
+        description: Instante (UTC, ISO 8601) da revisão aceita, conforme a Wikipedia.
+        data_type: varchar
+      - name: metadata_observed_at_utc
+        description: Instante (UTC, ISO 8601) em que os metadados da página foram observados.
+        data_type: varchar
       - name: license_id
+        description: Licença do texto (`CC-BY-SA-4.0`).
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['CC-BY-SA-4.0']
-      - name: permanent_url
-        data_tests: [not_null]
+                values: [CC-BY-SA-4.0]
+      - name: license_url
+        description: Endereço da licença do texto.
+        data_type: varchar
+      - name: attribution
+        description: Texto de atribuição exigido pela licença (contribuidores da Wikipedia).
+        data_type: varchar
+      - name: normalization
+        description: Versão do extrator que normalizou o texto (por exemplo `wikipedia-dom-1`).
+        data_type: varchar
       - name: processing_signature
+        description: >-
+          Assinatura do processamento (entradas do manifest, território e código), para saber se a saída está
+          atual.
+        data_type: varchar
         data_tests: [not_null]
+      - name: audit_json
+        description: Auditoria da extração em JSON (nós de texto do HTML e quantos foram cobertos pelos blocos).
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
+      - name: page_id
+        description: Identificador numérico da página na Wikipedia.
+        data_type: bigint
+      - name: revision_id
+        description: Identificador numérico da revisão aceita na Wikipedia.
+        data_type: bigint
   - name: wikipedia_section
+    description: Seções de cada artigo (a introdução é a seção `lead`), na ordem em que aparecem.
+    meta:
+      source_ids: [wikipedia]
     columns:
       - name: dico
+        description: Código DICO do município do artigo.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -50,12 +178,42 @@ models:
                 to: ref('wikipedia_article')
                 field: dico
       - name: section_id
+        description: Identificador da seção dentro do artigo; `lead` é a introdução.
+        data_type: varchar
         data_tests: [not_null]
+      - name: parent_section_id
+        description: Seção que contém esta, quando é uma subseção; nulo nas seções de topo.
+        data_type: varchar
+      - name: title
+        description: Título da seção; vazio na introdução.
+        data_type: varchar
+      - name: anchor
+        description: Âncora HTML da seção; nulo na introdução.
+        data_type: varchar
+      - name: processing_signature
+        description: >-
+          Assinatura do processamento (entradas do manifest, território e código), para saber se a saída está
+          atual.
+        data_type: varchar
+      - name: section_order
+        description: Posição da seção na ordem do artigo (0 é a introdução).
+        data_type: bigint
       - name: level
+        description: Nível do título (0 na introdução; 2 a 6 conforme o nível do cabeçalho).
+        data_type: bigint
         data_tests: [not_null]
+      - name: empty
+        description: Verdadeiro quando a seção não tem blocos de texto próprios.
+        data_type: boolean
   - name: wikipedia_block
+    description: >-
+      Blocos de texto de cada artigo (parágrafos, listas, tabelas e seus elementos), com links e contexto HTML.
+    meta:
+      source_ids: [wikipedia]
     columns:
       - name: dico
+        description: Código DICO do município do artigo.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -63,12 +221,43 @@ models:
                 to: ref('wikipedia_article')
                 field: dico
       - name: block_id
+        description: Identificador do bloco dentro do artigo (`b000001`, `b000002`...).
+        data_type: varchar
         data_tests: [not_null]
       - name: section_id
+        description: Seção do artigo a que o bloco pertence.
+        data_type: varchar
         data_tests: [not_null]
+      - name: parent_block_id
+        description: Bloco que contém este (lista, tabela, linha); nulo nos blocos de topo.
+        data_type: varchar
       - name: kind
+        description: >-
+          Tipo do elemento: `p`, `li`, `ul`, `ol`, `table`, `tr`, `td`, `th`, `caption`, `figure`, `figcaption`
+          ou `text`.
+        data_type: varchar
         data_tests: [not_null]
+      - name: text
+        description: Texto do bloco; pode ser nulo em blocos que só agrupam outros.
+        data_type: varchar
+      - name: links_json
+        description: 'Links do bloco em JSON (destino, texto e tipo: `link`, `reference` ou `unsafe`).'
+        data_type: varchar
+      - name: context_json
+        description: Atributos HTML do bloco em JSON (`id`, `class`, `colspan`, `rowspan`, `scope`).
+        data_type: varchar
+      - name: processing_signature
+        description: >-
+          Assinatura do processamento (entradas do manifest, território e código), para saber se a saída está
+          atual.
+        data_type: varchar
+      - name: block_order
+        description: Posição do bloco na ordem do artigo (a partir de 0).
+        data_type: bigint
   - name: wikipedia_coverage
+    description: >-
+      Cobertura por município: estado da associação com o artigo, se a identidade foi validada, se a extração
+      ficou completa e as contagens de seções, blocos e caracteres; a ausência é listada, nunca imputada.
     columns:
       - name: official_name
         description: Nome oficial municipal da dimensão CAOP congelada, independente do título do artigo.

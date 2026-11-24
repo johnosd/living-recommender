@@ -11,34 +11,271 @@ models:
         data_tests: [not_null]
   - name: census_age_category
     description: Categorias etárias nativas do INE, específicas do indicador.
+    meta:
+      source_ids: [censos]
     columns:
       - name: age_code
+        description: Código nativo da categoria etária no INE (`T` é o total).
+        data_type: varchar
         data_tests: [not_null]
+      - name: label
+        description: Rótulo da categoria etária como publicado pelo INE (por exemplo «25 - 29 anos»).
+        data_type: varchar
+      - name: age_min
+        description: Idade mínima da faixa; nulo no total e na categoria de idade ignorada.
+        data_type: integer
+      - name: age_max
+        description: >-
+          Idade máxima da faixa; nulo no total, nas faixas abertas (85 anos ou mais) e na categoria ignorada.
+        data_type: integer
+      - name: is_total
+        description: Verdadeiro na categoria que soma todas as idades.
+        data_type: boolean
+      - name: is_unknown
+        description: Verdadeiro na categoria de idade ignorada ou desconhecida.
+        data_type: boolean
       - name: indicator
+        description: Código do indicador do INE (`0014632` na geografia de 2025, `0011719` na de 2013).
+        data_type: varchar
         data_tests: [not_null]
+      - name: geography_version
+        description: 'Versão da geografia de freguesias do indicador: 2013 ou 2025.'
+        data_type: varchar
+      - name: metadata_dataset_id
+        description: Identificador do dataset de metadados de onde a categoria foi lida.
+        data_type: varchar
+      - name: raw_key
+        description: Chave, em `raw/`, do arquivo original de metadados de onde a categoria foi lida.
+        data_type: varchar
       - name: raw_sha256
+        description: SHA-256 do arquivo original de metadados, para conferir a integridade.
+        data_type: varchar
         data_tests: [not_null]
       - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
         data_tests: [not_null]
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: source_run_id
+        description: Identificador da coleta de origem (`run_id` do manifest da coleta dos Censos).
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
   - name: census_observation
     description: Contagens censitárias nativas com originais e metadados rastreáveis.
+    meta:
+      source_ids: [censos]
     columns:
       - name: source_dicofre
+        description: Código DICOFRE da freguesia como publicado pelo INE (na geografia `geography_version`).
+        data_type: varchar
         data_tests: [not_null]
-      - name: raw_sha256
-        data_tests: [not_null]
-      - name: metadata_raw_sha256
-        data_tests: [not_null]
+      - name: period
+        description: Ano de referência dos Censos (2021).
+        data_type: varchar
+      - name: age_code
+        description: Código nativo da categoria etária no INE (`T` é o total).
+        data_type: varchar
+      - name: label
+        description: Rótulo da categoria etária como publicado pelo INE.
+        data_type: varchar
+      - name: age_min
+        description: Idade mínima da faixa; nulo no total e na categoria de idade ignorada.
+        data_type: integer
+      - name: age_max
+        description: >-
+          Idade máxima da faixa; nulo no total, nas faixas abertas (85 anos ou mais) e na categoria ignorada.
+        data_type: integer
+      - name: is_total
+        description: Verdadeiro na categoria que soma todas as idades.
+        data_type: boolean
+      - name: is_unknown
+        description: Verdadeiro na categoria de idade ignorada ou desconhecida.
+        data_type: boolean
+      - name: value
+        description: >-
+          Contagem de residentes na freguesia e categoria etária; nulo quando não há valor publicado (ver
+          `value_status`).
+        data_type: bigint
       - name: value_status
+        description: 'Estado do valor na fonte: `observed`, `suppressed`, `not_applicable` ou `not_published`.'
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [observed, suppressed, not_applicable, not_published]
+      - name: symbol
+        description: Símbolo de convenção que o INE usa quando não publica o valor; nulo quando há valor.
+        data_type: 'null'
+      - name: indicator
+        description: Código do indicador do INE (`0014632` na geografia de 2025, `0011719` na de 2013).
+        data_type: varchar
+      - name: geography_version
+        description: 'Versão da geografia de freguesias do indicador: 2013 ou 2025.'
+        data_type: varchar
+      - name: dataset_id
+        description: Identificador do dataset (lote de freguesias) coletado no catálogo de fontes.
+        data_type: varchar
+      - name: raw_key
+        description: Chave, em `raw/`, do arquivo original de onde a linha veio.
+        data_type: varchar
+      - name: raw_sha256
+        description: SHA-256 do arquivo original em `raw/`, para conferir a integridade.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: source_run_id
+        description: Identificador da coleta de origem (`run_id` do manifest da coleta dos Censos).
+        data_type: varchar
+      - name: metadata_raw_key
+        description: Chave, em `raw/`, do arquivo original de metadados do indicador.
+        data_type: varchar
+      - name: metadata_raw_sha256
+        description: SHA-256 do arquivo original de metadados, para conferir a integridade.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: query_signature
+        description: Assinatura da consulta ao INE (parâmetros do dataset) usada para coletar o lote.
+        data_type: varchar
+      - name: collected_at_utc
+        description: Instante (UTC, ISO 8601) em que a fonte foi coletada, copiado do manifest.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
+      - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: source_release_date
+        description: Data da última atualização do indicador, informada pelo INE (`DataUltimaAtualizacao`).
+        data_type: varchar
+      - name: geography_evidence
+        description: Endereço dos metadados do INE que comprovam a versão da geografia.
+        data_type: varchar
+      - name: reexpression_method
+        description: >-
+          Método de reexpressão da geografia declarado pelo INE; `not_disclosed_by_publisher` se não divulgado.
+        data_type: varchar
   - name: census_parish_observation
     description: Uma observação por freguesia vigente/categoria, com cobertura e proveniência por observação.
+    meta:
+      source_ids: [censos, caop, ine_parish_crosswalk]
     columns:
+      - name: age_code
+        description: >-
+          Código canônico da faixa etária (`T` total, `unknown`, `<mín>_<máx>` ou `<mín>_plus`), harmonizado
+          entre as geografias.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: age_min
+        description: Idade mínima da faixa; nulo no total e na categoria de idade ignorada.
+        data_type: integer
+      - name: age_max
+        description: >-
+          Idade máxima da faixa; nulo no total, nas faixas abertas (85 anos ou mais) e na categoria ignorada.
+        data_type: integer
+      - name: is_total
+        description: Verdadeiro na categoria que soma todas as idades.
+        data_type: boolean
+      - name: is_unknown
+        description: Verdadeiro na categoria de idade ignorada ou desconhecida.
+        data_type: boolean
+      - name: source_dicofre
+        description: >-
+          Código DICOFRE da freguesia na geografia de origem do valor (2013 ou 2025); nulo quando falta o
+          registro de origem.
+        data_type: varchar
+      - name: period
+        description: Ano de referência dos Censos (2021).
+        data_type: varchar
+      - name: label
+        description: Rótulo da categoria etária como publicado pelo INE.
+        data_type: varchar
+      - name: value
+        description: >-
+          Contagem de residentes na freguesia e categoria etária; nulo quando não há valor publicado (ver
+          `value_status`).
+        data_type: bigint
+      - name: value_status
+        description: 'Estado do valor na fonte: `observed`, `suppressed`, `not_applicable` ou `not_published`.'
+        data_type: varchar
+      - name: symbol
+        description: Símbolo de convenção que o INE usa quando não publica o valor; nulo quando há valor.
+        data_type: 'null'
+      - name: indicator
+        description: Código do indicador do INE (`0014632` na geografia de 2025, `0011719` na de 2013).
+        data_type: varchar
+      - name: geography_version
+        description: 'Versão da geografia de freguesias do indicador: 2013 ou 2025.'
+        data_type: varchar
+      - name: dataset_id
+        description: >-
+          Identificador do dataset de origem; lista JSON quando a faixa de 85 anos ou mais resulta da união de
+          duas categorias da geografia de 2013.
+        data_type: varchar
+      - name: raw_key
+        description: >-
+          Chave, em `raw/`, do arquivo original com a contagem; lista JSON quando a faixa de 85 anos ou mais
+          resulta da união de duas categorias da geografia de 2013.
+        data_type: varchar
+      - name: raw_sha256
+        description: >-
+          SHA-256 do arquivo original; lista JSON quando a faixa de 85 anos ou mais resulta da união de duas
+          categorias da geografia de 2013.
+        data_type: varchar
+      - name: source_run_id
+        description: >-
+          Identificador da coleta de origem; lista JSON quando a faixa de 85 anos ou mais resulta da união de
+          duas categorias da geografia de 2013.
+        data_type: varchar
+      - name: metadata_raw_key
+        description: Chave, em `raw/`, do arquivo original de metadados do indicador.
+        data_type: varchar
+      - name: metadata_raw_sha256
+        description: SHA-256 do arquivo original de metadados, para conferir a integridade.
+        data_type: varchar
+      - name: query_signature
+        description: Assinatura da consulta ao INE (parâmetros do dataset) usada para coletar o lote.
+        data_type: varchar
+      - name: collected_at_utc
+        description: >-
+          Instante (UTC, ISO 8601) da coleta de origem; lista JSON quando a faixa de 85 anos ou mais resulta da
+          união de duas categorias da geografia de 2013.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) em que o build processou a linha.
+        data_type: varchar
+      - name: license_id
+        description: Licença de uso da fonte, como declarada em `config/sources.yml`.
+        data_type: varchar
+      - name: attribution
+        description: Texto de atribuição que a fonte exige ao citar o dado.
+        data_type: varchar
+      - name: source_release_date
+        description: Data da última atualização do indicador, informada pelo INE (`DataUltimaAtualizacao`).
+        data_type: varchar
+      - name: geography_evidence
+        description: Endereço dos metadados do INE que comprovam a versão da geografia.
+        data_type: varchar
+      - name: reexpression_method
+        description: >-
+          Método de reexpressão da geografia declarado pelo INE; `not_disclosed_by_publisher` se não divulgado.
+        data_type: varchar
+      - name: source_age_codes
+        description: Códigos nativos do INE que originaram a faixa, em lista JSON (a faixa 85+ junta duas).
+        data_type: varchar
       - name: dicofre
+        description: Código DICOFRE da freguesia vigente (CAOP 2025) a que a observação se refere.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
@@ -46,17 +283,49 @@ models:
                 to: source('caop_silver', 'dim_parish')
                 field: dicofre
       - name: dico
+        description: Código DICO do município da freguesia.
+        data_type: varchar
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: source('caop_silver', 'dim_municipality')
                 field: dico
-      - name: age_code
-        data_tests: [not_null]
+      - name: caop_version
+        description: Edição da CAOP do território de destino (2025).
+        data_type: varchar
+      - name: autonomous_region
+        description: 'Região de referência: `continente` ou o nome da região autónoma.'
+        data_type: varchar
       - name: coverage_status
+        description: >-
+          `own` (valor próprio da freguesia), `inherited` (herdado de freguesia de 2013 dividida) ou `missing`
+          (sem valor; ver `reason`).
+        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [own, inherited, missing]
+      - name: reason
+        description: >-
+          Motivo da ausência quando `missing` (`territorial_ambiguity`, `official_suppression`,
+          `official_not_applicable`, `official_not_published` ou `missing_source`); nulo quando há valor.
+        data_type: 'null'
+      - name: relation
+        description: >-
+          Relação com a freguesia de origem: `direct` ou a natureza da correspondência 2013 → 2025
+          (`one_to_one`, `one_to_many`, `many_to_one`, `many_to_many`).
+        data_type: varchar
+      - name: partial_origin
+        description: Verdadeiro quando a origem de 2013 é parcial (ambiguidade territorial).
+        data_type: boolean
+      - name: dim_parish_sha256
+        description: SHA-256 do parquet de `dim_parish` usado no cálculo (dependência).
+        data_type: varchar
+      - name: dim_municipality_sha256
+        description: SHA-256 do parquet de `dim_municipality` usado no cálculo (dependência).
+        data_type: varchar
+      - name: xwalk_parish_2013_2025_sha256
+        description: SHA-256 do parquet de `xwalk_parish_2013_2025` usado no cálculo (dependência).
+        data_type: varchar
