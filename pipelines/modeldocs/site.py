@@ -42,6 +42,30 @@ def link_sources_to_models(manifest: dict) -> dict:
     return linked
 
 
+def link_relationships(manifest: dict, model: DataModel) -> dict:
+    """Devolve uma cópia do manifest com a aresta `to_table` -> `from_table` para cada `relationships` declarado.
+
+    Vários modelos leem o parquet de outro build por `read_parquet(...)`, sem `ref` nem `source`: no dbt a ligação deles
+    com, por exemplo, `dim_municipality` existe só pelo nó do teste. Só a cópia do site muda; o diagrama do documento
+    usa os mesmos relacionamentos (D3). Autorreferência e aresta repetida são ignoradas. Não altera o dict recebido.
+    """
+    linked = copy.deepcopy(manifest)
+    ids = {table.name: table.unique_id for table in model.tables}
+    parent_map = linked.setdefault("parent_map", {})
+    child_map = linked.setdefault("child_map", {})
+    for relationship in model.relationships:
+        child, parent = ids.get(relationship.from_table), ids.get(relationship.to_table)
+        if child is None or parent is None or child == parent:
+            continue
+        parents = parent_map.setdefault(child, [])
+        if parent not in parents:
+            parents.append(parent)
+        children = child_map.setdefault(parent, [])
+        if child not in children:
+            children.append(child)
+    return linked
+
+
 def _empty_catalog(metadata: dict | None, generated_at: datetime) -> dict:
     base = copy.deepcopy(metadata) if metadata else {"dbt_schema_version": CATALOG_SCHEMA}
     base["generated_at"] = generated_at.isoformat().replace("+00:00", "Z")

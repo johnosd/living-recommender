@@ -17,7 +17,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from pipelines.modeldocs.model import ModelError, load_model
-from pipelines.modeldocs.site import lake_catalog_json, link_sources_to_models
+from pipelines.modeldocs.site import (
+    lake_catalog_json,
+    link_relationships,
+    link_sources_to_models,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 DBT_PROJECT = ROOT / "analytics" / "dbt"
@@ -76,7 +80,7 @@ def generate(root: Path, output: Path, executable: str) -> int:
     except ModelError as error:
         print(f"Modelo de dados inconsistente: {error}", file=sys.stderr)
         return 1
-    _write_json(output / "manifest.json", link_sources_to_models(manifest))
+    _write_json(output / "manifest.json", link_relationships(link_sources_to_models(manifest), model))
     empty = json.loads((output / "catalog.json").read_text(encoding="utf-8"))
     _write_json(output / "catalog.json", lake_catalog_json(model, root / "lake", generated_at=datetime.now(UTC),
                                                            base=empty))

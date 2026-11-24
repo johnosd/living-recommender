@@ -11,7 +11,8 @@ US4 se a aresta modelo → fonte aparecer.
 1. `dbt docs generate --empty-catalog` com `DBT_TARGET_PATH=<output>` e `CAOP_DUCKDB_PATH=<output>/never-used.duckdb`
    (o dbt-duckdb abre uma conexão mesmo com catálogo vazio; verificado em 2026-11-22). Gera `index.html`,
    `manifest.json` e um `catalog.json` vazio. Funciona sem lake, sem dados e sem rede.
-2. Leia `<output>/manifest.json`, aplique `link_sources_to_models` e regrave.
+2. Leia `<output>/manifest.json`, aplique `link_sources_to_models` e depois `link_relationships` (Phase 7, R-012) e
+   regrave.
 3. Se `lake_root` tiver tabelas, leia o `catalog.json` vazio que o passo 1 gravou (ele traz `metadata` válido),
    preencha `nodes` com `lake_catalog_json` e regrave. Sem lake: deixe o catálogo vazio.
 4. `--serve`: `dbt docs serve --host 127.0.0.1 --port <porta> --no-browser` (só localhost) com a mesma
@@ -30,6 +31,16 @@ já está no `.gitignore` (`.data/`).
 - Sem efeito no `depends_on` dos nós: o grafo do dbt docs é montado a partir de `parent_map`/`child_map`.
   **Risco R-002**: se uma versão futura do dbt docs ignorar esses mapas, a aresta some; a verificação manual do
   `quickstart.md` cobre isso, e o fallback é anotar o modelo produtor na descrição da fonte.
+
+## `link_relationships(manifest, model) -> dict` (Phase 7, R-012)
+
+- Copie o manifest; nunca altere o dict de entrada.
+- Para cada `Relationship` do `DataModel` (`from_table` → `to_table`, já resolvido para modelo): `parent_map[<id de
+  from_table>]` ganha o id de `to_table` e `child_map[<id de to_table>]` ganha o id de `from_table`, sem duplicar.
+- Ignore autorreferência e relacionamento cujo modelo não exista no `DataModel`.
+- Motivo: modelos como `stg_municipality_pole_distance` leem o parquet de outro build por `read_parquet(env_var(...))`,
+  sem `ref`/`source`; sem esta aresta, a ligação com `dim_municipality` só aparece pelo nó de teste (US4-AC2, SC-006).
+  Verificado no projeto real (2026-11-24): nenhum ciclo entre os nós de modelo e fonte.
 
 ## `lake_catalog_json(model, lake_root, generated_at) -> dict`
 

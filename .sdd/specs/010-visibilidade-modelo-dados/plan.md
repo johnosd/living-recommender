@@ -184,10 +184,11 @@ Stubs criados pelo plan (ponto de partida, não travados): `pipelines/modeldocs/
 | Fase 1 (Foundational) | Concluída: `load_model`, `run_dbt_parse`, `load_sources_info` |
 | Fase 2 (US1 documento) | Concluída: `render_markdown`, CLI `model_docs`, documento gerado, passo no CI, runbook (seção do documento) |
 | Fase 3 (US2 catálogo) | Concluída: `build_catalog`, CLI `lake_catalog`, runbook do catálogo |
-| Fase 4 (US3 descrições) | Concluída, aguardando revisão dos textos pelo autor (R-007): 18 principais com descrição, tipo e fonte em todas as colunas |
-| Fase 5 (US4 site do dbt) | Implementada: `site.py`, CLI `dbt_docs_site`, runbook; gate visual do grafo pendente (T027/R-002) |
-| Polish | T025 feito; T026 parcial (revalidado em 2026-11-24: suíte 775 passed, ruff, `--check`, trava OK; `dbt build` dos domínios OK em 2026-11-22; falta o CI remoto); T027 pendente |
-| Contratos | 5/5 verdes; trava íntegra |
+| Fase 4 (US3 descrições) | Concluída e revisada pelo autor: 18 principais com descrição, tipo e fonte em todas as colunas |
+| Fase 5 (US4 site do dbt) | Concluída: `site.py`, CLI `dbt_docs_site`, runbook; aresta fonte→modelo conferida no navegador pelo autor |
+| Polish | T025, T026 e T027 feitos: suíte 775 passed, CI remoto do PR #12 verde (`quality` e `secrets`/gitleaks), PR mergeado |
+| Feature | 42/42 itens; Phase 7 (Convergence) concluída: grafo com arestas de `relationships` (R-012), aviso do dbt aceito (R-013), contrato emendado (R-011) |
+| Contratos | 5/5 verdes; trava regravada em 2026-11-24 com a emenda aprovada do R-011, íntegra |
 
 ## Riscos e Decisões
 
@@ -198,17 +199,19 @@ Stubs criados pelo plan (ponto de partida, não travados): `pipelines/modeldocs/
 
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
-| R-001 | O manifest só conhece as colunas declaradas; hoje o `schema.yml` declara de 2 a 13 colunas por tabela e o lake tem de 8 a 39. Sem declarar todas, o dicionário fica parcial sem avisar. | Alto | Fase 4 declara todas as colunas das 18 principais. `meta.columns` (`declared = false`) é a prova de completude; relatórios ficam com a observação "lista possivelmente incompleta". |
-| R-002 | O dbt docs pode não desenhar a aresta fonte→modelo criada em `parent_map`/`child_map` (comportamento não documentado). | Médio | Conferência manual no `quickstart.md`. Fallback: dizer na descrição da fonte qual modelo a produz. |
-| R-003 | O Windows não substitui um `.duckdb` aberto no DBeaver ou no DuckDB UI. | Baixo | Geração em temporário + `os.replace`; se falhar, mensagem pedindo para fechar o cliente e o catálogo anterior continua intacto. |
-| R-004 | As views guardam o caminho absoluto dos parquets; mover `.data/` quebra o catálogo. | Baixo | Basta gerar de novo; está no runbook. |
-| R-005 | Mudança de versão do dbt pode alterar o formato do manifest. | Médio | `uv.lock` fixa o dbt; o contrato 1 roda o `dbt parse` real e acusa quebra no CI. |
-| R-006 | CRLF do Windows vs LF do CI fariam o `--check` divergir. | Médio | Gravar sempre com LF e comparar ignorando `\r\n`; coberto pelo contrato 4. |
-| R-007 | Escrever ~345 descrições é trabalho de conteúdo; descrição errada é pior que nenhuma (constitution III). | Alto | D9: só com evidência do SQL, do coletor ou dos docs; sem evidência, fica "sem descrição". Revisão do autor ao fechar a Fase 4. |
-| R-008 | O `data_type` declarado pode divergir do tipo real depois de uma mudança no SQL, sem ninguém notar. | Baixo | `meta.columns` compara `type_declared` e `type_actual`; a Fase 4 zera as divergências. Sem gate de CI (decisão do autor). |
-| R-009 | O documento ficará com muitas lacunas "chave territorial sem relacionamento" (ex.: `census_observation.dico`, `stg_caop_*`). | Baixo | É o efeito desejado: tornar as lacunas visíveis. Declarar os testes que faltam é decisão futura, fora desta spec. |
-| R-010 | O `dbt docs generate` abre uma conexão DuckDB mesmo com `--empty-catalog`. | Baixo | `CAOP_DUCKDB_PATH` aponta para a pasta de saída (D7); verificado em 2026-11-22 que nada é criado em `.data/ci`. |
-| R-011 | A asserção `".data" not in document` do contrato 1 (feita para barrar o caminho `.data/`) casa com qualquer lacuna de coluna chamada `dataset_id` (`- tabela.dataset_id`). Descoberto na Fase 2. | Médio | Contornado com dados, não com código: `stg_observation.dataset_id` e `rpt_observation_coverage.dataset_id` ganharam `description` (evidência no SQL). **Frágil**: uma futura coluna `data*` sem descrição reprova o contrato. Emenda sugerida ao autor: trocar a asserção por `.data/`. Contrato não editado. |
+| R-001 | O manifest só conhece as colunas declaradas; hoje o `schema.yml` declara de 2 a 13 colunas por tabela e o lake tem de 8 a 39. Sem declarar todas, o dicionário fica parcial sem avisar. | Alto | Resolvido: a auditoria confirmou que `meta.columns` volta vazio para as 18 principais. Fase 4 declara todas as colunas das 18 principais. `meta.columns` (`declared = false`) é a prova de completude; relatórios ficam com a observação "lista possivelmente incompleta". |
+| R-002 | O dbt docs pode não desenhar a aresta fonte→modelo criada em `parent_map`/`child_map` (comportamento não documentado). | Médio | Resolvido: em 2026-11-24 o autor conferiu no navegador que o grafo mostra a aresta; o plano B não foi necessário. (Original: conferência manual no `quickstart.md`. Fallback: dizer na descrição da fonte qual modelo a produz.) |
+| R-003 | O Windows não substitui um `.duckdb` aberto no DBeaver ou no DuckDB UI. | Baixo | Resolvido: confirmado em `catalog.py` (`build_catalog`) e no teste de CLI com `os.replace` falhando. Geração em temporário + `os.replace`; se falhar, mensagem pedindo para fechar o cliente e o catálogo anterior continua intacto. |
+| R-004 | As views guardam o caminho absoluto dos parquets; mover `.data/` quebra o catálogo. | Baixo | Resolvido: aviso presente no runbook. Basta gerar de novo; está no runbook. |
+| R-005 | Mudança de versão do dbt pode alterar o formato do manifest. | Médio | Resolvido: mitigação confirmada (dbt fixado no `uv.lock`; o contrato 1 roda o `dbt parse` real). `uv.lock` fixa o dbt; o contrato 1 roda o `dbt parse` real e acusa quebra no CI. |
+| R-006 | CRLF do Windows vs LF do CI fariam o `--check` divergir. | Médio | Resolvido: contrato 4 verde e `--check` verde no CI Ubuntu. Gravar sempre com LF e comparar ignorando `\r\n`; coberto pelo contrato 4. |
+| R-007 | Escrever ~345 descrições é trabalho de conteúdo; descrição errada é pior que nenhuma (constitution III). | Alto | D9: só com evidência do SQL, do coletor ou dos docs; sem evidência, fica "sem descrição". Revisão do autor ao fechar a Fase 4. Resolvido: textos revisados pelo autor em 2026-11-24. |
+| R-008 | O `data_type` declarado pode divergir do tipo real depois de uma mudança no SQL, sem ninguém notar. | Baixo | Resolvido: divergências zeradas na Fase 4, sem gate de CI por decisão do autor. `meta.columns` compara `type_declared` e `type_actual`; a Fase 4 zera as divergências. Sem gate de CI (decisão do autor). |
+| R-009 | O documento ficará com muitas lacunas "chave territorial sem relacionamento" (ex.: `census_observation.dico`, `stg_caop_*`). | Baixo | Resolvido: as lacunas aparecem no documento, como pretendido. É o efeito desejado: tornar as lacunas visíveis. Declarar os testes que faltam é decisão futura, fora desta spec. |
+| R-010 | O `dbt docs generate` abre uma conexão DuckDB mesmo com `--empty-catalog`. | Baixo | Resolvido: `_environment` em `dbt_docs_site.py` e o teste de integração (nada fora da saída) confirmam. `CAOP_DUCKDB_PATH` aponta para a pasta de saída (D7); verificado em 2026-11-22 que nada é criado em `.data/ci`. |
+| R-011 | A asserção `".data" not in document` do contrato 1 (feita para barrar o caminho `.data/`) casa com qualquer lacuna de coluna chamada `dataset_id` (`- tabela.dataset_id`). Descoberto na Fase 2. | Médio | Resolvido: em 2026-11-24 o autor aprovou a emenda (T030); a asserção virou `".data/" not in document` e a trava foi regravada. (Original: contornado com dados, não com código: `stg_observation.dataset_id` e `rpt_observation_coverage.dataset_id` ganharam `description` (evidência no SQL). **Frágil**: uma futura coluna `data*` sem descrição reprova o contrato. Emenda sugerida ao autor: trocar a asserção por `.data/`. Contrato não editado.) |
+| R-012 | Relacionamento declarado não é linhagem: `stg_municipality_pole_distance` (e outros) leem o parquet de outro build por `read_parquet(env_var(...))`, sem `ref`/`source`. No grafo do dbt docs, a ligação com `dim_municipality` só aparecia por um nó de teste, e o caso do US4-AC2/SC-006 não era atendido (achado C-001 do converge). | Médio | Resolvido: decisão do autor (2026-11-24) de ligar no site. `link_relationships` cria, só na cópia do manifest do site, a aresta `to_table` → `from_table` para cada `relationships`. Verificado sem ciclos no projeto real. O grafo mistura agora dependência de SQL e relacionamento declarado; o runbook explica. |
+| R-013 | No site do dbt, descrição ausente aparece com o aviso padrão do dbt (em inglês), não com "sem descrição" (FR-018; achado C-002). | Baixo | Resolvido: o autor aceitou o aviso do dbt em 2026-11-24, porque ele já deixa a ausência explícita e hoje só os relatórios ficam sem descrição. O documento continua com "sem descrição". |
 
 ## Execution Notes
 
@@ -226,8 +229,12 @@ Stubs criados pelo plan (ponto de partida, não travados): `pipelines/modeldocs/
 | 2026-11-22 | Fase 4 (US3) | 18 tabelas principais: descrição de tabela, `meta.source_ids` e 364 colunas com `description` e `data_type` (9 `schema.yml`); consulta de completude → 0 linhas; documento regerado (principais 100%). | Revisão humana dos textos (R-007) |
 | 2026-11-22 | Fase 5 (US4) + Polish | `site.py` e `dbt_docs_site` (aresta fonte→modelo, catálogo do lake, `--serve` em 127.0.0.1); README, memória; suíte completa 773 passed; `dbt build` dos domínios OK. | Gate visual (R-002), revisão dos textos (R-007) e CI remoto |
 | 2026-11-24 | Polish (revalidação) | Trava íntegra, ruff limpo, `model_docs --check` exit 0, suíte completa 775 passed; nada mudou no código. | Commit/push/PR para o CI remoto; T027; R-007 |
+| 2026-11-24 | Polish (fechamento) | PR #12 mergeado; CI remoto verde (execuções 45395460346 e 45398644435: `quality` e `secrets`); grafo conferido no navegador pelo autor (R-002 resolvido). T026 e T027 marcados. | Confirmação da revisão dos textos (R-007) |
+| 2026-11-24 | Fechamento | Autor confirmou a revisão das descrições (R-007 resolvido); 38/38; status `Implementada`. | R-011 (emenda do contrato) aguarda decisão |
+| 2026-11-24 | Phase 7 (Convergence) | `sdd-converge` abriu C-001 a C-004 (T028 a T031). T031: `.docs/sql/catalogo_tabelas.sql` registrado como entrega a mais (consultas para DBeaver/UI, commit `71f81aa`). | Decisões do autor para T028, T029 e T030 |
+| 2026-11-24 | Phase 7 (Convergence) concluída | T028: `link_relationships` no site (R-012); T029: aviso do dbt aceito (R-013); T030: emenda do contrato 1 para `.data/` e trava regravada (R-011 resolvido). 68 testes do modeldocs passaram, ruff limpo, `--check` exit 0. | Suíte completa e CI remoto com estas mudanças |
 
-**PRÓXIMO**: commit na branch `feature/010-visibilidade-modelo-dados`, push e PR para o CI remoto (T026); o autor confere o grafo no navegador (T027) e revisa as descrições (R-007); então `sdd-converge`
+**PRÓXIMO**: commit das mudanças da Phase 7, suíte completa e CI remoto; depois `sdd-converge 010-visibilidade-modelo-dados`
 
 ## Arquivos Principais
 
@@ -239,6 +246,9 @@ Stubs criados pelo plan (ponto de partida, não travados): `pipelines/modeldocs/
 - `.docs/modelo_de_dados.md` (gerado), `.docs/runbooks/modelo_de_dados.md`, `.github/workflows/python.yml`
 - `analytics/dbt/models/*/schema.yml` (Fase 4, prontos)
 - `pipelines/modeldocs/site.py`, `pipelines/cli/dbt_docs_site.py` (prontos)
+- Tudo mergeado no PR #12; textos dos `schema.yml` revisados
+- `.docs/sql/catalogo_tabelas.sql`: consultas prontas sobre `.data/catalog.duckdb` para o DBeaver e a DuckDB UI; entrega a mais, fora das tasks originais, citada no runbook (achado C-003 do converge)
+- Phase 7 (Convergence): `pipelines/modeldocs/site.py` (`link_relationships`), `pipelines/cli/dbt_docs_site.py`, `tests/unit/test_modeldocs_site.py`, `tests/integration/test_modeldocs_site_cli.py`, `tests/contracts/test_modeldocs_contract.py` (emenda aprovada, trava regravada), `logic/site.md`, `.docs/runbooks/modelo_de_dados.md`
 
 ## Cuidados para Retomada
 
@@ -250,3 +260,42 @@ Stubs criados pelo plan (ponto de partida, não travados): `pipelines/modeldocs/
 - O tipo `NULL` de coluna toda nula vem do DuckDB como `"NULL"`; o catálogo tira as aspas.
 - `executemany` do DuckDB falha com lista vazia: use `_insert_many` em `catalog.py`.
 - O contrato 1 proíbe a substring `.data` no documento: cuidado com colunas `data*` sem descrição (R-011).
+
+## Resultado Final
+
+Convergido em 2026-11-24, depois de duas passadas do `sdd-converge` (a primeira abriu C-001 a C-004, fechados na
+Phase 7).
+
+**O que foi construído**
+
+- `pipelines/modeldocs/` (`model`, `render`, `catalog`, `site`) e três CLIs finas: `model_docs` gera
+  `.docs/modelo_de_dados.md` (25 tabelas, diagrama Mermaid com os 15 relacionamentos, dicionário e lacunas), e o CI o
+  confere com `--check`; `lake_catalog` gera `.data/catalog.duckdb` (views sobre os parquets, `meta.tables`,
+  `meta.columns`, `meta.relationships`, `meta.raw_runs`); `dbt_docs_site` gera o site local do dbt docs, com `--serve`
+  só em `127.0.0.1`.
+- As 18 tabelas principais ficaram com descrição de tabela, `meta.source_ids` e todas as colunas com `description` e
+  `data_type` (364 colunas), revisadas pelo autor.
+- Runbook `.docs/runbooks/modelo_de_dados.md`, links no README e em `.docs/fontes_de_dados.md`, e consultas prontas em
+  `.docs/sql/catalogo_tabelas.sql`.
+
+**Desvios em relação ao plano original**
+
+- `dataset_id` de `stg_observation` e `rpt_observation_coverage` foi descrito já na Fase 2 por causa da asserção
+  `.data` do contrato 1; depois o contrato foi emendado para `.data/` (R-011).
+- `CatalogResult` ganhou `manifests_ignored`; `lake_catalog_json` ganhou o parâmetro `base`; `dbt_docs_site` ganhou
+  `--port` (padrão 8741) e recusa porta ocupada em IPv4 ou IPv6.
+- O catálogo grava o tipo `NULL` sem aspas; `_insert_many` contorna o `executemany` com lista vazia;
+  `DBT_TARGET_PATH` passou a ser absoluto.
+- Entrega a mais: `.docs/sql/catalogo_tabelas.sql` (C-003).
+
+**Decisões técnicas diferentes do plano**
+
+- R-012: o grafo do site também desenha uma aresta por `relationships` declarado (`link_relationships`), porque vários
+  modelos leem parquet direto, sem `ref`/`source`. Assim o grafo atende ao US4-AC2/SC-006
+  (`stg_municipality_pole_distance` → `dim_municipality`), mas mistura dependência de SQL com relacionamento declarado.
+- R-013: no site, a descrição ausente usa o aviso padrão do dbt em vez de "sem descrição"; o documento mantém
+  "sem descrição".
+
+**Evidência final**: contratos 5/5 verdes e trava íntegra (regravada com a emenda aprovada do R-011); suíte completa
+778 passed; `ruff check pipelines tests` limpo; `model_docs --check` exit 0. O CI remoto do PR #12 (`quality` e
+`secrets`) passou antes da Phase 7; as mudanças da Phase 7 ainda não foram commitadas nem passaram pelo CI remoto.

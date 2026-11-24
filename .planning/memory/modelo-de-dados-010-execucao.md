@@ -25,9 +25,16 @@ Feature: visibilidade das tabelas e relacionamentos (spec `.sdd/specs/010-visibi
 - **O arquivo `.duckdb` aberto no DBeaver/UI não pode ser trocado no Windows:** o catálogo é montado ao lado e trocado
   por `os.replace`; se falhar, o anterior continua intacto.
 - **Contrato 1 e `.data`:** a asserção `".data" not in document` casa com qualquer lacuna `tabela.dataset_id` (ou outra
-  coluna `data*` sem descrição). Contornado descrevendo essas colunas; uma emenda do contrato para `.data/` é mais
-  robusta (decisão do autor, R-011 do plano).
+  coluna `data*` sem descrição). Emenda aprovada pelo autor em 2026-11-24: a asserção agora é `".data/"` e a trava foi
+  regravada (R-011 resolvido).
 - **Navegador embutido não abre `localhost` subido pela sessão**, então a conferência visual do grafo (R-002) é manual.
+- **Relacionamento declarado não é linhagem** (converge, 2026-11-24). Os modelos de mobilidade (e outros) leem parquet
+  direto por `read_parquet(env_var(...))`, sem `ref`/`source`: no manifest o `parent_map` deles é vazio, e a ligação com
+  `dim_municipality` existe só pelo nó do teste `relationships`. Os únicos modelos que dependem de verdade da fonte
+  `caop_silver.dim_municipality` são `rpt_climate_coverage`, `rpt_climate_points` e `rpt_observation_coverage`. Para
+  saber se uma aresta aparece no grafo do dbt docs, olhe o `parent_map` do modelo, não o `schema.yml`. Decisão do autor
+  (R-012): o site desenha também uma aresta por `relationships` (`link_relationships`), então no grafo do site uma
+  aresta pode ser relacionamento declarado, não dependência de SQL.
 
 ## Números reais do lake do autor
 

@@ -162,7 +162,7 @@ remova teste dbt e não crie dependência nova.
 
 **Registro da Fase**:
 
-- Status: Concluída (2026-11-22), **aguardando revisão dos textos pelo autor (R-007)**
+- Status: Concluída (2026-11-22); textos revisados pelo autor em 2026-11-24 (R-007)
 - Feito: as 18 tabelas principais ficaram com descrição de tabela, `meta.source_ids`, e **todas** as colunas reais declaradas com `description` e `data_type` (364 colunas, 345 delas novas), nos 9 `schema.yml` (T013 a T018). `wikipedia_section`, `wikipedia_block` e `wikipedia_coverage` ganharam descrição de tabela. Os `data_tests` e os `.sql` não foram tocados; a geração conferiu por parse que todo teste, e todo modelo fora da lista, ficou semanticamente igual. Cada texto vem do SQL, do coletor (`pipelines/collectors/*`), de `config/` ou dos valores reais do lake; onde o coletor não deixa certeza o texto diz "pode ser nulo" em vez de afirmar. `pipelines/modeldocs/catalog.py` passou a gravar o tipo `NULL` sem aspas (o DuckDB devolve `"NULL"` para colunas inteiramente nulas), o que permitiu declarar `data_type: "null"` nessas colunas sem divergência (hoje `symbol` nos censos). Documento regerado: cobertura de descrição tabelas 100% das principais e colunas 100% das principais (95% no total; as lacunas restantes são só relatórios).
 - Contrato: `uv run --locked python -m pytest tests/contracts/test_modeldocs_contract.py -q --basetemp .pytest_tmp` → 5/5 verdes; trava íntegra.
 - Testes executados: `uv run --locked python -m pytest tests/unit/test_modeldocs_principal_described.py -q --basetemp .pytest_tmp` → 19/19 verdes (lista fixa das 18 + conferência de que a lista é exatamente o conjunto das principais); consulta de completude em `meta.columns` sobre o lake real (principais com `not declared` ou sem descrição ou sem `type_declared` ou com tipo divergente) → **0 linhas**; `model_docs --check` → exit 0; `dbt parse` sem aviso novo; ruff limpo.
@@ -193,7 +193,7 @@ remova teste dbt e não crie dependência nova.
 
 **Registro da Fase**:
 
-- Status: Implementada (2026-11-22); **gate visual pendente (T027/R-002)**
+- Status: Concluída (2026-11-24): gate visual feito pelo autor no navegador (T027/R-002)
 - Feito: `link_sources_to_models` e `lake_catalog_json` em `pipelines/modeldocs/site.py` (T020, T021; `lake_catalog_json` ganhou o parâmetro opcional `base` para herdar o `metadata` do catálogo vazio do dbt); `pipelines/cli/dbt_docs_site.py` (T022) com `dbt docs generate --empty-catalog`, aresta fonte→modelo no manifest, catálogo do lake e `--serve` só em `127.0.0.1`; seção do site no runbook (T024). Com o lake real: `.data/dbt-docs/` com `index.html`, 25 modelos, `child_map` de `dim_municipality` e `dim_parish` contendo as fontes `caop_silver.*`, e 25 nós em `catalog.json`; `.data/ci` ficou sem nenhum arquivo.
 - Contrato: sem contrato nesta fase (os 5 contratos seguem 5/5 verdes; trava íntegra).
 - Testes executados: `uv run --locked python -m pytest tests/unit/test_modeldocs_site.py tests/integration/test_modeldocs_site_cli.py -q --basetemp .pytest_tmp` → 11/11 verdes (6 unitários, 5 de CLI com o dbt real: aresta no manifest, catálogo só do que existe no lake, lake com hash idêntico antes e depois, sem lake, sem `dbt` → exit 2, `--serve` só em 127.0.0.1); ruff limpo. Uma iteração a mais: o `DBT_TARGET_PATH` relativo era resolvido a partir de `analytics/dbt/`; a CLI agora usa caminho absoluto, e o resíduo criado em `analytics/dbt/.data/dbt-docs` foi removido.
@@ -204,26 +204,28 @@ remova teste dbt e não crie dependência nova.
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [X] T025 Atualizar `README.md` (links para o documento e para o runbook, três comandos em uma tabela curta), `.docs/fontes_de_dados.md` se necessário e gravar uma nota em `.planning/memory/` (`modelo-de-dados-010-execucao.md`) com os achados duráveis (por exemplo: `dbt parse` sem banco, fonte do dbt não liga ao modelo, manifest com barra invertida no Windows, `''` em descrição, CRLF)
-- [ ] T026 Revalidar: `uv run --locked ruff check pipelines tests`, suíte completa, `uv run --locked python -m pipelines.cli.model_docs --check`, `check-contract-tests.ps1 -Slug 010-visibilidade-modelo-dados`, `dbt build` de cada domínio sobre os fixtures (como no CI) e o CI remoto do PR verde (incluindo gitleaks)
-- [ ] T027 Rodar o `quickstart.md` de ponta a ponta no lake real e conferir no navegador a aresta de `dim_municipality` no grafo (R-002); registrar o resultado
+- [X] T026 Revalidar: `uv run --locked ruff check pipelines tests`, suíte completa, `uv run --locked python -m pipelines.cli.model_docs --check`, `check-contract-tests.ps1 -Slug 010-visibilidade-modelo-dados`, `dbt build` de cada domínio sobre os fixtures (como no CI) e o CI remoto do PR verde (incluindo gitleaks)
+- [X] T027 Rodar o `quickstart.md` de ponta a ponta no lake real e conferir no navegador a aresta de `dim_municipality` no grafo (R-002); registrar o resultado
 
 **Registro do Polish (2026-11-22)**: T025 feito (README com tabela de comandos, nota `.planning/memory/modelo-de-dados-010-execucao.md`, links em `.docs/fontes_de_dados.md`). T026 só parcial: `ruff check pipelines tests` limpo, suíte completa **773 passed**, `model_docs --check` exit 0, trava íntegra e `dbt build` de cada domínio sobre os fixtures (réplica local dos passos do CI: caop, observations, climate, crosswalk, idealista e censos com `ERROR=0 SKIP=0`, mais Wikipedia e mobilidade promovidos) sem nenhum erro; **falta o CI remoto do PR (incluindo gitleaks)**, que exige commit e push. T027 **não feito**: falta o passo manual no navegador (grafo de `dim_municipality`) e o `quickstart.md` de ponta a ponta pelo autor. Fase 4 e Fase 5 seguem com os respectivos gates humanos (revisão dos textos, conferência visual).
 
 **Revalidação (2026-11-24)**, na branch `feature/010-visibilidade-modelo-dados`, ainda sem commit: `check-contract-tests.ps1 -Slug 010-visibilidade-modelo-dados` → trava íntegra; `uv run --locked ruff check pipelines tests` → limpo; `uv run --locked python -m pipelines.cli.model_docs --check` → exit 0; `uv run --locked python -m pytest -q --basetemp .pytest_tmp` → **775 passed** (10 min 29 s). Pendências inalteradas: CI remoto (exige commit e push), T027 no navegador e revisão dos textos (R-007).
+
+**Fechamento de T026 e T027 (2026-11-24)**: o autor fez commit (`71f81aa`), push e abriu o PR #12, que já está mergeado. CI remoto `Python quality`: execução `45395460346` (push), `quality` = success; execução `45398644435` (pull_request), `quality` = success e `secrets` (gitleaks) = success. T027: o autor conferiu no navegador a aresta `dim_municipality` → `caop_silver.dim_municipality` no grafo do dbt docs (informado pelo autor na sessão), o que fecha R-002 sem precisar do plano B.
 
 ### Checklist de Release
 
 - [X] Fase 1 (Foundational) concluída
 - [X] Fase 2 (US1 documento) concluída
 - [X] Fase 3 (US2 catálogo DuckDB) concluída
-- [ ] Fase 4 (US3 descrições) concluída e revisada pelo autor
-- [ ] Fase 5 (US4 dbt docs) concluída
+- [X] Fase 4 (US3 descrições) concluída e revisada pelo autor
+- [X] Fase 5 (US4 dbt docs) concluída
 - [X] Testes de contrato todos verdes na suíte completa e `check-contract-tests.ps1` íntegro
 - [X] `ruff check pipelines tests` limpo e suíte completa verde
 - [X] `model_docs --check` verde e documento commitado igual ao gerado (exit 0; o commit ainda não foi feito, a pedido do autor)
 - [X] Nenhum arquivo em `raw/` ou `lake/` alterado pelos três comandos
-- [ ] Constitution I (segredos) e VI (nenhum valor de dado no documento versionado) conferidos; gitleaks verde
-- [ ] `quickstart.md` executado com sucesso
+- [X] Constitution I (segredos) e VI (nenhum valor de dado no documento versionado) conferidos; gitleaks verde
+- [X] `quickstart.md` executado com sucesso
 
 ---
 
@@ -252,3 +254,22 @@ remova teste dbt e não crie dependência nova.
 - Se o pytest recusar o `%TEMP%` padrão por permissão, use `--basetemp .pytest_tmp`
 
 <!-- sdd-converge anexa "## Phase N: Convergence" abaixo desta linha -->
+
+## Phase 7: Convergence
+
+**Origem**: `sdd-converge` de 2026-11-24 (achados C-001 a C-004). Contratos 5/5 verdes e trava íntegra no momento da auditoria.
+
+- [X] T028 [US4] (C-001, MEDIUM; origem US4-AC2, FR-020, SC-006) Conferir no site (`uv run --locked python -m pipelines.cli.dbt_docs_site --root .data --serve`) se o grafo liga `stg_municipality_pole_distance` a `dim_municipality`. Hoje essa ligação existe só pelo teste `relationships` (`analytics/dbt/models/mobility/schema.yml:77`): o modelo lê o parquet por `env_var` e o `parent_map` dele no manifest do site está vazio. Abra o lineage de `stg_municipality_pole_distance` com os nós de teste visíveis e registre o resultado. Se a ligação não aparecer, pare e leve a decisão ao autor: (a) emendar o exemplo da spec para um caso de linhagem real (por exemplo, `rpt_climate_coverage` depende de `caop_silver.dim_municipality`); ou (b) `link_sources_to_models` passa a criar também a aresta modelo→modelo a partir de cada `relationships` declarado, só na cópia do site. A escolha vira um `R-012` em `plan.md`.
+- [X] T029 [US4] (C-002, LOW; origem FR-018, US4-AC1) Decidir com o autor se o site do dbt pode mostrar o aviso padrão do dbt para descrição ausente, ou se a cópia do manifest do site deve receber "sem descrição" nas tabelas e colunas sem texto. Registrar a decisão em `plan.md` (`R-013`); se for preencher, implementar em `pipelines/modeldocs/site.py`, com teste em `tests/unit/test_modeldocs_site.py`, sem alterar os `schema.yml`.
+- [X] T030 (C-004, LOW; origem plan: R-011) Levar ao autor a emenda do contrato 1 (`".data" not in document` → `".data/" not in document`). Se aprovada: editar só essa asserção em `tests/contracts/test_modeldocs_contract.py`, regravar a trava com `check-contract-tests.ps1 -Slug 010-visibilidade-modelo-dados -Write` e marcar R-011 como `Resolvido:`. Se recusada: registrar o motivo em R-011.
+- [X] T031 (C-003, LOW) Registrar em `plan.md` (`## Arquivos Principais` e `## Execution Notes`) a entrega a mais `.docs/sql/catalogo_tabelas.sql`, já citada em `.docs/runbooks/modelo_de_dados.md`.
+
+**Critério de Conclusão**: T028 com o resultado da conferência registrado (e a decisão do autor, se houver); T029 e T030 com decisão registrada em `plan.md`; contratos 5/5 verdes e trava íntegra; `model_docs --check` com exit 0.
+
+**Registro da Fase**:
+
+- Status: Concluída (2026-11-24)
+- Feito: decisões do autor em 2026-11-24 (opções recomendadas nas três). T028 → opção (b): `link_relationships(manifest, model)` em `pipelines/modeldocs/site.py` cria, só na cópia do manifest do site, a aresta `to_table` → `from_table` para cada `relationships` declarado (sem duplicar, sem autorreferência); a CLI `dbt_docs_site` aplica depois de `link_sources_to_models`. No site real, `stg_municipality_pole_distance` passou a ter como pais `dim_municipality` e `dim_mobility_pole`, e `dim_municipality` tem 8 modelos filhos mais a fonte; nenhum ciclo entre os 27 nós de modelo e fonte (R-012). T029 → aceito o aviso padrão do dbt para descrição ausente no site; nenhum código (R-013). T030 → emenda aprovada: a asserção do contrato 1 passou de `".data" not in document` para `".data/" not in document`, trava regravada com `-Write` (R-011 resolvido). T031 → `.docs/sql/catalogo_tabelas.sql` registrado no `plan.md`. Docs: `logic/site.md` (seção `link_relationships`) e a seção do site no runbook.
+- Contrato: `uv run --locked python -m pytest tests/contracts/test_modeldocs_contract.py -q --basetemp .pytest_tmp` → 5/5 verdes (na leva abaixo); `check-contract-tests.ps1 -Slug 010-visibilidade-modelo-dados -Write` → trava regravada com a emenda aprovada; conferência seguinte → trava íntegra.
+- Testes executados: `uv run --locked python -m pytest tests/contracts/test_modeldocs_contract.py tests/unit/test_modeldocs_site.py tests/integration/test_modeldocs_site_cli.py tests/unit/test_modeldocs_model.py tests/unit/test_modeldocs_render.py tests/unit/test_modeldocs_catalog.py tests/integration/test_modeldocs_catalog_cli.py tests/unit/test_modeldocs_principal_described.py -q --basetemp .pytest_tmp` → 68 passed (2 unitários novos de `link_relationships` e 1 de integração com o dbt real para a aresta de `stg_municipality_pole_distance`); `uv run --locked ruff check pipelines tests` → limpo depois de `--fix` em dois blocos de import; `uv run --locked python -m pipelines.cli.model_docs --check` → exit 0; `uv run --locked python -m pipelines.cli.dbt_docs_site --root .data` → exit 0.
+- Pendências: suíte completa e CI remoto ainda não rodados com esta fase (as mudanças estão sem commit); conferir no navegador o grafo de `stg_municipality_pole_distance` é opcional (a aresta está no manifest pelo mesmo mecanismo já validado no R-002).
