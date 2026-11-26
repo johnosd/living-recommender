@@ -204,14 +204,14 @@ Stubs criados pelo plan (ponto de partida do execute, não travados): `pipelines
 | ID | Risco/Decisão | Impacto | Mitigação/Encaminhamento |
 | --- | --- | --- | --- |
 | R-001 | Distrito do continente sem nenhum anúncio num snapshot fica sem região | Seus municípios não herdam nem da região | Aceito: hoje os 18 têm anúncios; a ausência aparece com motivo. Se ocorrer, avaliar seed distrito → região. |
-| R-002 | Grafia nova de ilha na fonte (por exemplo, São Jorge) falha o build | Build parado até acrescentar a linha na seed | Intencional (constitution III); a mensagem cita o nome. |
-| R-003 | A região é a do Idealista, não a NUTS II (Santarém no Alentejo, Setúbal na AML) | Leitura errada da referência regional | Documentar no catálogo, no dicionário e no runbook. |
-| R-004 | Critério de aluguel sem nenhum valor próprio num nível falha o build, mesmo com herdados | Um snapshot só distrital pararia o build | Aceito: sem valor próprio não há normalização. Mensagem do `CriteriaError` já cita o critério. |
+| R-002 | Grafia nova de ilha na fonte (por exemplo, São Jorge) falha o build | Build parado até acrescentar a linha na seed | Resolvido: intencional (constitution III); a mensagem cita o nome e a seed (contrato e auditoria de 2026-11-26). |
+| R-003 | A região é a do Idealista, não a NUTS II (Santarém no Alentejo, Setúbal na AML) | Leitura errada da referência regional | Resolvido: documentado no catálogo (`methodology_pt`), no dicionário de dados e no runbook. |
+| R-004 | Critério de aluguel sem nenhum valor próprio num nível falha o build, mesmo com herdados | Um snapshot só distrital pararia o build | Resolvido: aceito (sem valor próprio não há normalização); o `CriteriaError` cita o critério e diz "nenhum valor próprio" (teste unitário). |
 | R-005 | `T0` tem só 14 municípios próprios; herdados podem cair fora do P5–P95 | Normalização frágil no ranker | Encaminhar à Fase 4: limitar o score a 0–1 e revisar variantes com pouca amostra. |
 | R-006 | 254 municípios usam o valor do distrito no `ALL`: o aluguel não os diferencia entre si | Ranking empata dentro do distrito | Encaminhar à Fase 4: decidir se o herdado pesa menos ou aparece com selo. |
 | R-007 | Pendência A1 da 011: a freguesia mantém a mediana `ALL` própria com n ≥ 10 (o plano §8.4 sugeria só €/m²) | A cadeia da freguesia parte dessa regra | Mantida a regra convergida; confirmar com o autor. |
-| R-008 | A mudança de `with_value` e da metodologia gera nova `catalog_version` | Consumidores comparam versões | Esperado (D8 da 011). |
-| R-009 | A entrada da spec citava `territorial_inheritance = distrito\|regiao`; o plano usa `origin_level` | Nome de coluna diferente do texto de entrada | Decisão D7; revisar com o autor se preferir o outro nome (mudaria o contrato). |
+| R-008 | A mudança de `with_value` e da metodologia gera nova `catalog_version` | Consumidores comparam versões | Resolvido: esperado (D8 da 011); o build real gerou a versão `6917af159e07`. |
+| R-009 | A entrada da spec citava `territorial_inheritance = distrito\|regiao`; o plano usa `origin_level` | Nome de coluna diferente do texto de entrada | Resolvido: decisão D7 apresentada ao autor, que mandou executar; `origin_level` implementada e a FR-008 atendida. |
 | R-010 | Medido no build real: as amostras próprias estão só nos distritos do Porto (15), Faro (14) e Lisboa (13), e o P5–P95 vem delas (FR-011) | Em `custo_aluguel_mediana`, ficam abaixo do P5 de 33% (`T0`) a 73% (`T3`) dos herdados; um score limitado a 0–1 empataria muitos municípios no melhor custo | Encaminhar à Fase 4 (backlog); mudar a normalização exigiria rever a FR-011 |
 
 ## Execution Notes
@@ -246,3 +246,38 @@ Stubs criados pelo plan (ponto de partida do execute, não travados): `pipelines
 <!-- Armadilhas operacionais específicas desta feature, anexadas conforme descobertas. -->
 - O build real substitui as tabelas de `lake/gold/`: para comparar com a versão anterior, copie-as antes.
 - A suíte completa leva ~13 min: rode em segundo plano.
+
+## Resultado Final
+
+Convergida em 2026-11-26, sem achado acionável.
+
+**Construído**
+
+- `pipelines/gold/areas.py`: colocação dos anúncios por distrito e região, estatísticas por área, hierarquia
+  territorial, `reference_levels` e `apply_rent_inheritance`.
+- Tabelas novas `gold_rent_by_district_typology` e `gold_rent_by_region_typology`; a Gold passou a ter 10 tabelas.
+- `origin` e `origin_level` no perfil municipal, `origin_level` na freguesia, `reference_level*` na tabela municipal
+  de aluguel e herdados por nível no mart de qualidade.
+- Normalização e cobertura só com valores próprios; metodologia da cadeia no catálogo; seed dos nomes de ilha.
+- Notebook, dicionário de dados, runbook, README e plano do projeto atualizados.
+
+**Desvios em relação ao plano**
+
+- `rent._frame` ganhou o parâmetro `columns` para montar as tabelas de área.
+- A mensagem do `CriteriaError` passou a dizer "nenhum valor próprio".
+- O ajuste previsto em `test_gold_parish.py` (T016) foi necessário.
+
+**Evidências**
+
+- Contratos 012 (5/5) e 011 (5/5) verdes, travas íntegras; suíte completa com 853 testes na T033; na convergência,
+  75 testes Gold, `ruff` e `model_docs --check` verdes.
+- Lake real (snapshot 2026-11): 42 municípios próprios, 254 do distrito e 12 da região na mediana `ALL`; nenhum valor
+  anterior mudou; SC-005 com 324 linhas sem divergência; nenhuma tabela com coluna por anúncio.
+- Os 9 testes dbt tocados pela feature retornaram 0 linhas nos dados reais e reprovaram cópias adulteradas em memória.
+
+**Em aberto**
+
+- Desvios aceitos: um distrito do continente sem anúncios não herda da região (R-001, FR-007); o nome de distrito da
+  fonte só é validado em anúncios sem município (D2, FR-005).
+- Para o autor e a Fase 4: R-005, R-006, R-007 e R-010 (também no backlog).
+- Ainda não verificado: o CI, porque a branch não foi enviada; o notebook foi executado só por `nbconvert`.

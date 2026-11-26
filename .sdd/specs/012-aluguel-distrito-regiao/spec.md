@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-24
 
-**Status**: Implementada
+**Status**: Convergida
 
 **Input**: Aluguel por distrito e por região na camada Gold: novas tabelas Gold de mediana de aluguel (Idealista) por distrito e por região da fonte (mesmas regras da 011: snapshot vigente, IQR 1,5 por território × tipologia, n ≥ 10), e o indicador municipal/freguesia custo_aluguel_* passa a usar a referência do nível mais fino com dado, marcada como herdada (origin/territorial_inheritance = distrito|regiao). Motivo: muitos distritos (Braga, Aveiro, Coimbra, Setúbal, Alentejo, ilhas) foram extraídos só no nível do distrito, então 266 municípios ficam sem aluguel e com rótulo enganoso 'sem_anuncios'. Protótipo validado no notebook analytics/notebooks/explorar_gold.ipynb (view aluguel_regional; SQL reproduz a Gold em 279 combinações município × tipologia).
 

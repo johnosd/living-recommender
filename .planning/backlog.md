@@ -43,7 +43,7 @@ update-bug-status.ps1.
 | 009-mobilidade-distancias | Mobilidade — distâncias e tempos de viagem dos municípios até polos fixos | Convergida | 46/46 tasks | 2026-11-22 |
 | 010-visibilidade-modelo-dados | Visibilidade do modelo de dados — dicionário, diagrama ER, catálogo DuckDB único e dbt docs | Convergida | 42/42 tasks | 2026-11-24 |
 | 011-marts-indicadores-catalogo | Marts de indicadores e criteria_catalog versionado | Convergida | 58/58 tasks | 2026-11-24 |
-| 012-aluguel-distrito-regiao | Aluguel por distrito e por região na Gold, com herança marcada | Implementada | 43/43 tasks | 2026-11-26 |
+| 012-aluguel-distrito-regiao | Aluguel por distrito e por região na Gold, com herança marcada | Convergida | 43/43 tasks | 2026-11-26 |
 
 ## Melhorias Ad-hoc
 

@@ -18,6 +18,12 @@ extraídos por município. Como a normalização usa só próprios (FR-011), o P
 valores herdados de `custo_aluguel_mediana`, ficam abaixo do P5 109 de 266 (`ALL`), 201 de 282 (`T1`) e 201 de 277
 (`T3`). Se o ranker só limitar o score a 0–1, muitos municípios do interior empatam no melhor custo.
 
+## Verificar que um teste dbt singular detecta violação
+
+Carregue os parquets da Gold em tabelas DuckDB em memória, troque `{{ ref() }}` e `{{ source() }}` pelo nome da
+tabela no SQL do teste e rode antes e depois de um `update` dentro de `begin`/`rollback`. Em 2026-11-26, os 9 testes
+tocados pela 012 deram 0 linhas nos dados reais e pelo menos 1 nos dados adulterados.
+
 ## Armadilhas confirmadas
 
 - Normalizar por `origin` no município quebra testes que montam um perfil "municipal" a partir do de freguesia.

@@ -16,7 +16,7 @@ Plataforma web que recomenda **onde morar em Portugal**, município a município
    - um **peso** de 0 a 5;
    - uma **faixa de valores** aceitável, usada como filtro eliminatório.
 3. O sistema aplica essas preferências sobre uma **base vigente já processada** e mostra o resultado como **infográfico**: mapa, os melhores municípios, por que cada um foi recomendado, comparação com a média de Portugal, aluguel em relação ao orçamento, clima mês a mês e distâncias.
-4. Ao abrir um município, a pessoa vê as **freguesias** ordenadas pelos mesmos critérios. Cada indicador informa se é próprio da freguesia ou herdado do município.
+4. Ao abrir um município, a pessoa vê as **freguesias** ordenadas pelos mesmos critérios. Cada indicador informa se é próprio da freguesia ou herdado, e de que nível veio (no aluguel, do município, do distrito ou da região).
 
 Não é preciso criar conta. As preferências ficam só no navegador e podem ser compartilhadas por URL.
 
@@ -64,7 +64,7 @@ Detalhes, alternativas e riscos estão nas seções 4 a 13 do [plano](.docs/plan
 | SNS Transparência (condicional) | Utentes sem médico de família | ACES, herdado pelos municípios |
 | Censos 2021 (INE) | População e faixas etárias | Freguesia |
 | Open-Meteo Histórico (`era5`); WWO como fallback futuro | Coleta diária municipal de 24 meses; score e extremos em etapa futura | Ponto representativo da CAOP |
-| Anúncios de arrendamento (Idealista) | Aluguel pedido, **só agregado** (mediana, P25–P75, n) | Município / freguesia |
+| Anúncios de arrendamento (Idealista) | Aluguel pedido, **só agregado** (mediana, P25–P75, n) | Município / freguesia; distrito e região como referência herdada |
 | Wikipedia | Texto descritivo dos municípios (CC BY-SA, com atribuição) | Município |
 | Google Routes API (carro) | Tempo e distância de carro até polos fixos, calculados uma vez; a distância em linha reta não usa API | Município |
 
@@ -139,7 +139,7 @@ A spec 011 cria a **camada Gold**. São 8 tabelas em `lake/gold/`:
 
 Um critério disponível sem dado falha o build. Comando: `uv run --locked python -m pipelines.cli.build_gold --local --root .data`. Detalhes no [guia de coletas](.docs/runbooks/coletas.md#build-gold-indicadores-e-catálogo-de-critérios-spec-011).
 
-A spec 012 leva o **aluguel por distrito e por região** à Gold (mais 2 tabelas). O município sem 10 anúncios próprios usa a referência do distrito (ou ilha) e, se faltar, da região do Idealista, sempre **marcada como herdada** (`origin_level`); a freguesia segue a mesma cadeia. Com o snapshot de 2026-11, os 308 municípios têm aluguel: 42 próprios e 266 herdados.
+A spec 012 leva o **aluguel por distrito e por região** à Gold (mais 2 tabelas). O município sem 10 anúncios próprios usa a referência do distrito (ou ilha) e, se faltar, da região do Idealista, sempre **marcada como herdada** (`origin_level`); a freguesia segue a mesma cadeia. Com o snapshot de 2026-11, os 308 municípios têm a mediana de aluguel de todas as tipologias juntas (42 próprios, 266 herdados); em T0 e T4+, 19 continuam sem valor, porque nenhum nível tem 10 anúncios.
 
 Para olhar os dados, há o notebook [`analytics/notebooks/explorar_gold.ipynb`](analytics/notebooks/explorar_gold.ipynb): `uv run --group notebook jupyter lab`.
 
