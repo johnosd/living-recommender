@@ -636,3 +636,48 @@ descreve o cenário offline.
 Estado em 2026-11-21: implementação concluída e validada offline (suíte completa, dbt sobre fixture e build real
 contra a CAOP: 3.562 linhas, 2.156 de linha reta e 1.404 pares de carro pendentes). **Nenhuma chamada real ao Google
 foi feita**; a coleta real, o preço e as coordenadas dos aeroportos seguem como gates do autor.
+
+## Build Gold: indicadores e catálogo de critérios (spec 011)
+
+Monta a camada Gold a partir do lake já promovido: o perfil municipal (308 municípios × critério × variante),
+o perfil de freguesia (próprio, herdado ou ausente), o aluguel descritivo do Idealista, o clima mensal com o TCI,
+o catálogo versionado de critérios e o mart de qualidade. Não coleta nada, não abre a rede e não lê chave.
+
+```powershell
+uv run --locked python -m pipelines.cli.build_gold --local --root .data
+# catálogo alternativo (fixture ou rascunho):
+uv run --locked python -m pipelines.cli.build_gold --local --root .data --criteria caminho/criteria.yml
+```
+
+**Entradas exigidas** (o build falha nomeando a que faltar, antes de começar): `lake/silver/{dim_municipality,
+dim_parish,idealista_listings,census_parish_observation}` e `lake/bronze/{stg_observation,stg_climate_daily,
+stg_municipality_pole_distance,dim_mobility_pole}`. Rode antes os builds das specs 001 a 009.
+
+**Saídas**: `.data/lake/gold/<tabela>/data.parquet` para `gold_municipality_indicator`, `gold_parish_indicator`,
+`gold_rent_by_municipality_typology`, `gold_rent_by_parish_typology`, `gold_municipality_climate_monthly`,
+`gold_criteria_catalog`, `gold_criteria_normalization` e `gold_data_quality`. Cada tabela é promovida sozinha; se
+qualquer passo falhar (catálogo inválido, critério sem dado, teste dbt), a versão anterior fica intacta.
+
+**Mudar um critério.** Edite `config/criteria.yml`, que é a fonte única de verdade, e rode o build. O formato está
+em `.sdd/specs/011-marts-indicadores-catalogo/contracts/criteria-catalog.md`. Os pesos `> 0` dos critérios
+disponíveis de cada categoria têm de somar 1. Qualquer mudança, inclusive nos dados, gera uma `catalog_version`
+nova, e o mesmo YAML com os mesmos dados repete a versão. Os pesos, as direções e as faixas atuais são provisórios
+(R-003).
+
+**`fonte_pendente`.** É um critério previsto, mas ainda sem dado (exige `pending_reason`). Ele aparece no catálogo e
+no mart de qualidade, sem linhas no perfil e sem falhar o build. Um critério `disponivel` sem nenhum valor, ao
+contrário, **falha o build** com o id na mensagem: corrija a fonte ou marque-o como pendente. Hoje só
+`distancia_sede_distrito_km` está pendente, porque não há polos de sede de distrito em `config/poles.yml`.
+
+**Regras que valem para ler os números**:
+
+- O período é o mais recente **do município**; um ano anterior ao mais recente do critério vem marcado em
+  `is_older_period`.
+- O símbolo `-` vira 0 só em contagens (`zero_convencao_fonte`, R-001).
+- Aluguel só com pelo menos 10 anúncios, sem os outliers (IQR de Tukey, 1,5, por município × tipologia).
+- Carro sempre com "Tempos de viagem: Google".
+- Uma freguesia herdada é cópia exata do município.
+
+Estado em 2026-11-24: build real com catálogo `160da2ce8218` (61 critérios disponíveis, 1 pendente), 20 328 linhas
+municipais, 215 094 de freguesia, aluguel próprio em 42 municípios e 135 freguesias (`ALL`). A execução no S3
+depende da Fase 1.

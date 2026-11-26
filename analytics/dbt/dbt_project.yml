@@ -29,3 +29,5 @@ models:
       +tags: ['wikipedia']
     mobility:
       +tags: ['mobility']
+    gold:
+      +tags: ['gold']

@@ -15,7 +15,8 @@ from pipelines.modeldocs.model import UNKNOWN, DataModel, Relationship, Table
 
 REGENERATE_COMMAND = "uv run --locked python -m pipelines.cli.model_docs"
 TERRITORIAL_KEYS = ("dico", "dicofre")
-LAYERS = ("bronze", "silver")
+LAYERS = ("bronze", "silver", "gold")
+OPTIONAL_LAYERS = ("gold",)  # só aparece no resumo e nas lacunas quando há tabela nela (spec 011)
 NO_DESCRIPTION = "sem descrição"
 NO_GAPS = "Nenhuma."
 
@@ -50,8 +51,13 @@ def _coverage(tables: list[Table]) -> tuple[int, int, int, int]:
     return described, len(tables), sum(1 for c in columns if c.description), len(columns)
 
 
+def _layers(model: DataModel) -> list[str]:
+    present = {t.layer for t in model.tables}
+    return [layer for layer in LAYERS if layer not in OPTIONAL_LAYERS or layer in present]
+
+
 def _summary(model: DataModel) -> list[str]:
-    by_layer = {layer: sum(1 for t in model.tables if t.layer == layer) for layer in LAYERS}
+    by_layer = {layer: sum(1 for t in model.tables if t.layer == layer) for layer in _layers(model)}
     other = len(model.tables) - sum(by_layer.values())
     parts = [f"{layer} {count}" for layer, count in by_layer.items()] + ([f"{UNKNOWN} {other}"] if other else [])
     tables_done, tables_total, columns_done, columns_total = _coverage(list(model.tables))
@@ -96,7 +102,7 @@ def _territorial_gaps(model: DataModel) -> list[str]:
 
 def _gaps(model: DataModel) -> list[str]:
     rows = []
-    for label, scope in [*((layer, [t for t in model.tables if t.layer == layer]) for layer in LAYERS),
+    for label, scope in [*((layer, [t for t in model.tables if t.layer == layer]) for layer in _layers(model)),
                          ("total", list(model.tables))]:
         t_done, t_total, c_done, c_total = _coverage(scope)
         rows.append(f"| {label} | {_percent(t_done, t_total)} | {_percent(c_done, c_total)} |")

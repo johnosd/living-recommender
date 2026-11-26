@@ -1,0 +1,12 @@
+{
+  "feature": "011-marts-indicadores-catalogo",
+  "lockedAt": "2026-11-24 12:07",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_gold_indicators_contract.py",
+      "sha256": "7762db07d2b4667137b54371ba18b5390f8303ce245f2fd2d7c41567f84574b7",
+      "tests": "unknown"
+    }
+  ]
+}

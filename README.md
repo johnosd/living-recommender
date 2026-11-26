@@ -128,6 +128,17 @@ A spec 010 dá **visibilidade ao modelo de dados**: o [modelo de dados](.docs/mo
 | `uv run --locked python -m pipelines.cli.lake_catalog --root .data` | `.data/catalog.duckdb`, para DuckDB UI ou DBeaver |
 | `uv run --locked python -m pipelines.cli.dbt_docs_site --root .data [--serve]` | site local do `dbt docs` com lineage |
 
+A spec 011 cria a **camada Gold**. São 8 tabelas em `lake/gold/`:
+
+- o perfil municipal e o de freguesia, com cada valor trazendo fonte, período e licença, e cada ausência trazendo
+  o motivo;
+- o aluguel descritivo do Idealista, com outliers por IQR e mediana só com n ≥ 10;
+- o clima mensal, com o TCI do legado;
+- o mart de qualidade;
+- o **catálogo versionado de critérios** (`config/criteria.yml`), que alimenta o recomendador.
+
+Um critério disponível sem dado falha o build. Comando: `uv run --locked python -m pipelines.cli.build_gold --local --root .data`. Detalhes no [guia de coletas](.docs/runbooks/coletas.md#build-gold-indicadores-e-catálogo-de-critérios-spec-011).
+
 ## Roteiro
 
 | Fase | Entrega | Estado |
@@ -152,12 +163,13 @@ Estado atual:
 .sdd/                     ADRs (adr/) e specs das features (specs/)
 config/sources.yml       catálogo de fontes (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual, Wikipedia, Google Routes)
 pipelines/               coletores (CAOP, Pordata, INE, Open-Meteo, correspondência de freguesias, Idealista manual), storage local/S3 e CLIs (collect, load, build, view)
-analytics/dbt/           modelos Bronze/Silver, seed de sinônimos de município e testes de qualidade
+analytics/dbt/           modelos Bronze/Silver/Gold, seed de sinônimos de município e testes de qualidade
+config/criteria.yml      catálogo de critérios do recomendador (spec 011)
 tests/                   unitários, integração, contrato e fixtures sintéticas
 .docs/runbooks/           guias de operação (coletas)
 ```
 
-Dados gerados ficam em `.data/`, ignorada pelo Git. O lake segue `raw/` imutável → `lake/bronze/` → `lake/silver/`; ainda não há `lake/gold/` nem `published/`.
+Dados gerados ficam em `.data/`, ignorada pelo Git. O lake segue `raw/` imutável → `lake/bronze/` → `lake/silver/` → `lake/gold/` (spec 011); ainda não há `published/`.
 
 Estrutura prevista completa (seção 11 do plano), com o que ainda não existe:
 

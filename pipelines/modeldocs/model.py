@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 PROJECT_PREFIX = "analytics/dbt/"
-LAYER_PATTERN = re.compile(r"/lake/(bronze|silver)/")
+LAYER_PATTERN = re.compile(r"/lake/(bronze|silver|gold)/")
 REFERENCE_PATTERN = re.compile(r"^\s*(ref|source)\s*\((?P<args>[^)]*)\)\s*$")
 QUOTED_PATTERN = re.compile(r"""['"]([^'"]+)['"]""")
 REPORT_PREFIX = "rpt_"

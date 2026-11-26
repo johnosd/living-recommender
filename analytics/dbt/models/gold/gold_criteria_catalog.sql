@@ -1,0 +1,30 @@
+{{ config(materialized='external', format='parquet', location=env_var('GOLD_BUILD_DIR', '.data/ci-gold-build') ~ '/lake/gold/gold_criteria_catalog/data.parquet') }}
+
+select
+    cast(catalog_version as varchar) as catalog_version,
+    cast(schema_version as integer) as schema_version,
+    cast(criterion_id as varchar) as criterion_id,
+    cast(category as varchar) as category,
+    cast(category_label_pt as varchar) as category_label_pt,
+    cast(category_label_en as varchar) as category_label_en,
+    cast(label_pt as varchar) as label_pt,
+    cast(label_en as varchar) as label_en,
+    cast(unit as varchar) as unit,
+    cast(direction as varchar) as direction,
+    cast(methodology_pt as varchar) as methodology_pt,
+    cast(levels as varchar) as levels,
+    cast(modes as varchar) as modes,
+    cast(options as varchar) as options,
+    cast(default_range_min as double) as default_range_min,
+    cast(default_range_max as double) as default_range_max,
+    cast(weight as double) as weight,
+    cast(status as varchar) as status,
+    cast(pending_reason as varchar) as pending_reason,
+    cast(source_ids as varchar) as source_ids,
+    cast(dataset_ids as varchar) as dataset_ids,
+    cast(license_ids as varchar) as license_ids,
+    cast(attributions as varchar) as attributions,
+    cast(usage_restrictions as varchar) as usage_restrictions,
+    cast(reference_periods as varchar) as reference_periods,
+    cast(processed_at_utc as varchar) as processed_at_utc
+from read_parquet('{{ env_var('GOLD_PREPARED_DIR', '.data/ci-gold-build/prepared') }}/criteria_catalog.parquet')

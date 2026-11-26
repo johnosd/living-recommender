@@ -8,7 +8,11 @@ update-bug-status.ps1.
 
 - **2026-11-17 — Enriquecimento geográfico posterior dos anúncios Idealista:** recuperar município/freguesia combinando nomes e contexto territorial com a CAOP; geocodificar endereços parciais dos títulos quando necessário, preservando proveniência e precisão. A exploração encontrou 2.792 candidatos municipais únicos entre 6.371 anúncios regionais, ainda sem validação ou promoção ao lake. Próximo passo: definir um piloto de 100 anúncios para medir acurácia, ganho de cobertura e custo; escolher provedor e verificar licença/persistência (OpenCage como candidato; Google condicionado ao enquadramento contratual; não depender do Nominatim público para lotes recorrentes). Provedor, orçamento e implementação permanecem pendentes de decisão. [Avaliação e diagnóstico](../.sdd/assessments/enriquecimento-geogrfico-posterior-dos-anncios-idealista/explora.md).
 
-- **2026-11-22 — Fase 3: marts de indicadores e `criteria_catalog` (próximo passo):** a mobilidade (spec 009) está concluída e a coleta real foi feita (1.404 pares de carro, sem falhas, staging `stg_municipality_pole_distance` com 3.562 linhas), então as fontes principais já estão no lake. Construir os marts municipais (e de freguesia, quando houver dado) com os indicadores do catálogo do MVP e o `criteria_catalog` versionado (plano §8.1 e §8.2), que alimenta o ranker. O catálogo também serve de checagem final da ingestão: cada critério precisa apontar para um dado existente no lake. Confirmar antes o estado das Fases 0 e 1 (segredos, AWS, PoC MWAA), que aparecem desmarcadas no checklist do plano (§16), já que a Fase 3 prevê `dbt build` contra o S3.
+- **2026-11-24 — Catálogo de critérios: pendências da spec 011 (antes da Fase 4):**
+  - *Sede de distrito (R-002):* `distancia_sede_distrito_km` está `fonte_pendente` porque `config/poles.yml` não tem polos `sede_distrito`. Criar esses polos e recoletar (spec 009, só linha reta ou também carro) torna o critério disponível sem código novo.
+  - *Pesos e faixas (R-003):* os pesos internos, as direções e as faixas das opções (temperatura: fresco/ameno/quente; porte: vila/cidade média/grande centro) em `config/criteria.yml` são provisórios. O autor deve revisá-los antes do ranker. Cada mudança gera uma `catalog_version` nova.
+  - *Mediana na freguesia (A1 do Analyze):* a mediana de aluguel `ALL` própria na freguesia com n ≥ 10 foi mantida; o plano §8.4 sugeria só €/m². Confirmar com o autor.
+- **2026-11-24 — Fases 0 e 1 pendentes (execução no S3):** a Fase 3 virou a spec 011, com `dbt build` verde só no lake local. A execução no S3 depende da Fase 1 (Terraform, S3/ECR, PoC MWAA Serverless), que não tem sinal no repositório. Da Fase 0, falta confirmar a rotação de segredos e a limpeza do histórico do Git. O checklist do plano (§16) está desatualizado: nem a Fase 2, já feita, está marcada.
 - **2026-11-22 — Mobilidade: pendências pós-coleta (não bloqueiam a Fase 3):**
   - Os marts devem usar `stg_municipality_pole_distance` com a atribuição "Tempos de viagem: Google" e o risco aceito de termos de uso (ADR-002 D8, ADR-004); a linha reta (`source_id` `caop`) não tem essa restrição.
   - Conferir a coleta com um par conhecido no Google Maps (Lisboa→Porto: 317,5 km e 181 min no staging, a partir dos centros dos municípios).
@@ -34,6 +38,8 @@ update-bug-status.ps1.
 | 008-ingestao-wikipedia | Ingestão Wikipedia — textos municipais rastreáveis e organizados por seções | Convergida | 46/46 tasks | 2026-11-20 |
 | 009-mobilidade-distancias | Mobilidade — distâncias e tempos de viagem dos municípios até polos fixos | Convergida | 46/46 tasks | 2026-11-22 |
 | 010-visibilidade-modelo-dados | Visibilidade do modelo de dados — dicionário, diagrama ER, catálogo DuckDB único e dbt docs | Convergida | 42/42 tasks | 2026-11-24 |
+| 011-marts-indicadores-catalogo | Marts de indicadores e criteria_catalog versionado | Convergida | 58/58 tasks | 2026-11-24 |
+| 012-aluguel-distrito-regiao | Aluguel por distrito e por região na Gold, com herança marcada | Especificada | N/A | 2026-11-24 |
 
 ## Melhorias Ad-hoc
 
