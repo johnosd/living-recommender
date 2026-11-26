@@ -1,18 +1,24 @@
 """Perfil de freguesia com origem sinalizada: `proprio`, `herdado` (cópia exata do município) ou `ausente`.
 
 Regras: `.sdd/specs/011-marts-indicadores-catalogo/data-model.md` (`gold_parish_indicator`), D9 e FR-029/FR-030.
-Valor próprio só onde o critério tem `compute_parish` (Censos 2021 ou aluguel da freguesia).
+Valor próprio só onde o critério tem `compute_parish` (Censos 2021 ou aluguel da freguesia). `origin_level` diz o
+nível de onde veio o valor (spec 012, `logic/heranca.md` §8): a cadeia do aluguel chega aqui pelo município.
 """
 import numpy as np
 import pandas as pd
 
-from pipelines.gold.common import INDICATOR_COLUMNS, indicator_frame, indicator_row
+from pipelines.gold.common import (
+    INDICATOR_COLUMNS,
+    ORIGIN_COLUMNS,
+    indicator_frame,
+    indicator_row,
+)
 from pipelines.gold.rent import rent_rows
 
 KEY = ["dicofre", "criterion_id", "variant"]
 VALUE_COLUMNS = [column for column in INDICATOR_COLUMNS if column not in ("dico", "criterion_id", "category",
                                                                          "variant")]
-PARISH_COLUMNS = ("dicofre", "dico", *[column for column in INDICATOR_COLUMNS if column != "dico"], "origin",
+PARISH_COLUMNS = ("dicofre", "dico", *[column for column in INDICATOR_COLUMNS if column != "dico"], *ORIGIN_COLUMNS,
                   "territorial_inheritance")
 CENSUS_SOURCE = "censos"
 CENSUS_DATASET = "census_parish_observation"
@@ -64,7 +70,11 @@ def parish_indicators(parishes: pd.DataFrame, census: pd.DataFrame, municipal_in
     available = {item["id"] for item in criteria["criteria"] if item.get("status") == "disponivel"}
     municipal = municipal_indicators[municipal_indicators["criterion_id"].isin(available)]
     base = parishes[["dicofre", "dico"]].merge(municipal, on="dico", how="inner")
-    base["origin"] = np.where(base["value"].notna(), "herdado", "ausente")
+    inherited = base["value"].notna()
+    # O nível do herdado é o de onde o município tirou o valor; sem a coluna, é o próprio município.
+    levels = base["origin_level"] if "origin_level" in base.columns else pd.Series("municipio", index=base.index)
+    base["origin"] = np.where(inherited, "herdado", "ausente")  # sobrescreve a origem do município
+    base["origin_level"] = levels.astype(object).where(inherited, None)
     base["territorial_inheritance"] = None
 
     own_items = [(item, item["compute_parish"]) for item in criteria["criteria"]
@@ -99,15 +109,18 @@ def _combine(base: pd.DataFrame, own: pd.DataFrame) -> pd.DataFrame:
         added = own.loc[extra].copy()
         added[["value", "missing_reason"]] = [None, "sem_publicacao"]
         added["origin"] = "ausente"
+        added["origin_level"] = None
         base = pd.concat([base, added[base.columns]])
     has_value = own["value"].notna()
     valued = own[has_value].index
     base.loc[valued, VALUE_COLUMNS] = own.loc[valued, VALUE_COLUMNS].to_numpy()
     base.loc[valued, "origin"] = "proprio"
+    base.loc[valued, "origin_level"] = "freguesia"
     absent = own[~has_value].index
     still_absent = absent[base.loc[absent, "value"].isna().to_numpy()]
     base.loc[still_absent, VALUE_COLUMNS] = own.loc[still_absent, VALUE_COLUMNS].to_numpy()
     base.loc[still_absent, "origin"] = "ausente"
+    base.loc[still_absent, "origin_level"] = None
     census_index = own.index[own["territorial_inheritance"].notna()]
     base.loc[census_index, "territorial_inheritance"] = own.loc[census_index, "territorial_inheritance"].to_numpy()
     return base.reset_index()

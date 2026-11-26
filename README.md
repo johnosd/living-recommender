@@ -139,6 +139,10 @@ A spec 011 cria a **camada Gold**. São 8 tabelas em `lake/gold/`:
 
 Um critério disponível sem dado falha o build. Comando: `uv run --locked python -m pipelines.cli.build_gold --local --root .data`. Detalhes no [guia de coletas](.docs/runbooks/coletas.md#build-gold-indicadores-e-catálogo-de-critérios-spec-011).
 
+A spec 012 leva o **aluguel por distrito e por região** à Gold (mais 2 tabelas). O município sem 10 anúncios próprios usa a referência do distrito (ou ilha) e, se faltar, da região do Idealista, sempre **marcada como herdada** (`origin_level`); a freguesia segue a mesma cadeia. Com o snapshot de 2026-11, os 308 municípios têm aluguel: 42 próprios e 266 herdados.
+
+Para olhar os dados, há o notebook [`analytics/notebooks/explorar_gold.ipynb`](analytics/notebooks/explorar_gold.ipynb): `uv run --group notebook jupyter lab`.
+
 ## Roteiro
 
 | Fase | Entrega | Estado |

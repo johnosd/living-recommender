@@ -23,8 +23,9 @@ IDEALISTA = {"source_id": "idealista", "snapshot_month": "2026-11", "license_id"
 CENSOS = {"license_id": "CC-BY-4.0", "attribution": "Fonte: INE, Recenseamento da população e habitação — Censos 2021",
           "period": "2021", "dataset_id": "pop_2025_batch_ci"}
 
-MUNICIPALITIES = [("0101", "Águeda", None, 335.3), ("0102", "Albergaria-a-Velha", None, 155.4),
-                  ("1106", "Lisboa", None, 100.1), ("3101", "Calheta", "Região Autónoma da Madeira", 110.3)]
+MUNICIPALITIES = [("0101", "Águeda", None, 335.3, "Aveiro"), ("0102", "Albergaria-a-Velha", None, 155.4, "Aveiro"),
+                  ("1106", "Lisboa", None, 100.1, "Lisboa"),
+                  ("3101", "Calheta", "Região Autónoma da Madeira", 110.3, "Ilha da Madeira")]
 PARISHES = [("010101", "0101", 20.0), ("010102", "0101", 15.0), ("010201", "0102", 30.0), ("110601", "1106", 2.0),
             ("310101", "3101", 12.0)]
 AGES = ("25 - 29 anos", "30 - 34 anos", "35 - 39 anos")
@@ -115,15 +116,18 @@ def distances() -> list[dict]:
 
 
 def listings() -> list[dict]:
-    def listing(number, dico, dicofre, typology, rent, level="municipio", region="Centro"):
+    def listing(number, dico, dicofre, typology, rent, level="municipio", region="Centro", subregion="Aveiro"):
         return {**IDEALISTA, "listing_id": f"CI{number:03d}", "dico": dico, "dicofre": dicofre,
-                "locality_level": level, "source_region": region, "typology": typology, "asking_rent_eur": rent,
-                "area_m2": 60.0, "has_conflict": False}
+                "locality_level": level, "source_region": region, "source_subregion": subregion, "typology": typology,
+                "asking_rent_eur": rent, "area_m2": 60.0, "has_conflict": False}
 
     rows = [listing(i, "0101", "010101", "T2", 900.0 + 10 * i) for i in range(12)]
     rows.append(listing(12, "0101", "010101", "T2", 4000.0))  # outlier do grupo 0101 × T2
     rows += [listing(20 + i, "0102", "010201", "T1", 700.0 + 5 * i) for i in range(3)]
-    rows += [listing(40 + i, None, None, "T2", 950.0, level="regiao", region="Madeira") for i in range(2)]
+    rows += [listing(40 + i, None, None, "T2", 950.0, level="regiao", region="Madeira", subregion="Madeira (Ilha)")
+             for i in range(2)]
+    # só com o distrito (spec 012): 0102 não tem amostra própria e herda de Aveiro
+    rows += [listing(60 + i, None, None, "T2", 800.0 + 10 * i, level="regiao") for i in range(10)]
     return rows
 
 
@@ -189,8 +193,8 @@ def seed(root) -> dict:
     root = Path(root)
     _write(root, "silver", "dim_municipality", [
         {"dico": dico, "official_name": name, "normalized_name": name.lower(), "autonomous_region": region,
-         "area_km2": area, "caop_version": "fixture-2025", "license_id": "CC-BY-4.0"}
-        for dico, name, region, area in MUNICIPALITIES])
+         "district_or_island": district, "area_km2": area, "caop_version": "fixture-2025", "license_id": "CC-BY-4.0"}
+        for dico, name, region, area, district in MUNICIPALITIES])
     _write(root, "silver", "dim_parish", [
         {"dicofre": dicofre, "dico": dico, "official_name": dicofre, "area_km2": area, "caop_version": "fixture-2025",
          "license_id": "CC-BY-4.0"} for dicofre, dico, area in PARISHES])

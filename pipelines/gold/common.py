@@ -6,6 +6,8 @@ import pandas as pd
 STATUSES = ("disponivel", "fonte_pendente")
 VALUE_STATUSES = ("observado", "zero_convencao_fonte", "ausente")
 ORIGINS = ("proprio", "herdado", "ausente")
+ORIGIN_LEVELS = ("freguesia", "municipio", "distrito", "regiao")  # nível de onde veio o valor (spec 012)
+ORIGIN_COLUMNS = ("origin", "origin_level")
 SAMPLE_STATUSES = ("suficiente", "amostra_insuficiente", "sem_anuncios")
 RENT_COVERAGES = ("propria", "insuficiente", "regional_only", "sem_anuncios")
 TYPOLOGIES = ("ALL", "T0", "T1", "T2", "T3", "T4+")

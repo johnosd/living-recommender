@@ -8,8 +8,15 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
+from pipelines.gold.areas import (
+    apply_rent_inheritance,
+    district_rent_stats,
+    reference_levels,
+    region_rent_stats,
+    territory_hierarchy,
+)
 from pipelines.gold.climate import VARIABLES, climate_indicators, climate_monthly
-from pipelines.gold.common import INDICATOR_COLUMNS
+from pipelines.gold.common import INDICATOR_COLUMNS, ORIGIN_COLUMNS
 from pipelines.gold.criteria import catalog_tables, load_criteria
 from pipelines.gold.mobility import mobility_indicators
 from pipelines.gold.observations import municipal_indicators
@@ -30,7 +37,8 @@ OBSERVATION_COLUMNS = ["source_id", "dataset_id", "dico", "period", "filter_1", 
 CLIMATE_COLUMNS = ["source_id", "dico", "variable", "date", "value", "window_start", "window_end", "license_id",
                    "attribution", "usage_restriction"]
 LISTING_COLUMNS = ["listing_id", "source_id", "snapshot_month", "dico", "dicofre", "locality_level", "source_region",
-                   "asking_rent_eur", "area_m2", "typology", "license_id", "attribution"]
+                   "source_subregion", "asking_rent_eur", "area_m2", "typology", "license_id", "attribution"]
+MUNICIPALITY_COLUMNS = ["dico", "official_name", "district_or_island", "autonomous_region", "area_km2"]
 
 
 class GoldInputError(ValueError):
@@ -87,7 +95,7 @@ def _stamp(frame: pd.DataFrame, version: str, processed_at_utc: str) -> pd.DataF
 def load_inputs(root: Path) -> dict[str, pd.DataFrame]:
     """As tabelas de entrada, só com as colunas usadas."""
     check_inputs(root)
-    municipalities = _read(root, "dim_municipality", ["dico", "official_name", "autonomous_region", "area_km2"])
+    municipalities = _read(root, "dim_municipality", MUNICIPALITY_COLUMNS)
     return {
         "municipalities": municipalities.sort_values("dico").reset_index(drop=True),
         "parishes": _read(root, "dim_parish", ["dicofre", "dico", "area_km2"]).sort_values("dicofre")
@@ -110,6 +118,8 @@ def prepare_gold(root: Path, output_dir: Path, *, criteria_path: Path | None = N
     municipalities = data["municipalities"]
 
     stats = rent_stats(data["listings"], municipalities)
+    district_stats = district_rent_stats(data["listings"], municipalities)
+    region_stats = region_rent_stats(data["listings"], municipalities)
     monthly = climate_monthly(data["daily"])
     restriction = source_restriction("idealista", sources_path)
     municipal = pd.concat([
@@ -121,6 +131,9 @@ def prepare_gold(root: Path, output_dir: Path, *, criteria_path: Path | None = N
     order = {item["id"]: position for position, item in enumerate(criteria["criteria"])}
     municipal = municipal.assign(_order=municipal["criterion_id"].map(order)).sort_values(
         ["_order", "variant", "dico"]).drop(columns="_order").reset_index(drop=True)
+    # Antes da freguesia, do catálogo e da qualidade: todos leem o perfil já marcado (D9 da spec 012).
+    hierarchy = territory_hierarchy(data["listings"], municipalities)
+    municipal = apply_rent_inheritance(municipal, hierarchy, district_stats, region_stats, criteria)
 
     parish_stats = parish_rent_stats(data["listings"], data["parishes"])
     parish = parish_indicators(data["parishes"], data["census"], municipal, parish_stats, criteria,
@@ -134,10 +147,12 @@ def prepare_gold(root: Path, output_dir: Path, *, criteria_path: Path | None = N
     version = catalog["catalog_version"].iloc[0]
     quality = data_quality(catalog, indicators, {"municipio": stats, "freguesia": parish_stats})
     tables = {
-        "municipality_indicator": municipal[list(INDICATOR_COLUMNS)],
+        "municipality_indicator": municipal[[*INDICATOR_COLUMNS, *ORIGIN_COLUMNS]],
         "parish_indicator": parish,
-        "rent_municipality": stats,
+        "rent_municipality": reference_levels(stats, hierarchy, district_stats, region_stats),
         "rent_parish": parish_stats,
+        "rent_district": district_stats,
+        "rent_region": region_stats,
         "climate_monthly": monthly,
         "criteria_catalog": catalog,
         "criteria_normalization": normalization,

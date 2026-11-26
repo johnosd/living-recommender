@@ -22,7 +22,7 @@ from pipelines.gold.prepare import GoldInputError, check_inputs, prepare_gold
 ROOT = Path(__file__).resolve().parents[2]
 GOLD_TABLES = ("gold_municipality_indicator", "gold_rent_by_municipality_typology", "gold_municipality_climate_monthly",
                "gold_criteria_catalog", "gold_criteria_normalization", "gold_data_quality", "gold_parish_indicator",
-               "gold_rent_by_parish_typology")
+               "gold_rent_by_parish_typology", "gold_rent_by_district_typology", "gold_rent_by_region_typology")
 PROMOTED = tuple("lake/gold/" + name for name in GOLD_TABLES)
 
 

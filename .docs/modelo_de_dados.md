@@ -5,7 +5,7 @@
 
 ## Resumo
 
-- Tabelas: 33 (bronze 14, silver 11, gold 8)
+- Tabelas: 35 (bronze 14, silver 11, gold 10)
 - Relacionamentos declarados: 26
 - Cobertura de descrição: tabelas 100%, colunas 97%
 
@@ -123,8 +123,8 @@ erDiagram
 | --- | --- | --- |
 | bronze | 14/14 (100%) | 189/198 (95%) |
 | silver | 11/11 (100%) | 158/166 (95%) |
-| gold | 8/8 (100%) | 163/163 (100%) |
-| total | 33/33 (100%) | 510/527 (97%) |
+| gold | 10/10 (100%) | 208/208 (100%) |
+| total | 35/35 (100%) | 555/572 (97%) |
 
 ### Sem descrição
 
@@ -540,7 +540,7 @@ Relacionamentos:
 
 - Camada: gold | Domínio: gold | Tipo: principal
 - Fontes: pordata (not_granted_by_source) — atribuição: "Fonte: PORDATA"; ine (CC-BY-4.0) — atribuição: "Instituto Nacional de Estatística, IP – Portugal"; open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"; idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"; caop (CC-BY-4.0) — atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025"; google_distances (not_granted_by_source) — atribuição: "Tempos de viagem: Google"; censos (CC-BY-4.0) — atribuição: "Fonte: INE, Recenseamento da população e habitação — Censos 2021"
-- Descrição: Parâmetros de normalização por critério × nível × variante (n, mínimo, P5, P95, máximo, interpolação linear). Na freguesia, só valores próprios entram.
+- Descrição: Parâmetros de normalização por critério × nível × variante (n, mínimo, P5, P95, máximo, interpolação linear). Só valores próprios entram, no município e na freguesia.
 
 | Coluna | Tipo | Descrição | Testes |
 | --- | --- | --- | --- |
@@ -548,7 +548,7 @@ Relacionamentos:
 | criterion_id | varchar | Critério do catálogo. | not_null, relationships |
 | level | varchar | `municipio` ou `freguesia`. | accepted_values, not_null |
 | variant | varchar | Tipologia nos critérios de aluguel; texto vazio nos demais. | not_null |
-| n | bigint | Territórios com valor (na freguesia, só próprios). | not_null |
+| n | bigint | Territórios com valor próprio. | not_null |
 | min | double | Menor valor. | — |
 | p5 | double | Percentil 5 (interpolação linear). | — |
 | p95 | double | Percentil 95 (interpolação linear). | — |
@@ -574,11 +574,14 @@ Relacionamentos:
 | variant | varchar | Tipologia nos critérios de aluguel; texto vazio nos demais e nos pendentes. | not_null |
 | status | varchar | `disponivel` ou `fonte_pendente`. | accepted_values, not_null |
 | territories_expected | bigint | Territórios do nível (308 municípios ou 3 259 freguesias); 0 nos pendentes. | not_null |
-| with_value | bigint | Territórios com valor (na freguesia, só os próprios). | not_null |
-| missing | bigint | territories_expected − with_value (na freguesia inclui os herdados). | not_null |
+| with_value | bigint | Territórios com valor próprio (os herdados não contam como cobertura). | not_null |
+| missing | bigint | territories_expected − with_value (inclui os herdados). | not_null |
 | zero_by_convention | bigint | Valores com o símbolo `-` lido como zero numa contagem (R-001). | — |
 | older_period | bigint | Territórios que usam um período anterior ao mais recente do critério. | — |
-| inherited | bigint | Freguesias com o valor herdado do município; 0 no município. | — |
+| inherited | bigint | Territórios com valor herdado de um nível acima, no município e na freguesia. | not_null |
+| inherited_municipio | bigint | Freguesias que herdam um valor próprio do município; 0 no nível municipal. | not_null |
+| inherited_distrito | bigint | Territórios com valor herdado do distrito (ou ilha); na freguesia, através do município. | not_null |
+| inherited_regiao | bigint | Territórios com valor herdado da região do Idealista; na freguesia, através do município. | not_null |
 | stale | bigint | Valores de mobilidade calculados com uma configuração de polo que já não vale. | — |
 | outliers | bigint | Aluguel - anúncios marcados como outlier na variante; 0 nos demais critérios. | — |
 | dataset_latest_period | varchar | Período mais recente com valor no critério. | — |
@@ -658,6 +661,8 @@ Relacionamentos:
 | attribution | varchar | Atribuição exigida pela fonte (no carro, "Tempos de viagem: Google"). | — |
 | usage_restriction | varchar | Restrição de uso da fonte (Google, Open-Meteo, Idealista); nula quando não há. | — |
 | is_stale | boolean | Só mobilidade; verdadeiro quando o par foi calculado com uma configuração que já não vale. | not_null |
+| origin | varchar | `proprio` (dado do município), `herdado` (aluguel da área, quando o município não tem amostra) ou `ausente`. | accepted_values, not_null |
+| origin_level | varchar | Nível de onde veio o valor: `municipio` (próprio), `distrito` (ou ilha) ou `regiao` (a do Idealista, não a NUTS II); nulo se ausente. | accepted_values |
 | catalog_version | varchar | Versão do catálogo do mesmo build (hash do conteúdo). | not_null |
 | processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
 
@@ -693,7 +698,8 @@ Relacionamentos:
 | attribution | varchar | Atribuição exigida pela fonte. | — |
 | usage_restriction | varchar | Restrição de uso da fonte; nula quando não há. | — |
 | is_stale | boolean | Herdado da mobilidade do município (par desatualizado). | — |
-| origin | varchar | `proprio`, `herdado` (cópia exata do município) ou `ausente`. | accepted_values, not_null |
+| origin | varchar | `proprio`, `herdado` (cópia exata do município, que por sua vez pode ter herdado da área) ou `ausente`. | accepted_values, not_null |
+| origin_level | varchar | Nível de onde veio o valor: `freguesia` (próprio), `municipio`, `distrito` (ou ilha) ou `regiao`; nulo se ausente. | accepted_values |
 | territorial_inheritance | varchar | Nos critérios dos Censos, o `coverage_status` da freguesia (`own`, `inherited`, `missing`); nulo nos demais. | — |
 | catalog_version | varchar | Versão do catálogo do mesmo build. | not_null |
 | processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
@@ -703,6 +709,33 @@ Relacionamentos:
 - `criterion_id` -> `gold_criteria_catalog.criterion_id`
 - `dico` -> `dim_municipality.dico`
 - `dicofre` -> `dim_parish.dicofre`
+
+### gold_rent_by_district_typology
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"
+- Descrição: Aluguel pedido do Idealista por distrito (ou ilha) × tipologia, juntando os anúncios com município e os que vieram só com o distrito. Outliers por IQR em cada distrito × tipologia e mediana só com pelo menos 10 anúncios. Uma linha só para distritos com anúncios no snapshot vigente. Só agregados.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| district_or_island | varchar | Distrito do continente ou ilha, com o nome da CAOP (`dim_municipality.district_or_island`). | not_null |
+| source_region | varchar | Região do Idealista a que o distrito pertence (não é a NUTS II); sem região na fonte, a da região autónoma. | accepted_values |
+| typology | varchar | Tipologia (`ALL` = todas). | accepted_values, not_null |
+| n_listings | bigint | Anúncios com preço válido no distrito, inclusive os outliers. | not_null |
+| n_outliers | bigint | Anúncios marcados como outlier (IQR de Tukey, 1,5) no grupo distrito × tipologia. | not_null |
+| n_eligible | bigint | Anúncios usados nas estatísticas (sem os outliers). | not_null |
+| rent_median | double | Mediana do aluguel pedido (€/mês, interpolação linear); nula com menos de 10 anúncios. | — |
+| rent_p25 | double | Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| rent_p75 | double | Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| n_eur_m2 | bigint | Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m². | not_null |
+| eur_m2_median | double | Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida. | — |
+| sample_status | varchar | `suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios` (tipologia vazia). | accepted_values, not_null |
+| snapshot_month | varchar | Mês do snapshot do Idealista usado (AAAA-MM). | not_null |
+| source_id | varchar | Fonte (`idealista`). | not_null |
+| license_id | varchar | Licença declarada no snapshot. | not_null |
+| attribution | varchar | Atribuição exigida pela fonte. | not_null |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
 
 ### gold_rent_by_municipality_typology
 
@@ -723,11 +756,15 @@ Relacionamentos:
 | n_eur_m2 | bigint | Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m². | not_null |
 | eur_m2_median | double | Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida. | — |
 | sample_status | varchar | `suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios`. | accepted_values, not_null |
-| rent_coverage | varchar | Cobertura do município (igual nas 6 linhas): `propria`, `insuficiente`, `regional_only` (só há anúncios com a região autónoma) ou `sem_anuncios`. | accepted_values, not_null |
+| rent_coverage | varchar | Cobertura da amostra do próprio município (igual nas 6 linhas): `propria`, `insuficiente`, `regional_only` (só há anúncios com a região autónoma) ou `sem_anuncios`. O valor publicado pode vir da área (`reference_level`). | accepted_values, not_null |
 | snapshot_month | varchar | Mês do snapshot do Idealista usado (AAAA-MM). | — |
 | source_id | varchar | Fonte (`idealista`). | — |
 | license_id | varchar | Licença declarada no snapshot. | — |
 | attribution | varchar | Atribuição exigida pela fonte. | — |
+| district_or_island | varchar | Distrito do continente ou ilha do município, com o nome da CAOP. | not_null |
+| source_region | varchar | Região do Idealista do distrito; nula se o distrito não tem anúncios no snapshot. | accepted_values |
+| reference_level | varchar | Nível de onde vem a mediana de aluguel publicada para o município nesta tipologia (`municipio`, `distrito` ou `regiao`); nulo quando nenhum nível tem 10 anúncios. | accepted_values |
+| reference_level_eur_m2 | varchar | O mesmo que `reference_level`, para a mediana de aluguel por m². | accepted_values |
 | catalog_version | varchar | Versão do catálogo do mesmo build. | — |
 | processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
 
@@ -767,6 +804,32 @@ Relacionamentos:
 
 - `dico` -> `dim_municipality.dico`
 - `dicofre` -> `dim_parish.dicofre`
+
+### gold_rent_by_region_typology
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"
+- Descrição: Aluguel pedido do Idealista por região da fonte × tipologia (não é a NUTS II), com outliers por IQR em cada região × tipologia e mediana só com pelo menos 10 anúncios. Só agregados.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| source_region | varchar | Região do Idealista (não é a NUTS II). | accepted_values, not_null |
+| typology | varchar | Tipologia (`ALL` = todas). | accepted_values, not_null |
+| n_listings | bigint | Anúncios com preço válido na região, inclusive os outliers. | not_null |
+| n_outliers | bigint | Anúncios marcados como outlier (IQR de Tukey, 1,5) no grupo região × tipologia. | not_null |
+| n_eligible | bigint | Anúncios usados nas estatísticas (sem os outliers). | not_null |
+| rent_median | double | Mediana do aluguel pedido (€/mês, interpolação linear); nula com menos de 10 anúncios. | — |
+| rent_p25 | double | Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| rent_p75 | double | Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| n_eur_m2 | bigint | Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m². | not_null |
+| eur_m2_median | double | Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida. | — |
+| sample_status | varchar | `suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios` (tipologia vazia). | accepted_values, not_null |
+| snapshot_month | varchar | Mês do snapshot do Idealista usado (AAAA-MM). | not_null |
+| source_id | varchar | Fonte (`idealista`). | not_null |
+| license_id | varchar | Licença declarada no snapshot. | not_null |
+| attribution | varchar | Atribuição exigida pela fonte. | not_null |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
 
 ### dim_municipality
 

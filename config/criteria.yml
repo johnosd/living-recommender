@@ -34,9 +34,12 @@ criteria:
     pending_reason: null
     methodology_pt: >-
       Mediana (interpolação linear) do aluguel pedido nos anúncios do Idealista do snapshot vigente, por
-      município e tipologia (todas, T0 a T4+). Outliers marcados por IQR de Tukey (1,5) dentro de cada
-      município × tipologia ficam fora; só há mediana com pelo menos 10 anúncios. Anúncios só com região
-      (ilhas) não entram em nenhum município. Na freguesia, mesmo cálculo com a marca de outlier do município.
+      território e tipologia (todas, T0 a T4+). Outliers marcados por IQR de Tukey (1,5) dentro de cada
+      território × tipologia ficam fora; só há mediana com pelo menos 10 anúncios. Cadeia por tipologia, quando
+      não há amostra própria - o município herda do distrito (ou ilha) e, se faltar, da região do Idealista (não é
+      a NUTS II); a freguesia herda o valor publicado do município. Valores herdados vêm marcados com o nível de
+      origem e não entram na normalização. Anúncios sem município contam só no distrito e na região, nunca num
+      município. Na freguesia, a amostra própria usa a marca de outlier do município.
     options: null
     compute: {kind: rent, metric: median, variants: [ALL, T0, T1, T2, T3, T4+]}
     compute_parish: {kind: rent, metric: median, variants: [ALL, T0, T1, T2, T3, T4+]}
@@ -55,7 +58,8 @@ criteria:
     pending_reason: null
     methodology_pt: >-
       Mediana de aluguel ÷ área (m²) dos anúncios elegíveis do Idealista com área entre 10 e 1 000 m²; só
-      com pelo menos 10 anúncios. Mesma regra de outliers da mediana de aluguel.
+      com pelo menos 10 anúncios. Mesma regra de outliers e mesma cadeia de herança marcada da mediana de aluguel
+      (município, distrito ou ilha, região do Idealista; freguesia herda o município).
     options: null
     compute: {kind: rent, metric: eur_m2_median, variants: [ALL]}
     compute_parish: {kind: rent, metric: eur_m2_median, variants: [ALL]}

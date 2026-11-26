@@ -12,7 +12,7 @@ from tests.fixtures.gold.ci_seed import seed
 
 US1_TABLES = ("gold_municipality_indicator", "gold_rent_by_municipality_typology", "gold_municipality_climate_monthly",
               "gold_criteria_catalog", "gold_criteria_normalization", "gold_data_quality", "gold_parish_indicator",
-              "gold_rent_by_parish_typology")
+              "gold_rent_by_parish_typology", "gold_rent_by_district_typology", "gold_rent_by_region_typology")
 
 
 def table(root, name):
@@ -59,7 +59,8 @@ def test_quality_mart_lists_the_whole_catalog_and_matches_the_profile(tmp_path):
     catalog = table(tmp_path, "gold_criteria_catalog")
     assert set(quality["criterion_id"]) == set(catalog["criterion_id"])  # SC-008
     indicators = table(tmp_path, "gold_municipality_indicator")
-    profile = indicators.groupby(["criterion_id", "variant"])["value"].count().to_dict()
+    own = indicators.assign(value=indicators["value"].where(indicators["origin"] == "proprio"))  # spec 012, FR-014
+    profile = own.groupby(["criterion_id", "variant"])["value"].count().to_dict()
     municipal = quality[(quality["level"] == "municipio") & (quality["status"] == "disponivel")]
     assert {(row.criterion_id, row.variant): row.with_value for row in municipal.itertuples()} == profile
     assert (quality["with_value"] + quality["missing"] == quality["territories_expected"]).all()
@@ -87,6 +88,65 @@ def test_parish_tables_cover_every_parish_and_inherited_rows_copy_the_municipali
     assert set(own_rent["dicofre"]) == {"010101"}
     census = parish[(parish["criterion_id"] == "populacao_residentes") & (parish["dicofre"] == "010102")].iloc[0]
     assert (census["origin"], census["territorial_inheritance"]) == ("proprio", "inherited")
+
+
+def test_the_district_and_region_tables_aggregate_every_listing_of_the_area(tmp_path):
+    seed(tmp_path)
+    build(tmp_path)  # spec 012, US1
+    districts = table(tmp_path, "gold_rent_by_district_typology")
+    regions = table(tmp_path, "gold_rent_by_region_typology")
+    assert set(districts["district_or_island"]) == {"Aveiro", "Ilha da Madeira"} and len(districts) == 2 * 6
+    assert set(regions["source_region"]) == {"Centro", "Madeira"} and len(regions) == 2 * 6
+    for frame in (districts, regions):
+        assert not {"listing_id", "dico", "dicofre"} & set(frame.columns)  # constitution IV: só agregados
+        assert frame.loc[frame["n_eligible"] < 10, "rent_median"].isna().all()
+    aveiro = districts.set_index(["district_or_island", "typology"]).loc[("Aveiro", "ALL")]
+    assert aveiro["n_listings"] == 13 + 3 + 10 and aveiro["source_region"] == "Centro"  # 0101, 0102 e só distrito
+    madeira = districts.set_index(["district_or_island", "typology"]).loc[("Ilha da Madeira", "ALL")]
+    assert madeira["sample_status"] == "amostra_insuficiente" and pd.isna(madeira["rent_median"])
+
+
+def test_a_municipality_without_sample_inherits_the_district_and_normalization_stays_own(tmp_path):
+    seed(tmp_path)
+    build(tmp_path)  # spec 012, US2
+    indicators = table(tmp_path, "gold_municipality_indicator")
+    rent = indicators[indicators["criterion_id"] == "custo_aluguel_mediana"].set_index(["dico", "variant"])
+    districts = table(tmp_path, "gold_rent_by_district_typology").set_index(["district_or_island", "typology"])
+    assert (rent.loc[("0101", "ALL"), "origin"], rent.loc[("0101", "ALL"), "origin_level"]) == (
+        "proprio", "municipio")
+    for variant in ("ALL", "T2"):
+        row = rent.loc[("0102", variant)]
+        assert (row["origin"], row["origin_level"]) == ("herdado", "distrito")
+        assert row["value"] == districts.loc[("Aveiro", variant), "rent_median"] != rent.loc[("0101", variant), "value"]
+    for dico, reason in (("1106", "sem_anuncios"), ("3101", "regional_only")):  # sem referência em nenhum nível
+        row = rent.loc[(dico, "ALL")]
+        assert row["origin"] == "ausente" and pd.isna(row["origin_level"]) and row["missing_reason"] == reason
+    others = indicators[indicators["criterion_id"] != "custo_aluguel_mediana"]
+    assert (others["origin"] == others["value"].notna().map({True: "proprio", False: "ausente"})).all()
+    normalization = table(tmp_path, "gold_criteria_normalization")
+    municipal = normalization[(normalization["criterion_id"] == "custo_aluguel_mediana")
+                              & (normalization["level"] == "municipio")]
+    assert municipal["n"].tolist() == [1, 1]  # só 0101: o herdado de 0102 não normaliza
+    table_rent = table(tmp_path, "gold_rent_by_municipality_typology").set_index(["dico", "typology"])
+    inherited = table_rent.loc[("0102", "ALL")]
+    assert (inherited["rent_coverage"], inherited["reference_level"]) == ("insuficiente", "distrito")
+
+
+def test_the_parish_keeps_the_source_level_and_quality_counts_inherited_values_apart(tmp_path):
+    seed(tmp_path)
+    build(tmp_path)  # spec 012, US3
+    parish = table(tmp_path, "gold_parish_indicator")
+    rent = parish[(parish["criterion_id"] == "custo_aluguel_mediana") & (parish["variant"] == "ALL")]
+    levels = {row.dicofre: (row.origin, None if pd.isna(row.origin_level) else row.origin_level)
+              for row in rent.itertuples()}
+    assert levels == {"010101": ("proprio", "freguesia"), "010102": ("herdado", "municipio"),
+                      "010201": ("herdado", "distrito"), "110601": ("ausente", None), "310101": ("ausente", None)}
+    quality = table(tmp_path, "gold_data_quality")
+    quality = quality[(quality["criterion_id"] == "custo_aluguel_mediana") & (quality["variant"] == "ALL")]
+    counts = quality.set_index("level")[["territories_expected", "with_value", "missing", "inherited",
+                                         "inherited_municipio", "inherited_distrito", "inherited_regiao"]]
+    assert counts.loc["freguesia"].tolist() == [5, 1, 4, 2, 1, 1, 0]
+    assert counts.loc["municipio"].tolist() == [4, 1, 3, 1, 0, 1, 0]
 
 
 def test_a_failed_dbt_keeps_the_previous_gold_and_removes_the_candidate(tmp_path, monkeypatch):

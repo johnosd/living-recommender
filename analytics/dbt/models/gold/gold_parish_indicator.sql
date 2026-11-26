@@ -21,6 +21,7 @@ select
     cast(usage_restriction as varchar) as usage_restriction,
     cast(is_stale as boolean) as is_stale,
     cast(origin as varchar) as origin,
+    cast(origin_level as varchar) as origin_level,
     cast(territorial_inheritance as varchar) as territorial_inheritance,
     cast(catalog_version as varchar) as catalog_version,
     cast(processed_at_utc as varchar) as processed_at_utc

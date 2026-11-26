@@ -219,11 +219,12 @@ def _validate_mobility(cid: str, compute: dict) -> None:
         raise CriteriaError(f"critério '{cid}': informe pole_id ou nearest_kind (um dos dois)")
 
 
-def _values(frame: pd.DataFrame | None, criterion_id: str, level: str) -> pd.DataFrame:
+def _values(frame: pd.DataFrame | None, criterion_id: str) -> pd.DataFrame:
+    """Valores próprios do critério: o herdado não normaliza em nenhum nível (D8 da spec 012)."""
     if frame is None or frame.empty:
         return pd.DataFrame(columns=["variant", "value"])
     rows = frame[(frame["criterion_id"] == criterion_id) & frame["value"].notna()]
-    if level == "freguesia" and "origin" in rows.columns:
+    if "origin" in rows.columns:
         rows = rows[rows["origin"] == "proprio"]
     return rows
 
@@ -274,10 +275,10 @@ def catalog_tables(criteria: dict, indicators: dict[str, pd.DataFrame]) -> tuple
             for level in item["levels"]:
                 if level not in indicators:
                     continue  # nível ainda não construído (a freguesia é opcional até a P3)
-                rows = _values(indicators[level], item["id"], level)
+                rows = _values(indicators[level], item["id"])
                 if rows.empty:
-                    raise CriteriaError(f"critério '{item['id']}' está disponivel mas não tem nenhum valor no nível "
-                                        f"'{level}' (FR-020): corrija a fonte ou marque-o como fonte_pendente")
+                    raise CriteriaError(f"critério '{item['id']}' está disponivel mas não tem nenhum valor próprio no "
+                                        f"nível '{level}' (FR-020): corrija a fonte ou marque-o como fonte_pendente")
                 used.append(rows)
                 for variant, group in rows.groupby(rows["variant"].fillna(""), sort=True):
                     values = group["value"].astype(float).to_numpy()

@@ -108,7 +108,8 @@ def test_climate_and_mobility_are_always_inherited_exact_copies(parish):
 
 def test_parish_normalization_ignores_inherited_values(parish):
     frame, _ = parish
-    municipal = frame.rename(columns={"dicofre": "_"}).drop(columns="_").drop_duplicates(
+    # perfil municipal falso: sem a coluna `origin` da freguesia, que no município só normaliza `proprio` (spec 012)
+    municipal = frame.drop(columns=["dicofre", "origin", "origin_level"], errors="ignore").drop_duplicates(
         ["dico", "criterion_id", "variant"])
     municipal = municipal.assign(value=municipal["value"].fillna(1.0))
     _, normalization = catalog_tables(CRITERIA, {"municipio": municipal, "freguesia": frame})
