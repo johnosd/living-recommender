@@ -90,6 +90,11 @@ jobs:
       - name: Build mobility offline with dbt
         run: uv run --locked python -m pipelines.cli.build_mobility --local --root .data/ci-mobility --catalog .data/ci-mobility/catalog.yml --poles .data/ci-mobility/poles.yml
 
+      - name: Prepare Gold fixture
+        run: uv run --locked python -m tests.fixtures.gold.ci_seed --root .data/ci-gold
+      - name: Build Gold offline with dbt
+        run: uv run --locked python -m pipelines.cli.build_gold --local --root .data/ci-gold --criteria .data/ci-gold/criteria.yml
+
   secrets:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

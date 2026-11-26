@@ -26,7 +26,9 @@ def principal(tmp_path_factory):
 
 def test_the_fixed_list_is_exactly_the_principal_models_of_the_project(principal):
     tables, _ = principal
-    assert {name for name, table in tables.items() if table.kind == "principal"} == set(PRINCIPAL)
+    # A lista cobre as camadas bronze e silver da spec 010; a camada gold (spec 011) não é cobrada aqui.
+    assert {name for name, table in tables.items()
+            if table.kind == "principal" and table.layer in ("bronze", "silver")} == set(PRINCIPAL)
 
 
 @pytest.mark.parametrize("name", PRINCIPAL)

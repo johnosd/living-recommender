@@ -5,9 +5,9 @@
 
 ## Resumo
 
-- Tabelas: 25 (bronze 14, silver 11)
-- Relacionamentos declarados: 15
-- Cobertura de descrição: tabelas 100%, colunas 95%
+- Tabelas: 33 (bronze 14, silver 11, gold 8)
+- Relacionamentos declarados: 26
+- Cobertura de descrição: tabelas 100%, colunas 97%
 
 ## Diagrama de relacionamentos
 
@@ -16,6 +16,17 @@ erDiagram
     census_parish_observation }o--|| dim_municipality : "dico -> dico"
     census_parish_observation }o--|| dim_parish : "dicofre -> dicofre"
     dim_parish }o--|| dim_municipality : "dico -> dico"
+    gold_criteria_normalization }o--|| gold_criteria_catalog : "criterion_id -> criterion_id"
+    gold_data_quality }o--|| gold_criteria_catalog : "criterion_id -> criterion_id"
+    gold_municipality_climate_monthly }o--|| dim_municipality : "dico -> dico"
+    gold_municipality_indicator }o--|| gold_criteria_catalog : "criterion_id -> criterion_id"
+    gold_municipality_indicator }o--|| dim_municipality : "dico -> dico"
+    gold_parish_indicator }o--|| gold_criteria_catalog : "criterion_id -> criterion_id"
+    gold_parish_indicator }o--|| dim_municipality : "dico -> dico"
+    gold_parish_indicator }o--|| dim_parish : "dicofre -> dicofre"
+    gold_rent_by_municipality_typology }o--|| dim_municipality : "dico -> dico"
+    gold_rent_by_parish_typology }o--|| dim_municipality : "dico -> dico"
+    gold_rent_by_parish_typology }o--|| dim_parish : "dicofre -> dicofre"
     idealista_listings }o--|| dim_municipality : "dico -> dico"
     idealista_listings }o--|| dim_parish : "dicofre -> dicofre"
     stg_climate_daily }o--|| dim_municipality : "dico -> dico"
@@ -39,6 +50,34 @@ erDiagram
         varchar dico
     }
     dim_parish {
+        varchar dico
+        varchar dicofre
+    }
+    gold_criteria_catalog {
+        varchar criterion_id
+    }
+    gold_criteria_normalization {
+        varchar criterion_id
+    }
+    gold_data_quality {
+        varchar criterion_id
+    }
+    gold_municipality_climate_monthly {
+        varchar dico
+    }
+    gold_municipality_indicator {
+        varchar criterion_id
+        varchar dico
+    }
+    gold_parish_indicator {
+        varchar criterion_id
+        varchar dico
+        varchar dicofre
+    }
+    gold_rent_by_municipality_typology {
+        varchar dico
+    }
+    gold_rent_by_parish_typology {
         varchar dico
         varchar dicofre
     }
@@ -84,7 +123,8 @@ erDiagram
 | --- | --- | --- |
 | bronze | 14/14 (100%) | 189/198 (95%) |
 | silver | 11/11 (100%) | 158/166 (95%) |
-| total | 25/25 (100%) | 347/364 (95%) |
+| gold | 8/8 (100%) | 163/163 (100%) |
+| total | 33/33 (100%) | 510/527 (97%) |
 
 ### Sem descrição
 
@@ -460,6 +500,273 @@ Relacionamentos:
 Relacionamentos:
 
 - `dico` -> `dim_municipality.dico`
+
+### gold_criteria_catalog
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: pordata (not_granted_by_source) — atribuição: "Fonte: PORDATA"; ine (CC-BY-4.0) — atribuição: "Instituto Nacional de Estatística, IP – Portugal"; open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"; idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"; caop (CC-BY-4.0) — atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025"; google_distances (not_granted_by_source) — atribuição: "Tempos de viagem: Google"; censos (CC-BY-4.0) — atribuição: "Fonte: INE, Recenseamento da população e habitação — Censos 2021"
+- Descrição: Catálogo versionado de critérios (`config/criteria.yml`): definição, rótulos, direção, modos, peso, status e a proveniência dos valores calculados. Alimenta o ranker e o configurador da Fase 4.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| catalog_version | varchar | 12 primeiros hex do SHA-256 das definições e dos parâmetros de normalização. | not_null |
+| schema_version | integer | Versão do formato do arquivo de critérios. | — |
+| criterion_id | varchar | Identificador estável do critério (snake_case). | not_null, unique |
+| category | varchar | Categoria do critério. | not_null |
+| category_label_pt | varchar | Rótulo da categoria em português. | — |
+| category_label_en | varchar | Rótulo da categoria em inglês. | — |
+| label_pt | varchar | Rótulo do critério em português. | — |
+| label_en | varchar | Rótulo do critério em inglês. | — |
+| unit | varchar | Unidade do valor. | — |
+| direction | varchar | `maior_melhor`, `menor_melhor` ou `faixa_alvo`. | accepted_values, not_null |
+| methodology_pt | varchar | Metodologia (fórmula, dataset e regras) em português. | — |
+| levels | varchar | Níveis territoriais (JSON), `municipio` e/ou `freguesia`. | — |
+| modes | varchar | Modos de uso no configurador (JSON) — `peso`, `faixa`, `opcao`. | — |
+| options | varchar | Opções categóricas (JSON com `id`, rótulos e `range`); nulo quando não há. | — |
+| default_range_min | double | Mínimo padrão do controle de faixa; nulo = aberto. | — |
+| default_range_max | double | Máximo padrão do controle de faixa; nulo = aberto. | — |
+| weight | double | Peso interno na categoria (0 a 1); 0 = só filtro. | — |
+| status | varchar | `disponivel` ou `fonte_pendente`. | accepted_values, not_null |
+| pending_reason | varchar | Motivo da pendência; nulo nos disponíveis. | — |
+| source_ids | varchar | Fontes distintas dos valores calculados, unidas por " &#124; ". | — |
+| dataset_ids | varchar | Datasets distintos dos valores calculados, unidos por " &#124; ". | — |
+| license_ids | varchar | Licenças distintas dos valores calculados, unidas por " &#124; ". | — |
+| attributions | varchar | Atribuições distintas dos valores calculados, unidas por " &#124; ". | — |
+| usage_restrictions | varchar | Restrições de uso distintas dos valores calculados, unidas por " &#124; ". | — |
+| reference_periods | varchar | Períodos distintos usados pelos valores (JSON, ordem crescente). | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+### gold_criteria_normalization
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: pordata (not_granted_by_source) — atribuição: "Fonte: PORDATA"; ine (CC-BY-4.0) — atribuição: "Instituto Nacional de Estatística, IP – Portugal"; open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"; idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"; caop (CC-BY-4.0) — atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025"; google_distances (not_granted_by_source) — atribuição: "Tempos de viagem: Google"; censos (CC-BY-4.0) — atribuição: "Fonte: INE, Recenseamento da população e habitação — Censos 2021"
+- Descrição: Parâmetros de normalização por critério × nível × variante (n, mínimo, P5, P95, máximo, interpolação linear). Na freguesia, só valores próprios entram.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | not_null |
+| criterion_id | varchar | Critério do catálogo. | not_null, relationships |
+| level | varchar | `municipio` ou `freguesia`. | accepted_values, not_null |
+| variant | varchar | Tipologia nos critérios de aluguel; texto vazio nos demais. | not_null |
+| n | bigint | Territórios com valor (na freguesia, só próprios). | not_null |
+| min | double | Menor valor. | — |
+| p5 | double | Percentil 5 (interpolação linear). | — |
+| p95 | double | Percentil 95 (interpolação linear). | — |
+| max | double | Maior valor. | — |
+| is_degenerate | boolean | Verdadeiro quando P5 = P95 (o ranker não pode normalizar linearmente). | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `criterion_id` -> `gold_criteria_catalog.criterion_id`
+
+### gold_data_quality
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: pordata (not_granted_by_source) — atribuição: "Fonte: PORDATA"; ine (CC-BY-4.0) — atribuição: "Instituto Nacional de Estatística, IP – Portugal"; open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"; idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"; caop (CC-BY-4.0) — atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025"; google_distances (not_granted_by_source) — atribuição: "Tempos de viagem: Google"; censos (CC-BY-4.0) — atribuição: "Fonte: INE, Recenseamento da população e habitação — Censos 2021"
+- Descrição: Qualidade por critério do catálogo × nível × variante: cobertura própria, período anterior, zeros por convenção da fonte, herdados, desatualizados, outliers de aluguel e pendências.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | not_null |
+| criterion_id | varchar | Critério do catálogo. | not_null, relationships |
+| level | varchar | `municipio` ou `freguesia`. | accepted_values, not_null |
+| variant | varchar | Tipologia nos critérios de aluguel; texto vazio nos demais e nos pendentes. | not_null |
+| status | varchar | `disponivel` ou `fonte_pendente`. | accepted_values, not_null |
+| territories_expected | bigint | Territórios do nível (308 municípios ou 3 259 freguesias); 0 nos pendentes. | not_null |
+| with_value | bigint | Territórios com valor (na freguesia, só os próprios). | not_null |
+| missing | bigint | territories_expected − with_value (na freguesia inclui os herdados). | not_null |
+| zero_by_convention | bigint | Valores com o símbolo `-` lido como zero numa contagem (R-001). | — |
+| older_period | bigint | Territórios que usam um período anterior ao mais recente do critério. | — |
+| inherited | bigint | Freguesias com o valor herdado do município; 0 no município. | — |
+| stale | bigint | Valores de mobilidade calculados com uma configuração de polo que já não vale. | — |
+| outliers | bigint | Aluguel - anúncios marcados como outlier na variante; 0 nos demais critérios. | — |
+| dataset_latest_period | varchar | Período mais recente com valor no critério. | — |
+| pending_reason | varchar | Motivo da pendência ("fonte pendente - ..."); nulo nos disponíveis. | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `criterion_id` -> `gold_criteria_catalog.criterion_id`
+
+### gold_municipality_climate_monthly
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"
+- Descrição: Clima mensal por município (Open-Meteo, ERA5): médias, dias extremos e o TCI do weatherClassifier legado, com os componentes. Mês com menos de 20 dias válidos fica sem médias e sem TCI.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| dico | varchar | Código DICO do município. | not_null, relationships |
+| year_month | varchar | Mês (AAAA-MM). | not_null |
+| valid_days | integer | Dias do mês com temperatura máxima. | not_null |
+| temp_mean | double | Média da temperatura média diária (°C). | — |
+| temp_max_mean | double | Média da temperatura máxima diária (°C). | — |
+| temp_min_mean | double | Média da temperatura mínima diária (°C). | — |
+| precip_total | double | Precipitação total do mês (mm). | — |
+| sun_hours_mean | double | Média das horas de sol por dia. | — |
+| wind_mean | double | Média da velocidade média diária do vento a 10 m (km/h). | — |
+| humidity_mean | double | Média da umidade relativa média diária (%). | — |
+| hot_days | integer | Dias com máxima > 35 °C ou temperatura aparente máxima > 40 °C. | — |
+| cold_days | integer | Dias com mínima < 1 °C ou temperatura aparente mínima < −5 °C. | — |
+| rain_days | integer | Dias com precipitação > 35 mm. | — |
+| snow_days | integer | Dias com queda de neve > 0 cm. | — |
+| extreme_days | integer | Dias com pelo menos um tipo de extremo (cada dia conta uma vez). | — |
+| extreme_days_pct | double | Dias extremos ÷ dias válidos × 100. | — |
+| cid | integer | Componente de conforto diurno do TCI (faixa da temperatura média, −1 pela umidade). | — |
+| cia | integer | Componente de conforto diário do TCI (faixa da máxima, −1 pela umidade). | — |
+| p_index | integer | Componente de precipitação do TCI (0 a 10). | — |
+| s_index | integer | Componente de sol do TCI (0 a 10). | — |
+| w_index | integer | Componente de vento do TCI (0 a 10). | — |
+| tci | double | TCI = 2·CID + 2·CIA + 0,5·P + 0,5·S + W, limitado a 0–100. | — |
+| window_start | varchar | Início da janela coletada (AAAA-MM-DD). | — |
+| window_end | varchar | Fim da janela coletada (AAAA-MM-DD). | — |
+| source_id | varchar | Fonte (`open_meteo`). | — |
+| license_id | varchar | Licença da fonte. | — |
+| attribution | varchar | Atribuição exigida pela fonte. | — |
+| usage_restriction | varchar | Restrição de uso do plano gratuito do Open-Meteo. | — |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `dico` -> `dim_municipality.dico`
+
+### gold_municipality_indicator
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: pordata (not_granted_by_source) — atribuição: "Fonte: PORDATA"; ine (CC-BY-4.0) — atribuição: "Instituto Nacional de Estatística, IP – Portugal"; open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"; idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"; caop (CC-BY-4.0) — atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025"; google_distances (not_granted_by_source) — atribuição: "Tempos de viagem: Google"
+- Descrição: Perfil municipal longo: uma linha por município × critério disponível do catálogo × variante, inclusive as ausências (valor nulo com motivo). Cada valor traz fonte, período usado e licença.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| dico | varchar | Código DICO do município. | not_null, relationships |
+| criterion_id | varchar | Critério do catálogo (`gold_criteria_catalog.criterion_id`). | not_null, relationships |
+| category | varchar | Categoria do critério no catálogo (por exemplo `custo` ou `clima`). | not_null |
+| variant | varchar | Tipologia (`ALL`, `T0`...`T4+`) nos critérios de aluguel; texto vazio nos demais. | not_null |
+| value | double | Valor do indicador; nulo quando ausente (nunca imputado). | — |
+| unit | varchar | Unidade do valor, do catálogo. | — |
+| period | varchar | Período do valor: ano (Pordata/INE), mês `AAAA-MM` (Idealista, mobilidade) ou janela `início/fim` (clima). Nulo quando não há nenhum dado do município. | — |
+| dataset_latest_period | varchar | Período mais recente com valor no critério, entre todos os municípios. | — |
+| is_older_period | boolean | Verdadeiro quando o município usa um período anterior ao mais recente do critério (FR-003). | not_null |
+| value_status | varchar | `observado`, `zero_convencao_fonte` (o símbolo `-` lido como zero numa contagem, R-001) ou `ausente`. | accepted_values, not_null |
+| missing_reason | varchar | Motivo da ausência (`sem_publicacao`, `simbolo_fonte:<s>`, `sem_denominador`, `sem_par_elegivel`, `par_falha`, `amostra_insuficiente`, `sem_anuncios`, `regional_only`, `sem_dados_clima`...); nulo quando há valor. | — |
+| source_symbol | varchar | Símbolo da fonte na linha usada (`-`, `r`, `Pro`, `x`...), informativo. | — |
+| source_id | varchar | Fonte do valor (`pordata`, `ine`, `open_meteo`, `idealista`, `caop`, `google_distances`). | — |
+| dataset_id | varchar | Dataset de origem (por exemplo `recintos_cinema` ou `stg_climate_daily`). | not_null |
+| license_id | varchar | Licença da fonte, copiada linha a linha. | — |
+| attribution | varchar | Atribuição exigida pela fonte (no carro, "Tempos de viagem: Google"). | — |
+| usage_restriction | varchar | Restrição de uso da fonte (Google, Open-Meteo, Idealista); nula quando não há. | — |
+| is_stale | boolean | Só mobilidade; verdadeiro quando o par foi calculado com uma configuração que já não vale. | not_null |
+| catalog_version | varchar | Versão do catálogo do mesmo build (hash do conteúdo). | not_null |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `criterion_id` -> `gold_criteria_catalog.criterion_id`
+- `dico` -> `dim_municipality.dico`
+
+### gold_parish_indicator
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: pordata (not_granted_by_source) — atribuição: "Fonte: PORDATA"; ine (CC-BY-4.0) — atribuição: "Instituto Nacional de Estatística, IP – Portugal"; open_meteo (CC-BY-4.0) — atribuição: "Dados meteorológicos: Open-Meteo.com (CC BY 4.0); reanálise ERA5, Copernicus Climate Change Service/ECMWF"; idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"; caop (CC-BY-4.0) — atribuição: "Fonte: Direção-Geral do Território (DGT), CAOP2025"; google_distances (not_granted_by_source) — atribuição: "Tempos de viagem: Google"; censos (CC-BY-4.0) — atribuição: "Fonte: INE, Recenseamento da população e habitação — Censos 2021"
+- Descrição: Perfil de freguesia: uma linha por freguesia × critério disponível × variante. `proprio` onde há dado da freguesia (Censos 2021, aluguel com n ≥ 10), `herdado` (cópia exata do município) ou `ausente`.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| dicofre | varchar | Código DICOFRE da freguesia. | not_null, relationships |
+| dico | varchar | Código DICO do município da freguesia. | not_null, relationships |
+| criterion_id | varchar | Critério do catálogo. | not_null, relationships |
+| category | varchar | Categoria do critério no catálogo. | — |
+| variant | varchar | Tipologia nos critérios de aluguel; texto vazio nos demais. | not_null |
+| value | double | Valor do indicador (próprio ou herdado); nulo quando ausente. | — |
+| unit | varchar | Unidade do valor, do catálogo. | — |
+| period | varchar | Período do valor (2021 nos Censos; o do município nos herdados). | — |
+| dataset_latest_period | varchar | Período mais recente com valor no critério. | — |
+| is_older_period | boolean | Herdado do município; verdadeiro quando o valor usa um período anterior ao mais recente. | — |
+| value_status | varchar | `observado`, `zero_convencao_fonte` ou `ausente`. | accepted_values, not_null |
+| missing_reason | varchar | Motivo da ausência; nulo quando há valor. | — |
+| source_symbol | varchar | Símbolo da fonte (informativo). | — |
+| source_id | varchar | Fonte do valor (`censos` e `idealista` nos próprios; a do município nos herdados). | — |
+| dataset_id | varchar | Dataset de origem. | — |
+| license_id | varchar | Licença da fonte. | — |
+| attribution | varchar | Atribuição exigida pela fonte. | — |
+| usage_restriction | varchar | Restrição de uso da fonte; nula quando não há. | — |
+| is_stale | boolean | Herdado da mobilidade do município (par desatualizado). | — |
+| origin | varchar | `proprio`, `herdado` (cópia exata do município) ou `ausente`. | accepted_values, not_null |
+| territorial_inheritance | varchar | Nos critérios dos Censos, o `coverage_status` da freguesia (`own`, `inherited`, `missing`); nulo nos demais. | — |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | not_null |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `criterion_id` -> `gold_criteria_catalog.criterion_id`
+- `dico` -> `dim_municipality.dico`
+- `dicofre` -> `dim_parish.dicofre`
+
+### gold_rent_by_municipality_typology
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"
+- Descrição: Aluguel pedido do Idealista por município × tipologia (`ALL`, `T0`...`T4+`), com outliers marcados por IQR e mediana só com pelo menos 10 anúncios. Só agregados: nenhuma linha por anúncio.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| dico | varchar | Código DICO do município. | not_null, relationships |
+| typology | varchar | Tipologia (`ALL` = todas). | accepted_values, not_null |
+| n_listings | bigint | Anúncios com preço válido no grupo, inclusive os outliers. | not_null |
+| n_outliers | bigint | Anúncios marcados como outlier (IQR de Tukey, 1,5) no grupo município × tipologia. | not_null |
+| n_eligible | bigint | Anúncios usados nas estatísticas (sem os outliers). | not_null |
+| rent_median | double | Mediana do aluguel pedido (€/mês, interpolação linear); nula com menos de 10 anúncios. | — |
+| rent_p25 | double | Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| rent_p75 | double | Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| n_eur_m2 | bigint | Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m². | not_null |
+| eur_m2_median | double | Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida. | — |
+| sample_status | varchar | `suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios`. | accepted_values, not_null |
+| rent_coverage | varchar | Cobertura do município (igual nas 6 linhas): `propria`, `insuficiente`, `regional_only` (só há anúncios com a região autónoma) ou `sem_anuncios`. | accepted_values, not_null |
+| snapshot_month | varchar | Mês do snapshot do Idealista usado (AAAA-MM). | — |
+| source_id | varchar | Fonte (`idealista`). | — |
+| license_id | varchar | Licença declarada no snapshot. | — |
+| attribution | varchar | Atribuição exigida pela fonte. | — |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `dico` -> `dim_municipality.dico`
+
+### gold_rent_by_parish_typology
+
+- Camada: gold | Domínio: gold | Tipo: principal
+- Fontes: idealista (not_granted_by_source) — atribuição: "Fonte: Idealista, extração manual; período informado pelo operador"
+- Descrição: Aluguel pedido do Idealista por freguesia × tipologia, com a marca de outlier do grupo município × tipologia e mediana só com pelo menos 10 anúncios. Só agregados.
+
+| Coluna | Tipo | Descrição | Testes |
+| --- | --- | --- | --- |
+| dicofre | varchar | Código DICOFRE da freguesia. | not_null, relationships |
+| dico | varchar | Código DICO do município da freguesia. | not_null, relationships |
+| typology | varchar | Tipologia (`ALL` = todas). | accepted_values, not_null |
+| n_listings | bigint | Anúncios com preço válido e freguesia resolvida, inclusive os outliers. | not_null |
+| n_outliers | bigint | Anúncios marcados como outlier no grupo município × tipologia. | — |
+| n_eligible | bigint | Anúncios usados nas estatísticas (sem os outliers). | not_null |
+| rent_median | double | Mediana do aluguel pedido (€/mês); nula com menos de 10 anúncios. | — |
+| rent_p25 | double | Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| rent_p75 | double | Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios. | — |
+| n_eur_m2 | bigint | Anúncios elegíveis com área entre 10 e 1 000 m². | — |
+| eur_m2_median | double | Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida. | — |
+| sample_status | varchar | `suficiente`, `amostra_insuficiente` ou `sem_anuncios`. | accepted_values, not_null |
+| rent_coverage | varchar | Cobertura da freguesia (`propria`, `insuficiente` ou `sem_anuncios`). | accepted_values, not_null |
+| snapshot_month | varchar | Mês do snapshot do Idealista usado (AAAA-MM). | — |
+| source_id | varchar | Fonte (`idealista`). | — |
+| license_id | varchar | Licença declarada no snapshot. | — |
+| attribution | varchar | Atribuição exigida pela fonte. | — |
+| catalog_version | varchar | Versão do catálogo do mesmo build. | — |
+| processed_at_utc | varchar | Instante (UTC, ISO 8601) do build Gold. | — |
+
+Relacionamentos:
+
+- `dico` -> `dim_municipality.dico`
+- `dicofre` -> `dim_parish.dicofre`
 
 ### dim_municipality
 

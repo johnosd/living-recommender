@@ -78,7 +78,7 @@ def test_the_result_does_not_depend_on_the_node_order():
 def test_the_real_project_loads_with_every_relationship_resolved(real_manifest):
     loaded = load_model(real_manifest)
     assert len(loaded.tables) >= 25 and len(loaded.relationships) >= 15
-    assert {t.layer for t in loaded.tables} == {"bronze", "silver"}
+    assert {t.layer for t in loaded.tables} == {"bronze", "silver", "gold"}  # gold: spec 011
     assert all(r.to_table in {t.name for t in loaded.tables} for r in loaded.relationships)
     assert all("\\" not in t.origin_file and t.origin_file.startswith("analytics/dbt/") for t in loaded.tables)
 

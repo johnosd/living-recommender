@@ -15,12 +15,12 @@ import duckdb
 
 from pipelines.modeldocs.model import UNKNOWN, DataModel, Table
 
-LAYERS = ("bronze", "silver")
+LAYERS = ("bronze", "silver", "gold")
 DATE_KEYS = ("collected_at_utc", "checked_at_utc", "imported_at_utc")
 STATUS_OK, STATUS_MISSING, STATUS_NO_MODEL = "ok", "nao_construida", "sem_modelo"
 
 SCHEMA = """
-create schema bronze; create schema silver; create schema meta;
+create schema bronze; create schema silver; create schema gold; create schema meta;
 create table meta.tables (layer varchar, table_name varchar, domain varchar, kind varchar, status varchar,
     description varchar, source_ids varchar[], row_count bigint);
 create table meta.columns (layer varchar, table_name varchar, column_name varchar, position integer,

@@ -1,0 +1,1305 @@
+# Catálogo de critérios do recomendador (spec 011, contracts/criteria-catalog.md).
+# Fonte única de verdade: incluir ou mudar um critério é editar este arquivo; o build Gold
+# (`python -m pipelines.cli.build_gold`) valida, calcula e gera uma `catalog_version` nova.
+# Pesos, direções e faixas das opções são provisórios (R-003): revisão do autor antes da Fase 4.
+schema_version: 1
+
+categories:
+  - {id: custo, label_pt: Custo, label_en: Cost}
+  - {id: clima, label_pt: Clima, label_en: Climate}
+  - {id: cultura, label_pt: Cultura, label_en: Culture}
+  - {id: economia, label_pt: Economia, label_en: Economy}
+  - {id: emprego, label_pt: Emprego e salários, label_en: Jobs and wages}
+  - {id: educacao, label_pt: Educação, label_en: Education}
+  - {id: populacao, label_pt: População, label_en: Population}
+  - {id: comunidade, label_pt: Comunidade estrangeira, label_en: Foreign community}
+  - {id: saude, label_pt: Saúde, label_en: Health}
+  - {id: seguranca, label_pt: Segurança, label_en: Safety}
+  - {id: distancia, label_pt: Distâncias, label_en: Distances}
+  - {id: mercado, label_pt: Mercado imobiliário, label_en: Housing market}
+
+criteria:
+  # ---------------------------------------------------------------- custo
+  - id: custo_aluguel_mediana
+    category: custo
+    label_pt: Aluguel mediano pedido
+    label_en: Median asking rent
+    unit: €/mês
+    direction: menor_melhor
+    levels: [municipio, freguesia]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.6
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Mediana (interpolação linear) do aluguel pedido nos anúncios do Idealista do snapshot vigente, por
+      município e tipologia (todas, T0 a T4+). Outliers marcados por IQR de Tukey (1,5) dentro de cada
+      município × tipologia ficam fora; só há mediana com pelo menos 10 anúncios. Anúncios só com região
+      (ilhas) não entram em nenhum município. Na freguesia, mesmo cálculo com a marca de outlier do município.
+    options: null
+    compute: {kind: rent, metric: median, variants: [ALL, T0, T1, T2, T3, T4+]}
+    compute_parish: {kind: rent, metric: median, variants: [ALL, T0, T1, T2, T3, T4+]}
+
+  - id: custo_aluguel_m2
+    category: custo
+    label_pt: Aluguel mediano pedido por m²
+    label_en: Median asking rent per m²
+    unit: €/m²/mês
+    direction: menor_melhor
+    levels: [municipio, freguesia]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.2
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Mediana de aluguel ÷ área (m²) dos anúncios elegíveis do Idealista com área entre 10 e 1 000 m²; só
+      com pelo menos 10 anúncios. Mesma regra de outliers da mediana de aluguel.
+    options: null
+    compute: {kind: rent, metric: eur_m2_median, variants: [ALL]}
+    compute_parish: {kind: rent, metric: eur_m2_median, variants: [ALL]}
+
+  - id: custo_renda_ine_m2
+    category: custo
+    label_pt: Renda mediana dos novos contratos (INE)
+    label_en: Median rent of new leases (INE)
+    unit: €/m²
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.2
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Valor mediano das rendas por m² de novos contratos de arrendamento (INE, indicador 0014698), no ano
+      mais recente publicado para o município. Valor oficial: o símbolo "-" não vira zero.
+    options: null
+    compute: {kind: observation, source_id: ine, dataset_id: rendas_novos_contratos, filters: [{}], dash_is_zero: false}
+
+  # ---------------------------------------------------------------- clima
+  - id: clima_temp_media_anual
+    category: clima
+    label_pt: Temperatura média anual
+    label_en: Mean annual temperature
+    unit: °C
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [peso, faixa, opcao]
+    default_range: [null, null]
+    weight: 0.3
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Média da temperatura média diária a 2 m (Open-Meteo, reanálise ERA5) na janela coletada (24 meses), no
+      ponto representativo do município. Não é uma normal climatológica de 30 anos.
+    options:
+      - {id: fresco, label_pt: Fresco, label_en: Cool, range: [null, 14.5]}
+      - {id: ameno, label_pt: Ameno, label_en: Mild, range: [14.5, 17]}
+      - {id: quente, label_pt: Quente, label_en: Warm, range: [17, null]}
+    compute: {kind: climate, metric: temp_media_anual}
+
+  - id: clima_temp_max_verao
+    category: clima
+    label_pt: Máxima média no verão
+    label_en: Mean summer maximum
+    unit: °C
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.1
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Média da temperatura máxima diária (Open-Meteo, ERA5) nos dias de junho, julho e agosto da janela.
+    options: null
+    compute: {kind: climate, metric: temp_max_verao}
+
+  - id: clima_temp_min_inverno
+    category: clima
+    label_pt: Mínima média no inverno
+    label_en: Mean winter minimum
+    unit: °C
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.1
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Média da temperatura mínima diária (Open-Meteo, ERA5) nos dias de dezembro, janeiro e fevereiro da janela.
+    options: null
+    compute: {kind: climate, metric: temp_min_inverno}
+
+  - id: clima_precipitacao_anual
+    category: clima
+    label_pt: Precipitação anual
+    label_en: Annual precipitation
+    unit: mm/ano
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.1
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Soma da precipitação diária (Open-Meteo, ERA5) na janela × 365,25 ÷ dias válidos.
+    options: null
+    compute: {kind: climate, metric: precipitacao_anual}
+
+  - id: clima_sol_horas_dia
+    category: clima
+    label_pt: Horas de sol por dia
+    label_en: Sunshine hours per day
+    unit: h/dia
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.1
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Média da duração diária de sol (Open-Meteo, ERA5, segundos ÷ 3 600) na janela.
+    options: null
+    compute: {kind: climate, metric: sol_horas_dia}
+
+  - id: clima_dias_extremos_pct
+    category: clima
+    label_pt: Dias de clima extremo
+    label_en: Extreme weather days
+    unit: '% dos dias'
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.1
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Percentual de dias com calor (máxima > 35 °C ou aparente máxima > 40 °C), frio (mínima < 1 °C ou
+      aparente mínima < −5 °C), chuva (> 35 mm) ou neve (> 0 cm). Regras do weatherClassifier legado, com a
+      temperatura aparente do Open-Meteo no lugar do Heat Index e do Wind Chill do WWO; o UV do legado não
+      entra (não existe no Open-Meteo).
+    options: null
+    compute: {kind: climate, metric: dias_extremos_pct}
+
+  - id: clima_tci_anual
+    category: clima
+    label_pt: Índice de conforto climático (TCI)
+    label_en: Tourism Climate Index (TCI)
+    unit: índice 0–100
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.2
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Média dos TCI mensais (meses com pelo menos 20 dias válidos). TCI = 2·CID + 2·CIA + 0,5·P + 0,5·S + W,
+      com as faixas do weatherClassifier legado: CID pela temperatura média, CIA pela máxima (−1 com umidade
+      média < 30 % ou > 90 %), P pela precipitação do mês, S pelas horas de sol e W pelo vento médio. Variáveis
+      do Open-Meteo (ERA5) no lugar das do WWO; máximo possível 60.
+    options: null
+    compute: {kind: climate, metric: tci_anual}
+
+  - id: clima_temp_max_anual
+    category: clima
+    label_pt: Máxima média anual
+    label_en: Mean annual maximum
+    unit: °C
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Média da temperatura máxima diária a 2 m (Open-Meteo, ERA5) nos dias válidos da janela (24 meses).
+    options: null
+    compute: {kind: climate, metric: temp_max_anual}
+
+  - id: clima_temp_min_anual
+    category: clima
+    label_pt: Mínima média anual
+    label_en: Mean annual minimum
+    unit: °C
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Média da temperatura mínima diária a 2 m (Open-Meteo, ERA5) nos dias válidos da janela (24 meses).
+    options: null
+    compute: {kind: climate, metric: temp_min_anual}
+
+  - id: clima_dias_calor_pct
+    category: clima
+    label_pt: Dias de calor extremo
+    label_en: Extreme heat days
+    unit: '% dos dias'
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Percentual de dias com máxima > 35 °C ou temperatura aparente máxima > 40 °C (Open-Meteo, ERA5).
+    options: null
+    compute: {kind: climate, metric: dias_calor_pct}
+
+  - id: clima_dias_frio_pct
+    category: clima
+    label_pt: Dias de frio extremo
+    label_en: Extreme cold days
+    unit: '% dos dias'
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Percentual de dias com mínima < 1 °C ou temperatura aparente mínima < −5 °C (Open-Meteo, ERA5).
+    options: null
+    compute: {kind: climate, metric: dias_frio_pct}
+
+  - id: clima_dias_chuva_pct
+    category: clima
+    label_pt: Dias de chuva forte
+    label_en: Heavy rain days
+    unit: '% dos dias'
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: Percentual de dias com precipitação > 35 mm (Open-Meteo, ERA5).
+    options: null
+    compute: {kind: climate, metric: dias_chuva_pct}
+
+  - id: clima_dias_neve_pct
+    category: clima
+    label_pt: Dias com neve
+    label_en: Snow days
+    unit: '% dos dias'
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Percentual de dias com queda de neve > 0 cm (Open-Meteo, ERA5), como no legado. Valores residuais do
+      ERA5 (< 0,1 cm) também contam (R-004).
+    options: null
+    compute: {kind: climate, metric: dias_neve_pct}
+
+  # ---------------------------------------------------------------- cultura
+  - id: cultura_cinemas_10k
+    category: cultura
+    label_pt: Recintos de cinema por 10 mil habitantes
+    label_en: Cinemas per 10,000 residents
+    unit: por 10 mil hab.
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Recintos de cinema (Pordata 623) ÷ residentes do mesmo ano (Pordata 1) × 10 000. Contagem: o símbolo
+      "-" da fonte é lido como zero e marcado como zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: recintos_cinema
+      filters: [{}]
+      dash_is_zero: true
+      per_population: {scale: 10000, age_groups: null}
+
+  - id: cultura_espetaculos_10k
+    category: cultura
+    label_pt: Sessões de espetáculos ao vivo por 10 mil habitantes
+    label_en: Live performances per 10,000 residents
+    unit: por 10 mil hab.
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Sessões de espetáculos ao vivo (Pordata 631) ÷ residentes do mesmo ano × 10 000. Contagem: "-" vira zero
+      por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: sessoes_espetaculos_ao_vivo
+      filters: [{}]
+      dash_is_zero: true
+      per_population: {scale: 10000, age_groups: null}
+
+  # ---------------------------------------------------------------- economia
+  - id: economia_poder_compra
+    category: economia
+    label_pt: Poder de compra per capita
+    label_en: Purchasing power per capita
+    unit: índice (PT = 100)
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.7
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Indicador per capita do poder de compra (INE, indicador 0014580, Portugal = 100), no ano mais recente
+      publicado. Índice: "-" não vira zero.
+    options: null
+    compute: {kind: observation, source_id: ine, dataset_id: poder_compra_per_capita, filters: [{}], dash_is_zero: false}
+
+  - id: economia_agencias_bancarias_10k
+    category: economia
+    label_pt: Agências bancárias por 10 mil habitantes
+    label_en: Bank branches per 10,000 residents
+    unit: por 10 mil hab.
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.3
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Agências bancárias (Pordata 295) ÷ residentes do mesmo ano × 10 000. Contagem: "-" vira zero por
+      convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: agencias_bancarias
+      filters: [{}]
+      dash_is_zero: true
+      per_population: {scale: 10000, age_groups: null}
+
+  # ---------------------------------------------------------------- emprego
+  - id: emprego_desemprego_100
+    category: emprego
+    label_pt: Desempregados registados por 100 residentes de 15 a 64 anos
+    label_en: Registered unemployed per 100 residents aged 15–64
+    unit: por 100 residentes de 15–64
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Desempregados registados nos centros de emprego (Pordata 439, total) ÷ residentes de 15 a 64 anos do
+      mesmo ano (Pordata 1) × 100. É um proxy, não a taxa de desemprego oficial (R-009). Contagem: "-" vira
+      zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: desemprego_registado
+      filters: [{filter_1: Total}]
+      dash_is_zero: true
+      per_population:
+        scale: 100
+        age_groups: ['15 - 19 anos', '20 - 24 anos', '25 - 29 anos', '30 - 34 anos', '35 - 39 anos',
+                     '40 - 44 anos', '45 - 49 anos', '50 - 54 anos', '55 - 59 anos', '60 - 64 anos']
+
+  - id: emprego_ganho_medio_mensal
+    category: emprego
+    label_pt: Ganho médio mensal
+    label_en: Average monthly earnings
+    unit: €/mês
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Ganho médio mensal dos trabalhadores por conta de outrem (Pordata 581), no ano mais recente publicado. É
+      uma média: "-" e "x" ficam ausentes.
+    options: null
+    compute: {kind: observation, source_id: pordata, dataset_id: ganho_medio_mensal, filters: [{}], dash_is_zero: false}
+
+  - id: emprego_setor_a_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: agricultura, produção animal, caça, floresta e pesca'
+    label_en: 'Persons employed: agriculture, forestry and fishing'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: &setor >-
+      Pessoal ao serviço nas empresas da seção CAE (Pordata 845) ÷ pessoal ao serviço total do mesmo ano ×
+      100. Contagem: "-" vira zero por convenção da fonte. Os rótulos da fonte têm espaço não separável,
+      normalizado antes da comparação.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'A. Agricultura, produção animal, caça, floresta e pesca'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_b_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: indústrias extrativas'
+    label_en: 'Persons employed: mining and quarrying'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'B. Indústrias extrativas'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_c_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: indústrias transformadoras'
+    label_en: 'Persons employed: manufacturing'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'C. Indústrias transformadoras'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_d_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: eletricidade, gás, vapor, água quente e fria e ar frio'
+    label_en: 'Persons employed: electricity, gas, steam and air conditioning'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'D. Eletricidade, gás, vapor, água quente e fria e ar frio'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_e_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: água, saneamento, gestão de resíduos e despoluição'
+    label_en: 'Persons employed: water supply, sewerage and waste management'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'E. Captação, tratamento e distribuição de água; saneamento, gestão de resíduos e despoluição'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_f_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: construção'
+    label_en: 'Persons employed: construction'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'F. Construção'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_g_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: comércio por grosso e a retalho; reparação de veículos'
+    label_en: 'Persons employed: wholesale and retail trade'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'G. Comércio por grosso e a retalho; reparação de veículos automóveis e motociclos'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_h_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: transportes e armazenagem'
+    label_en: 'Persons employed: transportation and storage'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'H. Transportes e armazenagem'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_i_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: alojamento, restauração e similares'
+    label_en: 'Persons employed: accommodation and food services'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'I. Alojamento, restauração e similares'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_j_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: atividades de informação e de comunicação'
+    label_en: 'Persons employed: information and communication'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'J. Atividades de informação e de comunicação'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_l_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: atividades imobiliárias'
+    label_en: 'Persons employed: real estate activities'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'L. Atividades imobiliárias'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_m_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: consultoria, atividades científicas, técnicas e similares'
+    label_en: 'Persons employed: professional, scientific and technical activities'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'M. Atividades de consultoria, científicas, técnicas e similares'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_n_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: atividades administrativas e dos serviços de apoio'
+    label_en: 'Persons employed: administrative and support services'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'N. Atividades administrativas e dos serviços de apoio'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_p_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: educação'
+    label_en: 'Persons employed: education'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'P. Educação'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_q_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: saúde humana e apoio social'
+    label_en: 'Persons employed: human health and social work'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'Q. Atividades de saúde humana e apoio social'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_r_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: atividades artísticas, de espetáculos e recreativas'
+    label_en: 'Persons employed: arts, entertainment and recreation'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'R. Atividades de teatro, de música, de dança e outras atividades artísticas e literárias'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  - id: emprego_setor_s_pct
+    category: emprego
+    label_pt: 'Pessoal ao serviço: outras atividades de serviços'
+    label_en: 'Persons employed: other service activities'
+    unit: '% do pessoal ao serviço'
+    direction: faixa_alvo
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *setor
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: pessoal_ao_servico_empresas
+      filters: [{filter_1: 'S. Outras atividades de serviços'}]
+      dash_is_zero: true
+      share: {filters: {filter_1: Total}, scale: 100}
+
+  # ---------------------------------------------------------------- educacao
+  - id: educacao_escolas_1000_jovens
+    category: educacao
+    label_pt: Estabelecimentos de ensino não superior por mil residentes de 0 a 19 anos
+    label_en: Non-higher education schools per 1,000 residents aged 0–19
+    unit: por mil residentes de 0–19
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.6
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Estabelecimentos de ensino não superior, total (Pordata 379) ÷ residentes de 0 a 19 anos do mesmo ano
+      (Pordata 1) × 1 000. Contagem: "-" vira zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: ensino_nao_superior
+      filters: [{filter_1: Total, filter_2: Total}]
+      dash_is_zero: true
+      per_population:
+        scale: 1000
+        age_groups: [Menos de 5 anos, '5 - 9 anos', '10 - 14 anos', '15 - 19 anos']
+
+  - id: educacao_ensino_superior
+    category: educacao
+    label_pt: Há estabelecimento de ensino superior no município
+    label_en: Higher education institution in the municipality
+    unit: 1 = há, 0 = não há
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso]
+    default_range: [null, null]
+    weight: 0.4
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      1 quando o município tem pelo menos um estabelecimento de ensino superior (Pordata 375, total) no ano
+      mais recente, senão 0. O "-" da fonte vira zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: ensino_superior
+      filters: [{filter_1: Total}]
+      dash_is_zero: true
+      presence: true
+
+  # ---------------------------------------------------------------- populacao
+  - id: populacao_residentes
+    category: populacao
+    label_pt: Residentes
+    label_en: Residents
+    unit: residentes
+    direction: faixa_alvo
+    levels: [municipio, freguesia]
+    modes: [opcao, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      População residente total (Pordata 1, estimativas anuais) no ano mais recente. Na freguesia, residentes
+      dos Censos 2021 (INE).
+    options:
+      - {id: vila, label_pt: Vila, label_en: Town, range: [null, 20000]}
+      - {id: cidade_media, label_pt: Cidade média, label_en: Mid-sized city, range: [20000, 100000]}
+      - {id: grande_centro, label_pt: Grande centro, label_en: Large city, range: [100000, null]}
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: populacao_residente_sexo_idade
+      filters: [{filter_1: Total, filter_2: Total}]
+      dash_is_zero: true
+    compute_parish: {kind: census, metric: residentes}
+
+  - id: populacao_pct_25_39
+    category: populacao
+    label_pt: Residentes de 25 a 39 anos
+    label_en: Residents aged 25–39
+    unit: '%'
+    direction: maior_melhor
+    levels: [municipio, freguesia]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.25
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Residentes de 25 a 39 anos ÷ residentes totais do mesmo ano × 100 (Pordata 1). Na freguesia, Censos 2021
+      (INE).
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: populacao_residente_sexo_idade
+      filters:
+        - {filter_1: Total, filter_2: '25 - 29 anos'}
+        - {filter_1: Total, filter_2: '30 - 34 anos'}
+        - {filter_1: Total, filter_2: '35 - 39 anos'}
+      dash_is_zero: true
+      share: {filters: {filter_1: Total, filter_2: Total}, scale: 100}
+    compute_parish: {kind: census, metric: pct_25_39}
+
+  - id: populacao_pct_65_mais
+    category: populacao
+    label_pt: Residentes com 65 anos ou mais
+    label_en: Residents aged 65 or over
+    unit: '%'
+    direction: menor_melhor
+    levels: [municipio, freguesia]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.25
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Residentes com 65 anos ou mais ÷ residentes totais do mesmo ano × 100 (Pordata 1). Na freguesia, Censos
+      2021 (INE).
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: populacao_residente_sexo_idade
+      filters:
+        - {filter_1: Total, filter_2: '65 - 69 anos'}
+        - {filter_1: Total, filter_2: '70 - 74 anos'}
+        - {filter_1: Total, filter_2: '75 - 79 anos'}
+        - {filter_1: Total, filter_2: '80 - 84 anos'}
+        - {filter_1: Total, filter_2: '85 ou mais anos'}
+      dash_is_zero: true
+      share: {filters: {filter_1: Total, filter_2: Total}, scale: 100}
+    compute_parish: {kind: census, metric: pct_65_mais}
+
+  - id: populacao_densidade
+    category: populacao
+    label_pt: Densidade populacional
+    label_en: Population density
+    unit: hab./km²
+    direction: faixa_alvo
+    levels: [municipio, freguesia]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Densidade populacional (Pordata 4) no ano mais recente. Na freguesia, residentes dos Censos 2021 ÷ área
+      da freguesia na CAOP 2025.
+    options: null
+    compute: {kind: observation, source_id: pordata, dataset_id: densidade_populacional, filters: [{}], dash_is_zero: false}
+    compute_parish: {kind: census, metric: densidade}
+
+  # ---------------------------------------------------------------- comunidade
+  - id: comunidade_estrangeira_pct
+    category: comunidade
+    label_pt: População estrangeira residente
+    label_en: Foreign resident population
+    unit: '% dos residentes'
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      População estrangeira com estatuto legal de residente (Pordata 354, total) ÷ residentes do mesmo ano ×
+      100. Contagem: "-" vira zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: populacao_estrangeira_residente
+      filters: [{filter_1: Total}]
+      dash_is_zero: true
+      per_population: {scale: 100, age_groups: null}
+
+  - id: comunidade_brasileira_pct
+    category: comunidade
+    label_pt: População brasileira residente
+    label_en: Brazilian resident population
+    unit: '% dos residentes'
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      População brasileira com estatuto legal de residente (Pordata 354, "2.1. Brasil") ÷ residentes do mesmo
+      ano × 100. Contagem: "-" vira zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: populacao_estrangeira_residente
+      filters: [{filter_1: 2.1. Brasil}]
+      dash_is_zero: true
+      per_population: {scale: 100, age_groups: null}
+
+  # ---------------------------------------------------------------- saude
+  - id: saude_hospitais
+    category: saude
+    label_pt: Hospitais
+    label_en: Hospitals
+    unit: hospitais
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Hospitais, total (Pordata 470), no ano mais recente. Contagem: "-" vira zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: hospitais
+      filters: [{filter_1: Total}]
+      dash_is_zero: true
+
+  - id: saude_farmacias_10k
+    category: saude
+    label_pt: Farmácias por 10 mil habitantes
+    label_en: Pharmacies per 10,000 residents
+    unit: por 10 mil hab.
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Farmácias (Pordata 464) ÷ residentes do mesmo ano × 10 000. Contagem: "-" vira zero por convenção da
+      fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: farmacias
+      filters: [{}]
+      dash_is_zero: true
+      per_population: {scale: 10000, age_groups: null}
+
+  # ---------------------------------------------------------------- seguranca
+  - id: seguranca_taxa_criminalidade
+    category: seguranca
+    label_pt: Taxa de criminalidade
+    label_en: Crime rate
+    unit: ‰
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Taxa de criminalidade, total (INE, indicador 0008074, por mil habitantes), no ano mais recente publicado.
+      Taxa: "-" não vira zero.
+    options: null
+    compute: {kind: observation, source_id: ine, dataset_id: taxa_criminalidade, filters: [{filter_1: Total}], dash_is_zero: false}
+
+  - id: seguranca_crimes_pessoas_1000
+    category: seguranca
+    label_pt: Crimes contra as pessoas por mil habitantes
+    label_en: Crimes against persons per 1,000 residents
+    unit: por mil hab.
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Crimes registados contra as pessoas (Pordata 560) ÷ residentes do mesmo ano × 1 000. Contagem: "-" vira
+      zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: crimes_por_categoria
+      filters: [{filter_1: 1. Contra as pessoas}]
+      dash_is_zero: true
+      per_population: {scale: 1000, age_groups: null}
+
+  # ---------------------------------------------------------------- distancia
+  - id: distancia_lisboa_carro_min
+    category: distancia
+    label_pt: Tempo de carro até Lisboa
+    label_en: Driving time to Lisbon
+    unit: min
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.25
+    status: disponivel
+    pending_reason: null
+    methodology_pt: &carro >-
+      Tempo de viagem de carro, sem trânsito, do ponto representativo do município até o polo (Google Routes
+      API, spec 009). Tempos de viagem: Google. As ilhas não têm rota até o continente (ausência com motivo).
+    options: null
+    compute: {kind: mobility, mode: driving, measure: minutes, pole_id: lisboa}
+
+  - id: distancia_porto_carro_min
+    category: distancia
+    label_pt: Tempo de carro até o Porto
+    label_en: Driving time to Porto
+    unit: min
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.25
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *carro
+    options: null
+    compute: {kind: mobility, mode: driving, measure: minutes, pole_id: porto}
+
+  - id: distancia_aeroporto_carro_min
+    category: distancia
+    label_pt: Tempo de carro até o aeroporto mais próximo
+    label_en: Driving time to the nearest airport
+    unit: min
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 0.5
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Menor tempo de carro (Google Routes API, spec 009) até um dos aeroportos elegíveis do município. Se o par
+      de algum aeroporto elegível falhou, o valor fica ausente (não se escolhe outro). Tempos de viagem: Google.
+    options: null
+    compute: {kind: mobility, mode: driving, measure: minutes, nearest_kind: aeroporto}
+
+  - id: distancia_lisboa_carro_km
+    category: distancia
+    label_pt: Distância de carro até Lisboa
+    label_en: Driving distance to Lisbon
+    unit: km
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: &carro_km 'Distância da rota de carro até o polo (Google Routes API, spec 009). Tempos de viagem: Google.'
+    options: null
+    compute: {kind: mobility, mode: driving, measure: km, pole_id: lisboa}
+
+  - id: distancia_porto_carro_km
+    category: distancia
+    label_pt: Distância de carro até o Porto
+    label_en: Driving distance to Porto
+    unit: km
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *carro_km
+    options: null
+    compute: {kind: mobility, mode: driving, measure: km, pole_id: porto}
+
+  - id: distancia_aeroporto_carro_km
+    category: distancia
+    label_pt: Distância de carro até o aeroporto mais próximo
+    label_en: Driving distance to the nearest airport
+    unit: km
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: 'Menor distância de carro até um aeroporto elegível (Google Routes API, spec 009). Tempos de viagem: Google.'
+    options: null
+    compute: {kind: mobility, mode: driving, measure: km, nearest_kind: aeroporto}
+
+  - id: distancia_lisboa_km
+    category: distancia
+    label_pt: Distância em linha reta até Lisboa
+    label_en: Straight-line distance to Lisbon
+    unit: km (linha reta)
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: &reta >-
+      Distância geodésica (haversine) entre os pontos representativos da CAOP 2025 (spec 009). Existe também
+      para as ilhas.
+    options: null
+    compute: {kind: mobility, mode: straight_line, measure: km, pole_id: lisboa}
+
+  - id: distancia_porto_km
+    category: distancia
+    label_pt: Distância em linha reta até o Porto
+    label_en: Straight-line distance to Porto
+    unit: km (linha reta)
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *reta
+    options: null
+    compute: {kind: mobility, mode: straight_line, measure: km, pole_id: porto}
+
+  - id: distancia_aeroporto_km
+    category: distancia
+    label_pt: Distância em linha reta até o aeroporto mais próximo
+    label_en: Straight-line distance to the nearest airport
+    unit: km (linha reta)
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: *reta
+    options: null
+    compute: {kind: mobility, mode: straight_line, measure: km, nearest_kind: aeroporto}
+
+  - id: distancia_sede_distrito_km
+    category: distancia
+    label_pt: Distância até a sede de distrito
+    label_en: Distance to the district capital
+    unit: km
+    direction: menor_melhor
+    levels: [municipio]
+    modes: [faixa]
+    default_range: [null, null]
+    weight: 0
+    status: fonte_pendente
+    pending_reason: polos de sede de distrito não configurados em config/poles.yml (spec 009); exige recoleta
+    methodology_pt: Distância até a sede do distrito do município; depende dos polos sede_distrito da spec 009 (R-002).
+    options: null
+
+  # ---------------------------------------------------------------- mercado
+  - id: mercado_fogos_concluidos_1000
+    category: mercado
+    label_pt: Fogos concluídos em construções novas por mil habitantes
+    label_en: New dwellings completed per 1,000 residents
+    unit: por mil hab.
+    direction: maior_melhor
+    levels: [municipio]
+    modes: [peso, faixa]
+    default_range: [null, null]
+    weight: 1.0
+    status: disponivel
+    pending_reason: null
+    methodology_pt: >-
+      Fogos concluídos em construções novas para habitação familiar, total (Pordata 980) ÷ residentes do
+      mesmo ano × 1 000. Contagem: "-" vira zero por convenção da fonte.
+    options: null
+    compute:
+      kind: observation
+      source_id: pordata
+      dataset_id: fogos_concluidos
+      filters: [{filter_1: Total}]
+      dash_is_zero: true
+      per_population: {scale: 1000, age_groups: null}

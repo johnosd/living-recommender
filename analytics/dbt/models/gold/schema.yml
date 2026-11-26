@@ -1,0 +1,732 @@
+version: 2
+
+# Camada Gold (spec 011). As tabelas são preparadas em Python (`pipelines/gold/`) e os modelos só fixam tipos e
+# rodam os testes. A fonte `caop_silver` (dim_municipality, dim_parish) já é declarada em `models/bronze/schema.yml`
+# e lida por `OBS_SILVER_DIR`; o dbt não aceita a mesma fonte declarada duas vezes.
+
+models:
+  - name: gold_municipality_indicator
+    description: >-
+      Perfil municipal longo: uma linha por município × critério disponível do catálogo × variante, inclusive as
+      ausências (valor nulo com motivo). Cada valor traz fonte, período usado e licença.
+    meta:
+      source_ids: [pordata, ine, open_meteo, idealista, caop, google_distances]
+    columns:
+      - name: dico
+        description: Código DICO do município.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: criterion_id
+        description: Critério do catálogo (`gold_criteria_catalog.criterion_id`).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_criteria_catalog')
+                field: criterion_id
+      - name: category
+        description: Categoria do critério no catálogo (por exemplo `custo` ou `clima`).
+        data_type: varchar
+        data_tests: [not_null]
+      - name: variant
+        description: Tipologia (`ALL`, `T0`...`T4+`) nos critérios de aluguel; texto vazio nos demais.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: value
+        description: Valor do indicador; nulo quando ausente (nunca imputado).
+        data_type: double
+      - name: unit
+        description: Unidade do valor, do catálogo.
+        data_type: varchar
+      - name: period
+        description: >-
+          Período do valor: ano (Pordata/INE), mês `AAAA-MM` (Idealista, mobilidade) ou janela `início/fim`
+          (clima). Nulo quando não há nenhum dado do município.
+        data_type: varchar
+      - name: dataset_latest_period
+        description: Período mais recente com valor no critério, entre todos os municípios.
+        data_type: varchar
+      - name: is_older_period
+        description: Verdadeiro quando o município usa um período anterior ao mais recente do critério (FR-003).
+        data_type: boolean
+        data_tests: [not_null]
+      - name: value_status
+        description: >-
+          `observado`, `zero_convencao_fonte` (o símbolo `-` lido como zero numa contagem, R-001) ou `ausente`.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [observado, zero_convencao_fonte, ausente]
+      - name: missing_reason
+        description: >-
+          Motivo da ausência (`sem_publicacao`, `simbolo_fonte:<s>`, `sem_denominador`, `sem_par_elegivel`,
+          `par_falha`, `amostra_insuficiente`, `sem_anuncios`, `regional_only`, `sem_dados_clima`...); nulo
+          quando há valor.
+        data_type: varchar
+      - name: source_symbol
+        description: Símbolo da fonte na linha usada (`-`, `r`, `Pro`, `x`...), informativo.
+        data_type: varchar
+      - name: source_id
+        description: Fonte do valor (`pordata`, `ine`, `open_meteo`, `idealista`, `caop`, `google_distances`).
+        data_type: varchar
+      - name: dataset_id
+        description: Dataset de origem (por exemplo `recintos_cinema` ou `stg_climate_daily`).
+        data_type: varchar
+        data_tests: [not_null]
+      - name: license_id
+        description: Licença da fonte, copiada linha a linha.
+        data_type: varchar
+      - name: attribution
+        description: 'Atribuição exigida pela fonte (no carro, "Tempos de viagem: Google").'
+        data_type: varchar
+      - name: usage_restriction
+        description: Restrição de uso da fonte (Google, Open-Meteo, Idealista); nula quando não há.
+        data_type: varchar
+      - name: is_stale
+        description: Só mobilidade; verdadeiro quando o par foi calculado com uma configuração que já não vale.
+        data_type: boolean
+        data_tests: [not_null]
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build (hash do conteúdo).
+        data_type: varchar
+        data_tests: [not_null]
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_rent_by_municipality_typology
+    description: >-
+      Aluguel pedido do Idealista por município × tipologia (`ALL`, `T0`...`T4+`), com outliers marcados por IQR
+      e mediana só com pelo menos 10 anúncios. Só agregados: nenhuma linha por anúncio.
+    meta:
+      source_ids: [idealista]
+    columns:
+      - name: dico
+        description: Código DICO do município.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: typology
+        description: Tipologia (`ALL` = todas).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ALL, T0, T1, T2, T3, T4+]
+      - name: n_listings
+        description: Anúncios com preço válido no grupo, inclusive os outliers.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: n_outliers
+        description: Anúncios marcados como outlier (IQR de Tukey, 1,5) no grupo município × tipologia.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: n_eligible
+        description: Anúncios usados nas estatísticas (sem os outliers).
+        data_type: bigint
+        data_tests: [not_null]
+      - name: rent_median
+        description: Mediana do aluguel pedido (€/mês, interpolação linear); nula com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p25
+        description: Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p75
+        description: Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: n_eur_m2
+        description: Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m².
+        data_type: bigint
+        data_tests: [not_null]
+      - name: eur_m2_median
+        description: Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida.
+        data_type: double
+      - name: sample_status
+        description: '`suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [suficiente, amostra_insuficiente, sem_anuncios]
+      - name: rent_coverage
+        description: >-
+          Cobertura do município (igual nas 6 linhas): `propria`, `insuficiente`, `regional_only` (só há anúncios
+          com a região autónoma) ou `sem_anuncios`.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [propria, insuficiente, regional_only, sem_anuncios]
+      - name: snapshot_month
+        description: Mês do snapshot do Idealista usado (AAAA-MM).
+        data_type: varchar
+      - name: source_id
+        description: Fonte (`idealista`).
+        data_type: varchar
+      - name: license_id
+        description: Licença declarada no snapshot.
+        data_type: varchar
+      - name: attribution
+        description: Atribuição exigida pela fonte.
+        data_type: varchar
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_municipality_climate_monthly
+    description: >-
+      Clima mensal por município (Open-Meteo, ERA5): médias, dias extremos e o TCI do weatherClassifier legado,
+      com os componentes. Mês com menos de 20 dias válidos fica sem médias e sem TCI.
+    meta:
+      source_ids: [open_meteo]
+    columns:
+      - name: dico
+        description: Código DICO do município.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: year_month
+        description: Mês (AAAA-MM).
+        data_type: varchar
+        data_tests: [not_null]
+      - name: valid_days
+        description: Dias do mês com temperatura máxima.
+        data_type: integer
+        data_tests: [not_null]
+      - name: temp_mean
+        description: Média da temperatura média diária (°C).
+        data_type: double
+      - name: temp_max_mean
+        description: Média da temperatura máxima diária (°C).
+        data_type: double
+      - name: temp_min_mean
+        description: Média da temperatura mínima diária (°C).
+        data_type: double
+      - name: precip_total
+        description: Precipitação total do mês (mm).
+        data_type: double
+      - name: sun_hours_mean
+        description: Média das horas de sol por dia.
+        data_type: double
+      - name: wind_mean
+        description: Média da velocidade média diária do vento a 10 m (km/h).
+        data_type: double
+      - name: humidity_mean
+        description: Média da umidade relativa média diária (%).
+        data_type: double
+      - name: hot_days
+        description: Dias com máxima > 35 °C ou temperatura aparente máxima > 40 °C.
+        data_type: integer
+      - name: cold_days
+        description: Dias com mínima < 1 °C ou temperatura aparente mínima < −5 °C.
+        data_type: integer
+      - name: rain_days
+        description: Dias com precipitação > 35 mm.
+        data_type: integer
+      - name: snow_days
+        description: Dias com queda de neve > 0 cm.
+        data_type: integer
+      - name: extreme_days
+        description: Dias com pelo menos um tipo de extremo (cada dia conta uma vez).
+        data_type: integer
+      - name: extreme_days_pct
+        description: Dias extremos ÷ dias válidos × 100.
+        data_type: double
+      - name: cid
+        description: Componente de conforto diurno do TCI (faixa da temperatura média, −1 pela umidade).
+        data_type: integer
+      - name: cia
+        description: Componente de conforto diário do TCI (faixa da máxima, −1 pela umidade).
+        data_type: integer
+      - name: p_index
+        description: Componente de precipitação do TCI (0 a 10).
+        data_type: integer
+      - name: s_index
+        description: Componente de sol do TCI (0 a 10).
+        data_type: integer
+      - name: w_index
+        description: Componente de vento do TCI (0 a 10).
+        data_type: integer
+      - name: tci
+        description: TCI = 2·CID + 2·CIA + 0,5·P + 0,5·S + W, limitado a 0–100.
+        data_type: double
+      - name: window_start
+        description: Início da janela coletada (AAAA-MM-DD).
+        data_type: varchar
+      - name: window_end
+        description: Fim da janela coletada (AAAA-MM-DD).
+        data_type: varchar
+      - name: source_id
+        description: Fonte (`open_meteo`).
+        data_type: varchar
+      - name: license_id
+        description: Licença da fonte.
+        data_type: varchar
+      - name: attribution
+        description: Atribuição exigida pela fonte.
+        data_type: varchar
+      - name: usage_restriction
+        description: Restrição de uso do plano gratuito do Open-Meteo.
+        data_type: varchar
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_criteria_catalog
+    description: >-
+      Catálogo versionado de critérios (`config/criteria.yml`): definição, rótulos, direção, modos, peso, status
+      e a proveniência dos valores calculados. Alimenta o ranker e o configurador da Fase 4.
+    meta:
+      source_ids: [pordata, ine, open_meteo, idealista, caop, google_distances, censos]
+    columns:
+      - name: catalog_version
+        description: 12 primeiros hex do SHA-256 das definições e dos parâmetros de normalização.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: schema_version
+        description: Versão do formato do arquivo de critérios.
+        data_type: integer
+      - name: criterion_id
+        description: Identificador estável do critério (snake_case).
+        data_type: varchar
+        data_tests: [not_null, unique]
+      - name: category
+        description: Categoria do critério.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: category_label_pt
+        description: Rótulo da categoria em português.
+        data_type: varchar
+      - name: category_label_en
+        description: Rótulo da categoria em inglês.
+        data_type: varchar
+      - name: label_pt
+        description: Rótulo do critério em português.
+        data_type: varchar
+      - name: label_en
+        description: Rótulo do critério em inglês.
+        data_type: varchar
+      - name: unit
+        description: Unidade do valor.
+        data_type: varchar
+      - name: direction
+        description: '`maior_melhor`, `menor_melhor` ou `faixa_alvo`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [maior_melhor, menor_melhor, faixa_alvo]
+      - name: methodology_pt
+        description: Metodologia (fórmula, dataset e regras) em português.
+        data_type: varchar
+      - name: levels
+        description: Níveis territoriais (JSON), `municipio` e/ou `freguesia`.
+        data_type: varchar
+      - name: modes
+        description: Modos de uso no configurador (JSON) — `peso`, `faixa`, `opcao`.
+        data_type: varchar
+      - name: options
+        description: Opções categóricas (JSON com `id`, rótulos e `range`); nulo quando não há.
+        data_type: varchar
+      - name: default_range_min
+        description: Mínimo padrão do controle de faixa; nulo = aberto.
+        data_type: double
+      - name: default_range_max
+        description: Máximo padrão do controle de faixa; nulo = aberto.
+        data_type: double
+      - name: weight
+        description: Peso interno na categoria (0 a 1); 0 = só filtro.
+        data_type: double
+      - name: status
+        description: '`disponivel` ou `fonte_pendente`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [disponivel, fonte_pendente]
+      - name: pending_reason
+        description: Motivo da pendência; nulo nos disponíveis.
+        data_type: varchar
+      - name: source_ids
+        description: Fontes distintas dos valores calculados, unidas por " | ".
+        data_type: varchar
+      - name: dataset_ids
+        description: Datasets distintos dos valores calculados, unidos por " | ".
+        data_type: varchar
+      - name: license_ids
+        description: Licenças distintas dos valores calculados, unidas por " | ".
+        data_type: varchar
+      - name: attributions
+        description: Atribuições distintas dos valores calculados, unidas por " | ".
+        data_type: varchar
+      - name: usage_restrictions
+        description: Restrições de uso distintas dos valores calculados, unidas por " | ".
+        data_type: varchar
+      - name: reference_periods
+        description: Períodos distintos usados pelos valores (JSON, ordem crescente).
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_criteria_normalization
+    description: >-
+      Parâmetros de normalização por critério × nível × variante (n, mínimo, P5, P95, máximo, interpolação
+      linear). Na freguesia, só valores próprios entram.
+    meta:
+      source_ids: [pordata, ine, open_meteo, idealista, caop, google_distances, censos]
+    columns:
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: criterion_id
+        description: Critério do catálogo.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_criteria_catalog')
+                field: criterion_id
+      - name: level
+        description: '`municipio` ou `freguesia`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [municipio, freguesia]
+      - name: variant
+        description: Tipologia nos critérios de aluguel; texto vazio nos demais.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: n
+        description: Territórios com valor (na freguesia, só próprios).
+        data_type: bigint
+        data_tests: [not_null]
+      - name: min
+        description: Menor valor.
+        data_type: double
+      - name: p5
+        description: Percentil 5 (interpolação linear).
+        data_type: double
+      - name: p95
+        description: Percentil 95 (interpolação linear).
+        data_type: double
+      - name: max
+        description: Maior valor.
+        data_type: double
+      - name: is_degenerate
+        description: Verdadeiro quando P5 = P95 (o ranker não pode normalizar linearmente).
+        data_type: boolean
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_data_quality
+    description: >-
+      Qualidade por critério do catálogo × nível × variante: cobertura própria, período anterior, zeros por
+      convenção da fonte, herdados, desatualizados, outliers de aluguel e pendências.
+    meta:
+      source_ids: [pordata, ine, open_meteo, idealista, caop, google_distances, censos]
+    columns:
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: criterion_id
+        description: Critério do catálogo.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_criteria_catalog')
+                field: criterion_id
+      - name: level
+        description: '`municipio` ou `freguesia`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [municipio, freguesia]
+      - name: variant
+        description: Tipologia nos critérios de aluguel; texto vazio nos demais e nos pendentes.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: status
+        description: '`disponivel` ou `fonte_pendente`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [disponivel, fonte_pendente]
+      - name: territories_expected
+        description: Territórios do nível (308 municípios ou 3 259 freguesias); 0 nos pendentes.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: with_value
+        description: Territórios com valor (na freguesia, só os próprios).
+        data_type: bigint
+        data_tests: [not_null]
+      - name: missing
+        description: territories_expected − with_value (na freguesia inclui os herdados).
+        data_type: bigint
+        data_tests: [not_null]
+      - name: zero_by_convention
+        description: Valores com o símbolo `-` lido como zero numa contagem (R-001).
+        data_type: bigint
+      - name: older_period
+        description: Territórios que usam um período anterior ao mais recente do critério.
+        data_type: bigint
+      - name: inherited
+        description: Freguesias com o valor herdado do município; 0 no município.
+        data_type: bigint
+      - name: stale
+        description: Valores de mobilidade calculados com uma configuração de polo que já não vale.
+        data_type: bigint
+      - name: outliers
+        description: Aluguel - anúncios marcados como outlier na variante; 0 nos demais critérios.
+        data_type: bigint
+      - name: dataset_latest_period
+        description: Período mais recente com valor no critério.
+        data_type: varchar
+      - name: pending_reason
+        description: Motivo da pendência ("fonte pendente - ..."); nulo nos disponíveis.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_parish_indicator
+    description: >-
+      Perfil de freguesia: uma linha por freguesia × critério disponível × variante. `proprio` onde há dado da
+      freguesia (Censos 2021, aluguel com n ≥ 10), `herdado` (cópia exata do município) ou `ausente`.
+    meta:
+      source_ids: [pordata, ine, open_meteo, idealista, caop, google_distances, censos]
+    columns:
+      - name: dicofre
+        description: Código DICOFRE da freguesia.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_parish')
+                field: dicofre
+      - name: dico
+        description: Código DICO do município da freguesia.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: criterion_id
+        description: Critério do catálogo.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('gold_criteria_catalog')
+                field: criterion_id
+      - name: category
+        description: Categoria do critério no catálogo.
+        data_type: varchar
+      - name: variant
+        description: Tipologia nos critérios de aluguel; texto vazio nos demais.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: value
+        description: Valor do indicador (próprio ou herdado); nulo quando ausente.
+        data_type: double
+      - name: unit
+        description: Unidade do valor, do catálogo.
+        data_type: varchar
+      - name: period
+        description: Período do valor (2021 nos Censos; o do município nos herdados).
+        data_type: varchar
+      - name: dataset_latest_period
+        description: Período mais recente com valor no critério.
+        data_type: varchar
+      - name: is_older_period
+        description: Herdado do município; verdadeiro quando o valor usa um período anterior ao mais recente.
+        data_type: boolean
+      - name: value_status
+        description: '`observado`, `zero_convencao_fonte` ou `ausente`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [observado, zero_convencao_fonte, ausente]
+      - name: missing_reason
+        description: Motivo da ausência; nulo quando há valor.
+        data_type: varchar
+      - name: source_symbol
+        description: Símbolo da fonte (informativo).
+        data_type: varchar
+      - name: source_id
+        description: Fonte do valor (`censos` e `idealista` nos próprios; a do município nos herdados).
+        data_type: varchar
+      - name: dataset_id
+        description: Dataset de origem.
+        data_type: varchar
+      - name: license_id
+        description: Licença da fonte.
+        data_type: varchar
+      - name: attribution
+        description: Atribuição exigida pela fonte.
+        data_type: varchar
+      - name: usage_restriction
+        description: Restrição de uso da fonte; nula quando não há.
+        data_type: varchar
+      - name: is_stale
+        description: Herdado da mobilidade do município (par desatualizado).
+        data_type: boolean
+      - name: origin
+        description: '`proprio`, `herdado` (cópia exata do município) ou `ausente`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [proprio, herdado, ausente]
+      - name: territorial_inheritance
+        description: >-
+          Nos critérios dos Censos, o `coverage_status` da freguesia (`own`, `inherited`, `missing`); nulo nos
+          demais.
+        data_type: varchar
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_rent_by_parish_typology
+    description: >-
+      Aluguel pedido do Idealista por freguesia × tipologia, com a marca de outlier do grupo município × tipologia
+      e mediana só com pelo menos 10 anúncios. Só agregados.
+    meta:
+      source_ids: [idealista]
+    columns:
+      - name: dicofre
+        description: Código DICOFRE da freguesia.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_parish')
+                field: dicofre
+      - name: dico
+        description: Código DICO do município da freguesia.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: source('caop_silver', 'dim_municipality')
+                field: dico
+      - name: typology
+        description: Tipologia (`ALL` = todas).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ALL, T0, T1, T2, T3, T4+]
+      - name: n_listings
+        description: Anúncios com preço válido e freguesia resolvida, inclusive os outliers.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: n_outliers
+        description: Anúncios marcados como outlier no grupo município × tipologia.
+        data_type: bigint
+      - name: n_eligible
+        description: Anúncios usados nas estatísticas (sem os outliers).
+        data_type: bigint
+        data_tests: [not_null]
+      - name: rent_median
+        description: Mediana do aluguel pedido (€/mês); nula com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p25
+        description: Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p75
+        description: Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: n_eur_m2
+        description: Anúncios elegíveis com área entre 10 e 1 000 m².
+        data_type: bigint
+      - name: eur_m2_median
+        description: Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida.
+        data_type: double
+      - name: sample_status
+        description: '`suficiente`, `amostra_insuficiente` ou `sem_anuncios`.'
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [suficiente, amostra_insuficiente, sem_anuncios]
+      - name: rent_coverage
+        description: Cobertura da freguesia (`propria`, `insuficiente` ou `sem_anuncios`).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [propria, insuficiente, sem_anuncios]
+      - name: snapshot_month
+        description: Mês do snapshot do Idealista usado (AAAA-MM).
+        data_type: varchar
+      - name: source_id
+        description: Fonte (`idealista`).
+        data_type: varchar
+      - name: license_id
+        description: Licença declarada no snapshot.
+        data_type: varchar
+      - name: attribution
+        description: Atribuição exigida pela fonte.
+        data_type: varchar
+      - name: catalog_version
+        description: Versão do catálogo do mesmo build.
+        data_type: varchar
+      - name: processed_at_utc
+        description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
