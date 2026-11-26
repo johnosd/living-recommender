@@ -94,6 +94,25 @@ models:
         description: Só mobilidade; verdadeiro quando o par foi calculado com uma configuração que já não vale.
         data_type: boolean
         data_tests: [not_null]
+      - name: origin
+        description: >-
+          `proprio` (dado do município), `herdado` (aluguel da área, quando o município não tem amostra) ou
+          `ausente`.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [proprio, herdado, ausente]
+      - name: origin_level
+        description: >-
+          Nível de onde veio o valor: `municipio` (próprio), `distrito` (ou ilha) ou `regiao` (a do Idealista, não a
+          NUTS II); nulo se ausente.
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [municipio, distrito, regiao]
       - name: catalog_version
         description: Versão do catálogo do mesmo build (hash do conteúdo).
         data_type: varchar
@@ -164,8 +183,9 @@ models:
                 values: [suficiente, amostra_insuficiente, sem_anuncios]
       - name: rent_coverage
         description: >-
-          Cobertura do município (igual nas 6 linhas): `propria`, `insuficiente`, `regional_only` (só há anúncios
-          com a região autónoma) ou `sem_anuncios`.
+          Cobertura da amostra do próprio município (igual nas 6 linhas): `propria`, `insuficiente`, `regional_only`
+          (só há anúncios com a região autónoma) ou `sem_anuncios`. O valor publicado pode vir da área
+          (`reference_level`).
         data_type: varchar
         data_tests:
           - not_null
@@ -184,6 +204,33 @@ models:
       - name: attribution
         description: Atribuição exigida pela fonte.
         data_type: varchar
+      - name: district_or_island
+        description: Distrito do continente ou ilha do município, com o nome da CAOP.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: source_region
+        description: Região do Idealista do distrito; nula se o distrito não tem anúncios no snapshot.
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Norte, Centro, Área Metropolitana de Lisboa, Algarve, Alentejo, Madeira, Açores]
+      - name: reference_level
+        description: >-
+          Nível de onde vem a mediana de aluguel publicada para o município nesta tipologia (`municipio`,
+          `distrito` ou `regiao`); nulo quando nenhum nível tem 10 anúncios.
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [municipio, distrito, regiao]
+      - name: reference_level_eur_m2
+        description: O mesmo que `reference_level`, para a mediana de aluguel por m².
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [municipio, distrito, regiao]
       - name: catalog_version
         description: Versão do catálogo do mesmo build.
         data_type: varchar
@@ -399,7 +446,7 @@ models:
   - name: gold_criteria_normalization
     description: >-
       Parâmetros de normalização por critério × nível × variante (n, mínimo, P5, P95, máximo, interpolação
-      linear). Na freguesia, só valores próprios entram.
+      linear). Só valores próprios entram, no município e na freguesia.
     meta:
       source_ids: [pordata, ine, open_meteo, idealista, caop, google_distances, censos]
     columns:
@@ -429,7 +476,7 @@ models:
         data_type: varchar
         data_tests: [not_null]
       - name: n
-        description: Territórios com valor (na freguesia, só próprios).
+        description: Territórios com valor próprio.
         data_type: bigint
         data_tests: [not_null]
       - name: min
@@ -496,11 +543,11 @@ models:
         data_type: bigint
         data_tests: [not_null]
       - name: with_value
-        description: Territórios com valor (na freguesia, só os próprios).
+        description: Territórios com valor próprio (os herdados não contam como cobertura).
         data_type: bigint
         data_tests: [not_null]
       - name: missing
-        description: territories_expected − with_value (na freguesia inclui os herdados).
+        description: territories_expected − with_value (inclui os herdados).
         data_type: bigint
         data_tests: [not_null]
       - name: zero_by_convention
@@ -510,8 +557,21 @@ models:
         description: Territórios que usam um período anterior ao mais recente do critério.
         data_type: bigint
       - name: inherited
-        description: Freguesias com o valor herdado do município; 0 no município.
+        description: Territórios com valor herdado de um nível acima, no município e na freguesia.
         data_type: bigint
+        data_tests: [not_null]
+      - name: inherited_municipio
+        description: Freguesias que herdam um valor próprio do município; 0 no nível municipal.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: inherited_distrito
+        description: Territórios com valor herdado do distrito (ou ilha); na freguesia, através do município.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: inherited_regiao
+        description: Territórios com valor herdado da região do Idealista; na freguesia, através do município.
+        data_type: bigint
+        data_tests: [not_null]
       - name: stale
         description: Valores de mobilidade calculados com uma configuração de polo que já não vale.
         data_type: bigint
@@ -617,13 +677,23 @@ models:
         description: Herdado da mobilidade do município (par desatualizado).
         data_type: boolean
       - name: origin
-        description: '`proprio`, `herdado` (cópia exata do município) ou `ausente`.'
+        description: >-
+          `proprio`, `herdado` (cópia exata do município, que por sua vez pode ter herdado da área) ou `ausente`.
         data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [proprio, herdado, ausente]
+      - name: origin_level
+        description: >-
+          Nível de onde veio o valor: `freguesia` (próprio), `municipio`, `distrito` (ou ilha) ou `regiao`; nulo se
+          ausente.
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [freguesia, municipio, distrito, regiao]
       - name: territorial_inheritance
         description: >-
           Nos critérios dos Censos, o `coverage_status` da freguesia (`own`, `inherited`, `missing`); nulo nos
@@ -729,4 +799,224 @@ models:
         data_type: varchar
       - name: processed_at_utc
         description: Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_rent_by_district_typology
+    description: >-
+      Aluguel pedido do Idealista por distrito (ou ilha) × tipologia, juntando os anúncios com município e os que
+      vieram só com o distrito. Outliers por IQR em cada distrito × tipologia e mediana só com pelo menos 10
+      anúncios. Uma linha só para distritos com anúncios no snapshot vigente. Só agregados.
+    meta:
+      source_ids: [idealista]
+    columns:
+      - name: district_or_island
+        description: >-
+          Distrito do continente ou ilha, com o nome da CAOP (`dim_municipality.district_or_island`).
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: source_region
+        description: >-
+          Região do Idealista a que o distrito pertence (não é a NUTS II); sem região na fonte, a da região autónoma.
+        data_type: varchar
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [Norte, Centro, Área Metropolitana de Lisboa, Algarve, Alentejo, Madeira, Açores]
+      - name: typology
+        description: >-
+          Tipologia (`ALL` = todas).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ALL, T0, T1, T2, T3, T4+]
+      - name: n_listings
+        description: >-
+          Anúncios com preço válido no distrito, inclusive os outliers.
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: n_outliers
+        description: >-
+          Anúncios marcados como outlier (IQR de Tukey, 1,5) no grupo distrito × tipologia.
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: n_eligible
+        description: >-
+          Anúncios usados nas estatísticas (sem os outliers).
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: rent_median
+        description: >-
+          Mediana do aluguel pedido (€/mês, interpolação linear); nula com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p25
+        description: >-
+          Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p75
+        description: >-
+          Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: n_eur_m2
+        description: >-
+          Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m².
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: eur_m2_median
+        description: >-
+          Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida.
+        data_type: double
+      - name: sample_status
+        description: >-
+          `suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios` (tipologia vazia).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [suficiente, amostra_insuficiente, sem_anuncios]
+      - name: snapshot_month
+        description: >-
+          Mês do snapshot do Idealista usado (AAAA-MM).
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: source_id
+        description: >-
+          Fonte (`idealista`).
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: license_id
+        description: >-
+          Licença declarada no snapshot.
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: attribution
+        description: >-
+          Atribuição exigida pela fonte.
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: catalog_version
+        description: >-
+          Versão do catálogo do mesmo build.
+        data_type: varchar
+      - name: processed_at_utc
+        description: >-
+          Instante (UTC, ISO 8601) do build Gold.
+        data_type: varchar
+
+  - name: gold_rent_by_region_typology
+    description: >-
+      Aluguel pedido do Idealista por região da fonte × tipologia (não é a NUTS II), com outliers por IQR em cada
+      região × tipologia e mediana só com pelo menos 10 anúncios. Só agregados.
+    meta:
+      source_ids: [idealista]
+    columns:
+      - name: source_region
+        description: >-
+          Região do Idealista (não é a NUTS II).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [Norte, Centro, Área Metropolitana de Lisboa, Algarve, Alentejo, Madeira, Açores]
+      - name: typology
+        description: >-
+          Tipologia (`ALL` = todas).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [ALL, T0, T1, T2, T3, T4+]
+      - name: n_listings
+        description: >-
+          Anúncios com preço válido na região, inclusive os outliers.
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: n_outliers
+        description: >-
+          Anúncios marcados como outlier (IQR de Tukey, 1,5) no grupo região × tipologia.
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: n_eligible
+        description: >-
+          Anúncios usados nas estatísticas (sem os outliers).
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: rent_median
+        description: >-
+          Mediana do aluguel pedido (€/mês, interpolação linear); nula com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p25
+        description: >-
+          Percentil 25 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: rent_p75
+        description: >-
+          Percentil 75 do aluguel pedido (€/mês); nulo com menos de 10 anúncios.
+        data_type: double
+      - name: n_eur_m2
+        description: >-
+          Anúncios elegíveis com área entre 10 e 1 000 m², usados no €/m².
+        data_type: bigint
+        data_tests:
+          - not_null
+      - name: eur_m2_median
+        description: >-
+          Mediana do aluguel por m² (€/m²/mês); nula com menos de 10 anúncios com área válida.
+        data_type: double
+      - name: sample_status
+        description: >-
+          `suficiente` (n ≥ 10), `amostra_insuficiente` (1 a 9) ou `sem_anuncios` (tipologia vazia).
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [suficiente, amostra_insuficiente, sem_anuncios]
+      - name: snapshot_month
+        description: >-
+          Mês do snapshot do Idealista usado (AAAA-MM).
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: source_id
+        description: >-
+          Fonte (`idealista`).
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: license_id
+        description: >-
+          Licença declarada no snapshot.
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: attribution
+        description: >-
+          Atribuição exigida pela fonte.
+        data_type: varchar
+        data_tests:
+          - not_null
+      - name: catalog_version
+        description: >-
+          Versão do catálogo do mesmo build.
+        data_type: varchar
+      - name: processed_at_utc
+        description: >-
+          Instante (UTC, ISO 8601) do build Gold.
         data_type: varchar

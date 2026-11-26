@@ -12,6 +12,10 @@ update-bug-status.ps1.
   - *Sede de distrito (R-002):* `distancia_sede_distrito_km` está `fonte_pendente` porque `config/poles.yml` não tem polos `sede_distrito`. Criar esses polos e recoletar (spec 009, só linha reta ou também carro) torna o critério disponível sem código novo.
   - *Pesos e faixas (R-003):* os pesos internos, as direções e as faixas das opções (temperatura: fresco/ameno/quente; porte: vila/cidade média/grande centro) em `config/criteria.yml` são provisórios. O autor deve revisá-los antes do ranker. Cada mudança gera uma `catalog_version` nova.
   - *Mediana na freguesia (A1 do Analyze):* a mediana de aluguel `ALL` própria na freguesia com n ≥ 10 foi mantida; o plano §8.4 sugeria só €/m². Confirmar com o autor.
+- **2026-11-26 — Aluguel herdado: pendências da spec 012 para o ranker (antes da Fase 4):**
+  - *Normalização estreita (R-005):* as amostras próprias estão só nos distritos de Lisboa, Porto e Faro, e o P5–P95 vem só delas. Em `custo_aluguel_mediana`, ficam abaixo do P5 109 de 266 herdados (`ALL`) e 201 de 282 (`T1`). Limitar o score a 0–1 empataria muitos municípios no melhor custo; decidir no ranker (por exemplo, normalizar com os valores publicados, o que muda a FR-011) ou recoletar o Idealista por município nos outros distritos.
+  - *Empate por distrito (R-006):* 254 municípios usam o valor do distrito no `ALL`; decidir se o herdado pesa menos ou só aparece com selo.
+  - *Mediana na freguesia (R-007):* segue a pergunta A1 da 011.
 - **2026-11-24 — Fases 0 e 1 pendentes (execução no S3):** a Fase 3 virou a spec 011, com `dbt build` verde só no lake local. A execução no S3 depende da Fase 1 (Terraform, S3/ECR, PoC MWAA Serverless), que não tem sinal no repositório. Da Fase 0, falta confirmar a rotação de segredos e a limpeza do histórico do Git. O checklist do plano (§16) está desatualizado: nem a Fase 2, já feita, está marcada.
 - **2026-11-22 — Mobilidade: pendências pós-coleta (não bloqueiam a Fase 3):**
   - Os marts devem usar `stg_municipality_pole_distance` com a atribuição "Tempos de viagem: Google" e o risco aceito de termos de uso (ADR-002 D8, ADR-004); a linha reta (`source_id` `caop`) não tem essa restrição.
@@ -39,7 +43,7 @@ update-bug-status.ps1.
 | 009-mobilidade-distancias | Mobilidade — distâncias e tempos de viagem dos municípios até polos fixos | Convergida | 46/46 tasks | 2026-11-22 |
 | 010-visibilidade-modelo-dados | Visibilidade do modelo de dados — dicionário, diagrama ER, catálogo DuckDB único e dbt docs | Convergida | 42/42 tasks | 2026-11-24 |
 | 011-marts-indicadores-catalogo | Marts de indicadores e criteria_catalog versionado | Convergida | 58/58 tasks | 2026-11-24 |
-| 012-aluguel-distrito-regiao | Aluguel por distrito e por região na Gold, com herança marcada | Especificada | N/A | 2026-11-24 |
+| 012-aluguel-distrito-regiao | Aluguel por distrito e por região na Gold, com herança marcada | Convergida | 43/43 tasks | 2026-11-26 |
 
 ## Melhorias Ad-hoc
 

@@ -21,3 +21,9 @@ from {{ ref('gold_parish_indicator') }} group by all having count(*) > 1
 union all
 select 'gold_rent_by_parish_typology', dicofre || '|' || typology, count(*)
 from {{ ref('gold_rent_by_parish_typology') }} group by all having count(*) > 1
+union all
+select 'gold_rent_by_district_typology', district_or_island || '|' || typology, count(*)
+from {{ ref('gold_rent_by_district_typology') }} group by all having count(*) > 1
+union all
+select 'gold_rent_by_region_typology', source_region || '|' || typology, count(*)
+from {{ ref('gold_rent_by_region_typology') }} group by all having count(*) > 1

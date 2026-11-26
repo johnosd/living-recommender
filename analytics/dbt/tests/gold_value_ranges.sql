@@ -22,6 +22,14 @@ select 'parish_rent_median', dicofre, typology, rent_median
 from {{ ref('gold_rent_by_parish_typology') }}
 where rent_median is not null and (rent_median < 100 or rent_median > 10000)
 union all
+select 'district_rent_median', district_or_island, typology, rent_median
+from {{ ref('gold_rent_by_district_typology') }}
+where rent_median is not null and (rent_median < 100 or rent_median > 10000)
+union all
+select 'region_rent_median', source_region, typology, rent_median
+from {{ ref('gold_rent_by_region_typology') }}
+where rent_median is not null and (rent_median < 100 or rent_median > 10000)
+union all
 select 'parish_percent', dicofre, criterion_id, value
 from {{ ref('gold_parish_indicator') }}
 where value is not null and (criterion_id like '%\_pct' escape '\' or criterion_id like 'populacao\_pct\_%' escape '\'

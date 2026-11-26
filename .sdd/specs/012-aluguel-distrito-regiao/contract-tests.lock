@@ -1,0 +1,12 @@
+{
+  "feature": "012-aluguel-distrito-regiao",
+  "lockedAt": "2026-11-26 14:56",
+  "total": null,
+  "files": [
+    {
+      "path": "tests/contracts/test_gold_area_rent_contract.py",
+      "sha256": "d22ad33c971ccb03050e04de9a7f86e3bb3f3295e35ae98a7fd12cffebaa19a1",
+      "tests": "unknown"
+    }
+  ]
+}

@@ -35,11 +35,14 @@ def _current(listings: pd.DataFrame) -> pd.DataFrame:
     return current
 
 
-def _outliers(listings: pd.DataFrame) -> pd.Series:
-    """IQR de Tukey por município x tipologia, só em grupos com pelo menos 10 preços (D6)."""
+def _outliers(listings: pd.DataFrame, key: str = "dico") -> pd.Series:
+    """IQR de Tukey por território (`key`) x tipologia, só em grupos com pelo menos 10 preços (D6).
+
+    O padrão é o município; o distrito e a região da spec 012 passam a sua própria coluna.
+    """
     flags = pd.Series(False, index=listings.index)
-    municipal = listings[listings["dico"].notna() & listings["typology"].notna()]
-    for _, group in municipal.groupby(["dico", "typology"], sort=False):
+    placed = listings[listings[key].notna() & listings["typology"].notna()]
+    for _, group in placed.groupby([key, "typology"], sort=False):
         if len(group) < MIN_SAMPLE:
             continue
         prices = group["asking_rent_eur"].astype(float)
@@ -88,8 +91,8 @@ def _provenance(current: pd.DataFrame) -> dict:
             "attribution": first.get("attribution")}
 
 
-def _frame(rows: list[dict], key_columns: list[str]) -> pd.DataFrame:
-    frame = pd.DataFrame(rows, columns=[*key_columns, *STATS_COLUMNS])
+def _frame(rows: list[dict], key_columns: list[str], columns: tuple = STATS_COLUMNS) -> pd.DataFrame:
+    frame = pd.DataFrame(rows, columns=[*key_columns, *columns])
     for column in ("rent_median", "rent_p25", "rent_p75", "eur_m2_median"):
         frame[column] = pd.to_numeric(frame[column], errors="coerce").astype("float64")
     for column in ("n_listings", "n_outliers", "n_eligible", "n_eur_m2"):

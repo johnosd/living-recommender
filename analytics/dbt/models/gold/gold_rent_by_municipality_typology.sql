@@ -17,6 +17,10 @@ select
     cast(source_id as varchar) as source_id,
     cast(license_id as varchar) as license_id,
     cast(attribution as varchar) as attribution,
+    cast(district_or_island as varchar) as district_or_island,
+    cast(source_region as varchar) as source_region,
+    cast(reference_level as varchar) as reference_level,
+    cast(reference_level_eur_m2 as varchar) as reference_level_eur_m2,
     cast(catalog_version as varchar) as catalog_version,
     cast(processed_at_utc as varchar) as processed_at_utc
 from read_parquet('{{ env_var('GOLD_PREPARED_DIR', '.data/ci-gold-build/prepared') }}/rent_municipality.parquet')

@@ -10,12 +10,16 @@ join municipal m using (dico, criterion_id, variant)
 where p.origin = 'herdado'
   and (p.value is distinct from m.value or p.period is distinct from m.period
        or p.source_id is distinct from m.source_id or p.license_id is distinct from m.license_id
-       or p.attribution is distinct from m.attribution or p.value_status is distinct from m.value_status)
+       or p.attribution is distinct from m.attribution or p.value_status is distinct from m.value_status
+       or p.origin_level is distinct from m.origin_level)  -- spec 012: o nível de onde o município tirou o valor
 union all
 select 'origem incoerente', dicofre, criterion_id, variant
 from parish
 where (origin = 'ausente') <> (value is null)
    or (value is null) <> (missing_reason is not null)
+   or (origin = 'ausente') <> (origin_level is null)
+   or (origin = 'proprio' and origin_level is distinct from 'freguesia')
+   or (origin = 'herdado' and (origin_level is null or origin_level not in ('municipio', 'distrito', 'regiao')))
 union all
 select 'cobertura', null, criterion_id, variant
 from parish cross join expected

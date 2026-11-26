@@ -444,20 +444,20 @@ Cada indicador do `criteria_catalog` traz: `id`, `categoria`, `rótulo PT-BR/EN`
 
 | Critério | Nível freguesia | Origem |
 |---|---|---|
-| Custo | Mediana Idealista da freguesia se n ≥ 10; senão herda do município | Próprio / herdado |
+| Custo | Mediana Idealista da freguesia se n ≥ 10; senão herda o valor do município, que sem amostra própria vem do distrito (ou ilha) e depois da região do Idealista (spec 012) | Próprio / herdado, com o nível de origem |
 | Perfil etário | Censos 2021 por freguesia (via crosswalk 2013 → atual) | Próprio |
 | Densidade populacional | Censos 2021 + área CAOP | Próprio |
 | Clima | Open-Meteo no centroide da freguesia (relevante em municípios com relevo, como Madeira e Serra da Estrela) | Próprio |
 | Mobilidade | Distância do centroide da freguesia aos polos | Próprio |
 | Saúde, educação, segurança | Só existem por município no MVP | Herdado (não diferencia freguesias) |
 
-3. **Regra de herança:** indicador herdado é **igual para todas as freguesias do município**, então não altera a ordem entre elas. Ele aparece na ficha com o selo "valor do município" e **não conta** para a cobertura própria da freguesia.
+3. **Regra de herança:** indicador herdado é **igual para todas as freguesias do município**, então não altera a ordem entre elas. Ele aparece na ficha com o selo do nível de origem ("valor do município", "do distrito" ou "da região") e **não conta** para a cobertura própria da freguesia.
 4. **Confiança:** se a freguesia só tiver indicadores herdados nos critérios com peso > 0, ela aparece sem score próprio ("dados insuficientes para diferenciar"), sem ordem fictícia.
 5. **Fase B:** saúde e educação por freguesia a partir de pontos georreferenciados (hospitais, centros de saúde, escolas — fontes abertas a avaliar: SNS, DGEEC, OSM) com contagem em raio a partir do centroide.
 
 ### 8.4 Aluguel — MVP e Fase B
 
-- **MVP:** por município e tipologia, `n`, mediana, P25, P75 e €/m² mediano (Idealista, preço pedido), ao lado da mediana do INE (contratos novos, por m²) e com o período de referência de cada um. **Por freguesia:** as mesmas estatísticas quando n ≥ 10 (sem segmentar por tipologia se n < 10 por tipologia; nesse caso só €/m²).
+- **MVP:** por município e tipologia, `n`, mediana, P25, P75 e €/m² mediano (Idealista, preço pedido), ao lado da mediana do INE (contratos novos, por m²) e com o período de referência de cada um. **Por freguesia:** as mesmas estatísticas quando n ≥ 10 (sem segmentar por tipologia se n < 10 por tipologia; nesse caso só €/m²). **Por distrito e região (spec 012):** as mesmas estatísticas com os anúncios da área, usadas como referência herdada e marcada quando o município não tem n ≥ 10; só valores próprios entram na normalização.
 - **Fase B (ML nacional):** só com ≥ 3 snapshots mensais. Baseline = mediana município × tipologia; candidatos LightGBM/CatBoost; validação **temporal** (treina em t−k, testa em t) e **geográfica** (group k-fold por NUTS3); MAE/RMSE por região e tipologia; intervalo de predição (quantis). O notebook de 2023 serve só de referência de features.
 
 ---

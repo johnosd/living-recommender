@@ -654,9 +654,10 @@ dim_parish,idealista_listings,census_parish_observation}` e `lake/bronze/{stg_ob
 stg_municipality_pole_distance,dim_mobility_pole}`. Rode antes os builds das specs 001 a 009.
 
 **Saídas**: `.data/lake/gold/<tabela>/data.parquet` para `gold_municipality_indicator`, `gold_parish_indicator`,
-`gold_rent_by_municipality_typology`, `gold_rent_by_parish_typology`, `gold_municipality_climate_monthly`,
-`gold_criteria_catalog`, `gold_criteria_normalization` e `gold_data_quality`. Cada tabela é promovida sozinha; se
-qualquer passo falhar (catálogo inválido, critério sem dado, teste dbt), a versão anterior fica intacta.
+`gold_rent_by_municipality_typology`, `gold_rent_by_parish_typology`, `gold_rent_by_district_typology`,
+`gold_rent_by_region_typology`, `gold_municipality_climate_monthly`, `gold_criteria_catalog`,
+`gold_criteria_normalization` e `gold_data_quality`. Cada tabela é promovida sozinha; se qualquer passo falhar
+(catálogo inválido, critério sem dado, teste dbt), a versão anterior fica intacta.
 
 **Mudar um critério.** Edite `config/criteria.yml`, que é a fonte única de verdade, e rode o build. O formato está
 em `.sdd/specs/011-marts-indicadores-catalogo/contracts/criteria-catalog.md`. Os pesos `> 0` dos critérios
@@ -674,10 +675,25 @@ contrário, **falha o build** com o id na mensagem: corrija a fonte ou marque-o 
 - O período é o mais recente **do município**; um ano anterior ao mais recente do critério vem marcado em
   `is_older_period`.
 - O símbolo `-` vira 0 só em contagens (`zero_convencao_fonte`, R-001).
-- Aluguel só com pelo menos 10 anúncios, sem os outliers (IQR de Tukey, 1,5, por município × tipologia).
+- Aluguel só com pelo menos 10 anúncios, sem os outliers (IQR de Tukey, 1,5, por território × tipologia).
 - Carro sempre com "Tempos de viagem: Google".
 - Uma freguesia herdada é cópia exata do município.
 
-Estado em 2026-11-24: build real com catálogo `160da2ce8218` (61 critérios disponíveis, 1 pendente), 20 328 linhas
-municipais, 215 094 de freguesia, aluguel próprio em 42 municípios e 135 freguesias (`ALL`). A execução no S3
-depende da Fase 1.
+**Aluguel herdado (spec 012).** Sem amostra própria, o município usa o valor do **distrito** (ou ilha) e, se faltar,
+o da **região**, decidido por tipologia e separadamente para €/m². A freguesia usa o valor publicado do município.
+
+- Leia sempre `origin` e `origin_level`: um valor `distrito` ou `regiao` é a referência **da área**, não o aluguel do
+  município. `rent_coverage` continua falando só da amostra própria; `reference_level` diz de onde vem o publicado.
+- A região é a do Idealista, **não** a NUTS II (Santarém fica no Alentejo e Setúbal na Área Metropolitana de Lisboa).
+- Só valores próprios entram na normalização P5/P95 e na cobertura (`with_value`). Hoje as amostras próprias estão
+  só nos distritos de Lisboa, Porto e Faro: muitos herdados caem **abaixo do P5** (R-005).
+- Um distrito do continente sem anúncios no snapshot fica sem região: os seus municípios saem ausentes.
+
+**Erros de área** (`AreaError`): "distrito da fonte sem par na CAOP" pede uma linha nova em
+`analytics/dbt/seeds/idealista_island_aliases.csv` quando for uma grafia nova de ilha; "mais de uma região" indica
+mudança na hierarquia da fonte e precisa ser investigada antes de publicar.
+
+Estado em 2026-11-26: build real com catálogo `6917af159e07` (61 critérios disponíveis, 1 pendente), 20 328 linhas
+municipais, 215 094 de freguesia, 150 linhas distritais (25 distritos ou ilhas) e 42 regionais (7). Na mediana `ALL`,
+os 308 municípios têm valor (42 próprios, 254 do distrito, 12 da região), e as 3 259 freguesias também (135 próprias,
+284 do município, 2 777 do distrito, 63 da região). A execução no S3 depende da Fase 1.

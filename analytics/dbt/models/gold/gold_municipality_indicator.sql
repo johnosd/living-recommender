@@ -19,6 +19,8 @@ select
     cast(attribution as varchar) as attribution,
     cast(usage_restriction as varchar) as usage_restriction,
     cast(is_stale as boolean) as is_stale,
+    cast(origin as varchar) as origin,
+    cast(origin_level as varchar) as origin_level,
     cast(catalog_version as varchar) as catalog_version,
     cast(processed_at_utc as varchar) as processed_at_utc
 from read_parquet('{{ env_var('GOLD_PREPARED_DIR', '.data/ci-gold-build/prepared') }}/municipality_indicator.parquet')

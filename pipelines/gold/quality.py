@@ -1,15 +1,19 @@
 """Mart de qualidade: cobertura, período anterior, zeros por convenção, `stale`, outliers e pendentes (spec 011, US2).
 
-Uma linha por critério do catálogo × nível declarado × variante (`data-model.md`, `gold_data_quality`).
+Uma linha por critério do catálogo × nível declarado × variante (`data-model.md`, `gold_data_quality`). Cobertura é
+só o valor próprio, nos dois níveis; os herdados são contados à parte, pelo nível de origem (spec 012, FR-014).
 """
 import json
 
 import pandas as pd
 
 KEYS = {"municipio": "dico", "freguesia": "dicofre"}
-COLUMNS = ("catalog_version", "criterion_id", "level", "variant", "status", "territories_expected", "with_value",
-           "missing", "zero_by_convention", "older_period", "inherited", "stale", "outliers",
-           "dataset_latest_period", "pending_reason")
+INHERITED_COLUMNS = {"inherited_municipio": "municipio", "inherited_distrito": "distrito",
+                     "inherited_regiao": "regiao"}
+COUNT_COLUMNS = ("territories_expected", "with_value", "missing", "zero_by_convention", "older_period", "inherited",
+                 *INHERITED_COLUMNS, "stale", "outliers")
+COLUMNS = ("catalog_version", "criterion_id", "level", "variant", "status", *COUNT_COLUMNS, "dataset_latest_period",
+           "pending_reason")
 
 
 def _expected(frame: pd.DataFrame, level: str) -> int:
@@ -21,6 +25,18 @@ def _outliers(rent: pd.DataFrame | None, variant: str) -> int:
     if rent is None or rent.empty:
         return 0
     return int(rent.loc[rent["typology"] == variant, "n_outliers"].sum())
+
+
+def _split(group: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """As linhas de valor próprio e a contagem dos herdados (total e por nível de origem)."""
+    if "origin" not in group.columns:  # perfil sem herança: tudo é próprio
+        return group, {"inherited": 0}
+    inherited = group[group["origin"] == "herdado"]
+    counts = {"inherited": len(inherited)}
+    if "origin_level" in inherited.columns:
+        counts.update({column: int((inherited["origin_level"] == level).sum())
+                       for column, level in INHERITED_COLUMNS.items()})
+    return group[group["origin"] == "proprio"], counts
 
 
 def _row(version, criterion_id, level, variant, status, **counts) -> dict:
@@ -49,7 +65,7 @@ def data_quality(catalog: pd.DataFrame, indicators_by_level: dict[str, pd.DataFr
             expected = _expected(frame, level)
             subset = frame[frame["criterion_id"] == criterion_id]
             for variant, group in subset.groupby(subset["variant"].fillna(""), sort=True):
-                own = group[group["origin"] == "proprio"] if level == "freguesia" else group
+                own, inherited = _split(group)
                 with_value = int(own["value"].notna().sum())
                 is_rent = (group["source_id"] == "idealista").any()
                 rows.append(_row(
@@ -57,13 +73,11 @@ def data_quality(catalog: pd.DataFrame, indicators_by_level: dict[str, pd.DataFr
                     with_value=with_value, missing=expected - with_value,
                     zero_by_convention=int((own["value_status"] == "zero_convencao_fonte").sum()),
                     older_period=int(own["is_older_period"].sum()),
-                    inherited=int((group["origin"] == "herdado").sum()) if level == "freguesia" else 0,
-                    stale=int(own["is_stale"].sum()),
+                    **inherited, stale=int(own["is_stale"].sum()),
                     outliers=_outliers(rent_by_level.get(level), str(variant)) if is_rent else 0,
                     dataset_latest_period=group["dataset_latest_period"].dropna().max() if
                     group["dataset_latest_period"].notna().any() else None))
     frame = pd.DataFrame(rows, columns=list(COLUMNS))
-    for column in ("territories_expected", "with_value", "missing", "zero_by_convention", "older_period", "inherited",
-                   "stale", "outliers"):
+    for column in COUNT_COLUMNS:
         frame[column] = frame[column].astype("int64")
     return frame
